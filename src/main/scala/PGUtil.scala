@@ -20,8 +20,7 @@ object PGUtil extends java.io.Serializable {
    private def dbPassword(hostname:String, port:String, database:String, username:String ):String = {
     // Usage: val thatPassWord = dbPassword(hostname,port,database,username)
     // .pgpass file format, hostname:port:database:username:password
-    //val passwdFile = new java.io.File(scala.sys.env("HOME"), ".pgpass")
-    val passwdFile = new java.io.File( "/home/mapper/.pgpass")
+    val passwdFile = new java.io.File(scala.sys.env("HOME"), ".pgpass")
     var passwd = ""
     val fileSrc = scala.io.Source.fromFile(passwdFile)
     fileSrc.getLines.foreach{line =>
@@ -39,7 +38,6 @@ object PGUtil extends java.io.Serializable {
   }
 
   def passwordFromConn(url:String) = {
-    // Usage: "jdbc:postgresql://localhost:5432/mimic?user=mapper&currentSchema=omop"
     val pattern = "jdbc:postgresql://(.*):(\\d+)/(\\w+)[?]user=(\\w+).*".r
     val pattern(host, port, database, username) = url
     dbPassword(host,port,database,username)
@@ -213,11 +211,6 @@ object PGUtil extends java.io.Serializable {
     AND targ.$key IS NULL
     """
     conn.prepareStatement(ins).executeUpdate()
-
-    //    UPDATE eds.nda_mouv_ufr_hegp as final
-    //SET d8_fin=now(), i2b2_action=-1
-    //WHERE  NOT EXISTS (SELECT 1 FROM eds.nda_mouv_ufr_hegp_tmp tmp
-    //WHERE tmp.id_mouv_ufr = final.id_mouv_ufr AND tmp.source = final.source)
 
   }
 

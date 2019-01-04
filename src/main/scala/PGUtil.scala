@@ -99,14 +99,6 @@ object PGUtil extends java.io.Serializable {
     // get the partitionned dataset from multiple jdbc stmts
     spark.read.format("jdbc").option("url",url).option("dbtable",queryStr).option("partitionColumn",partition_column).option("lowerBound",lower_bound).option("upperBound",upper_bound).option("numPartitions",num_partitions).option("fetchsize",50000).option("password",passwordFromConn(url)).load
     }
-
-  private def formatField[T](fld:T):String={
-    fld match {
-      case d:String if d.nonEmpty => "\"" + d.replace("\"","\"\"") + "\""
-      case d: None.type => ""
-      case _ => fld.toString 
-    }
-  }
   
   private def formatRow(lst:Seq[org.apache.spark.sql.Row]):String={
   val str = StringBuilder.newBuilder
@@ -114,7 +106,12 @@ object PGUtil extends java.io.Serializable {
           for (i <- 0 to input.size -1){
           if(i != 0){str.append(",")}
           if(input.get(i) != null){
-                  str.append(formatField(input.get(i)))
+            str.append(Option(input.get(i)) match {
+              case Some(d: String) if d.nonEmpty => "\"" + d.replace("\"","\"\"") + "\""
+              case Some(None) => ""
+              case None => ""
+              case _ => input.get(i).toString
+            })
           }
           }
           str.append("\n")

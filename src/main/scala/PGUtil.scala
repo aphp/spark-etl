@@ -37,7 +37,7 @@ object PGUtil extends java.io.Serializable {
     passwd
   }
 
-  def passwordFromConn(url:String) = {
+  def passwordFromConn(url:String):String = {
     val pattern = "jdbc:postgresql://(.*):(\\d+)/(\\w+)[?]user=(\\w+).*".r
     val pattern(host, port, database, username) = url
     dbPassword(host,port,database,username)
@@ -64,17 +64,17 @@ object PGUtil extends java.io.Serializable {
       .load.schema
   }
 
-  def tableTruncate(conn:Connection, table:String)={
+  def tableTruncate(conn:Connection, table:String):Unit ={
     val st: PreparedStatement = conn.prepareStatement(s"TRUNCATE TABLE $table")
     st.executeUpdate()
   }
 
-  def tableDrop(conn:Connection, table:String)={
+  def tableDrop(conn:Connection, table:String):Unit ={
     val st: PreparedStatement = conn.prepareStatement(s"DROP TABLE IF EXISTS $table")
     st.executeUpdate()
   }
 
-  def tableCreate(conn:Connection, table:String, schema:StructType, isUnlogged:Boolean)={
+  def tableCreate(conn:Connection, table:String, schema:StructType, isUnlogged:Boolean):Unit ={
     val unlogged = if(isUnlogged){"UNLOGGED"}else{""}
     val fields = ""
     val queryCreate = s"""CREATE TABLE $unlogged ($fields)"""
@@ -82,7 +82,7 @@ object PGUtil extends java.io.Serializable {
     st.executeUpdate()
   }
 
-  def tableCopy(conn:Connection, tableSrc:String, tableTarg:String, isUnlogged:Boolean)={
+  def tableCopy(conn:Connection, tableSrc:String, tableTarg:String, isUnlogged:Boolean = true):Unit ={
     val unlogged = if(isUnlogged){"UNLOGGED"}else{""}
     val queryCreate = s"""CREATE $unlogged TABLE $tableTarg (LIKE $tableSrc)"""
     val st: PreparedStatement = conn.prepareStatement(queryCreate)
@@ -122,7 +122,7 @@ object PGUtil extends java.io.Serializable {
   str.toString
   }
 
-  def outputBulk(url:String, table:String, df:Dataset[Row], batchsize:Int) = {
+  def outputBulk(url:String, table:String, df:Dataset[Row], batchsize:Int = 50000) = {
     val dialect = JdbcDialects.get(url)
     val copyColumns =  df.schema.fields.map(x => dialect.quoteIdentifier(x.name)).mkString(",")
 
@@ -159,7 +159,7 @@ object PGUtil extends java.io.Serializable {
     }
   }
 
-  def inputQueryBulkDf(spark:SparkSession, url:String, query:String, path:String, isMultiline:Boolean):Dataset[Row]={
+  def inputQueryBulkDf(spark:SparkSession, url:String, query:String, path:String, isMultiline:Boolean = false):Dataset[Row]={
     val schemaQuery = getSchemaQuery(spark, url, query)
     val conn = connOpen(url)
     inputQueryBulkCsv(conn, query, path)
@@ -177,17 +177,17 @@ object PGUtil extends java.io.Serializable {
       .load(path)
   }
 
-  def outputBulkDfScd1(url:String, table:String, key:String, df:Dataset[Row], batchsize:Int) =  {
+  def outputBulkDfScd1(url:String, table:String, key:String, df:Dataset[Row], batchsize:Int = 50000):Unit ={
     val tableTmp = table + "_tmp"
     val conn = connOpen(url)
     tableDrop(conn, tableTmp)
-    tableCopy(conn, table, tableTmp, true)
+    tableCopy(conn, table, tableTmp)
     outputBulk(url, tableTmp, df, batchsize)
     scd1(conn, table, tableTmp, key, df.schema)
     tableDrop(conn, tableTmp)
   }
 
-  def scd1(conn:Connection, table:String, tableTarg:String, key:String, rddSchema:StructType)={
+  def scd1(conn:Connection, table:String, tableTarg:String, key:String, rddSchema:StructType):Unit ={
     val updSet =  rddSchema.fields.filter(x => !key.equals(x.name)).map(x => s"${x.name} = tmp.${x.name}").mkString(",")
     val updIsDistinct =  rddSchema.fields.filter(x => !key.equals(x.name)).map(x => s"tmp.${x.name} IS DISTINCT FROM tmp.${x.name}").mkString(" OR ")
     val upd = s"""
@@ -214,17 +214,17 @@ object PGUtil extends java.io.Serializable {
 
   }
 
-  def outputBulkDfScd2(url:String, table:String, key:String, dateBegin:String, dateEnd:String, df:Dataset[Row], batchsize:Int) =  {
+  def outputBulkDfScd2(url:String, table:String, key:String, dateBegin:String, dateEnd:String, df:Dataset[Row], batchsize:Int = 50000):Unit ={
     val tableTmp = table + "_tmp"
     val conn = connOpen(url)
     tableDrop(conn, tableTmp)
-    tableCopy(conn, table, tableTmp, true)
+    tableCopy(conn, table, tableTmp)
     outputBulk(url, tableTmp, df, batchsize)
     scd2(conn, table, tableTmp, key, dateBegin, dateEnd, df.schema)
     tableDrop(conn, tableTmp)
   }
 
-  def scd2(conn:Connection, table:String, tableTmp:String, key:String, dateBegin:String, dateEnd:String, rddSchema:StructType)={
+  def scd2(conn:Connection, table:String, tableTmp:String, key:String, dateBegin:String, dateEnd:String, rddSchema:StructType):Unit ={
     val insCols =    rddSchema.fields.filter(x => x.name!=dateBegin).map(x => s"${x.name}").mkString(",") + "," + dateBegin
     val insColsTmp = rddSchema.fields.filter(x => x.name!=dateBegin).map(x => s"tmp.${x.name}").mkString(",") + ", now()"
 

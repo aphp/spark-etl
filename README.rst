@@ -13,9 +13,9 @@ Usage
 	// the connection looks into /home/$USER/.pgpass for a password
 	val url = "jdbc:postgresql://somehost:someport/somedb?user=someuser&currentSchema=someschema"
 	// get a dataframe from a PGCOPY stmt
-	val df = PGUtil.inputQueryBulkDf(spark, url, "select * from sometable", "/tmp/export.csv", false)
-	// bulk load a temporary table and apply a SCD1 on sometable from the previous df with a batch size of 50k rows
-	PGUtil.outputBulkDfScd1(url, "sometable", "somekey", df, 50000)
+	val df = PGUtil.inputQueryBulkDf(spark, url, "select * from sometable", "/tmp/export.csv")
+	// bulk load a temporary table and apply a SCD1 on sometable from the previous df with a default batch size of 50k rows
+	PGUtil.outputBulkDfScd1(url, "sometable", "somekey", df)
 
 
 

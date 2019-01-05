@@ -2,15 +2,17 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>fr.aphp.wind.spark</groupId>
   <artifactId>spark-postgres</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>1.0.3-SNAPSHOT</version>
+  <packaging>jar</packaging>
+  <url>https://github.com/EDS-APHP/spark-postgres</url>
   <name>spark-postgres</name>
   <description></description>
-  <inceptionYear>2016</inceptionYear>
    <licenses>
     <license>
-      <name>MIT License</name>
-      <url>http://www.opensource.org/licenses/mit-license.php</url>
+      <name>Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
       <distribution>repo</distribution>
+      <comments>A business-friendly OSS license</comments>
     </license>
   </licenses>
   <properties>

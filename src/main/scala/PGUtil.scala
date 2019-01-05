@@ -60,6 +60,7 @@ object PGUtil extends java.io.Serializable {
     spark.read.format("jdbc")
       .option("url",url)
       .option("password",passwordFromConn(url))
+      .option("driver","org.postgresql.Driver")
       .option("dbtable", queryStr)
       .load.schema
   }
@@ -93,28 +94,34 @@ object PGUtil extends java.io.Serializable {
     // get min and max for partitioning
     val queryStr = s"($query) as tmp"
     val min_max_query = s"(SELECT cast(min($partition_column) as bigint), cast(max($partition_column) + 1 as bigint) FROM $queryStr) AS tmp1"
-    val row  = spark.read.format("jdbc").option("url",url).option("dbtable",min_max_query).option("password",passwordFromConn(url)).load.first
+    val row  = spark.read.format("jdbc")
+	.option("url",url)
+	.option("driver","org.postgresql.Driver")
+	.option("dbtable",min_max_query).option("password",passwordFromConn(url)).load.first
     val lower_bound = row.getLong(0)
     val upper_bound = row.getLong(1)
     // get the partitionned dataset from multiple jdbc stmts
-    spark.read.format("jdbc").option("url",url).option("dbtable",queryStr).option("partitionColumn",partition_column).option("lowerBound",lower_bound).option("upperBound",upper_bound).option("numPartitions",num_partitions).option("fetchsize",50000).option("password",passwordFromConn(url)).load
+    spark.read.format("jdbc").option("url",url)
+	.option("dbtable",queryStr)
+	.option("driver","org.postgresql.Driver")
+	.option("partitionColumn",partition_column).option("lowerBound",lower_bound).option("upperBound",upper_bound).option("numPartitions",num_partitions).option("fetchsize",50000).option("password",passwordFromConn(url)).load
     }
   
-  private def formatRow(lst:Seq[org.apache.spark.sql.Row]):String={
+  def formatRow(lst:Seq[org.apache.spark.sql.Row]):String={
   val str = StringBuilder.newBuilder
+  var count = 0
   for(input <- lst){
           for (i <- 0 to input.size -1){
           if(i != 0){str.append(",")}
-          if(input.get(i) != null){
             str.append(Option(input.get(i)) match {
-              case Some(d: String) if d.nonEmpty => "\"" + d.replace("\"","\"\"") + "\""
+              case Some(d: String) if d.nonEmpty => if( d.contains(",") || d.contains("\n") ){"\"" + d.replace("\"","\"\"") + "\""}else{d}
               case Some(None) => ""
               case None => ""
               case _ => input.get(i).toString
             })
           }
-          }
-          str.append("\n")
+   count += 1
+   if(count < lst.size){str.append("\n")}
    }
   str.toString
   }
@@ -174,19 +181,19 @@ object PGUtil extends java.io.Serializable {
       .load(path)
   }
 
-  def outputBulkDfScd1(url:String, table:String, key:String, df:Dataset[Row], batchsize:Int = 50000):Unit ={
+  def outputBulkDfScd1(url:String, table:String, key:String, df:Dataset[Row], batchsize:Int = 50000, excludeColumns:List[String] = Nil):Unit ={
     val tableTmp = table + "_tmp"
     val conn = connOpen(url)
     tableDrop(conn, tableTmp)
     tableCopy(conn, table, tableTmp)
     outputBulk(url, tableTmp, df, batchsize)
-    scd1(conn, table, tableTmp, key, df.schema)
+    scd1(conn, table, tableTmp, key, df.schema, excludeColumns)
     tableDrop(conn, tableTmp)
   }
 
-  def scd1(conn:Connection, table:String, tableTarg:String, key:String, rddSchema:StructType):Unit ={
-    val updSet =  rddSchema.fields.filter(x => !key.equals(x.name)).map(x => s"${x.name} = tmp.${x.name}").mkString(",")
-    val updIsDistinct =  rddSchema.fields.filter(x => !key.equals(x.name)).map(x => s"tmp.${x.name} IS DISTINCT FROM tmp.${x.name}").mkString(" OR ")
+  def scd1(conn:Connection, table:String, tableTarg:String, key:String, rddSchema:StructType, excludeColumns:List[String] = Nil):Unit ={
+    val updSet =  rddSchema.fields.filter(x => !key.equals(x.name)).filter(x => !excludeColumns.contains(x.name)).map(x => s"${x.name} = tmp.${x.name}").mkString(",")
+    val updIsDistinct =  rddSchema.fields.filter(x => !key.equals(x.name)).filter(x => !excludeColumns.contains(x.name)).map(x => s"tmp.${x.name} IS DISTINCT FROM tmp.${x.name}").mkString(" OR ")
     val upd = s"""
     UPDATE $table as targ
     SET $updSet
@@ -197,8 +204,8 @@ object PGUtil extends java.io.Serializable {
     """
     conn.prepareStatement(upd).executeUpdate()
 
-    val insSet =  rddSchema.fields.map(x => s"${x.name}").mkString(",")
-    val insSetTarg =  rddSchema.fields.map(x => s"tmp.${x.name}").mkString(",")
+    val insSet =  rddSchema.fields.filter(x => !excludeColumns.contains(x.name)).map(x => s"${x.name}").mkString(",")
+    val insSetTarg =  rddSchema.fields.filter(x => !excludeColumns.contains(x.name)).map(x => s"tmp.${x.name}").mkString(",")
     val ins = s"""
     INSERT INTO $table ($insSet)
     SELECT $insSetTarg
@@ -211,19 +218,19 @@ object PGUtil extends java.io.Serializable {
 
   }
 
-  def outputBulkDfScd2(url:String, table:String, key:String, dateBegin:String, dateEnd:String, df:Dataset[Row], batchsize:Int = 50000):Unit ={
+  def outputBulkDfScd2(url:String, table:String, key:String, dateBegin:String, dateEnd:String, df:Dataset[Row], batchsize:Int = 50000, excludeColumns:List[String] = Nil):Unit ={
     val tableTmp = table + "_tmp"
     val conn = connOpen(url)
     tableDrop(conn, tableTmp)
     tableCopy(conn, table, tableTmp)
     outputBulk(url, tableTmp, df, batchsize)
-    scd2(conn, table, tableTmp, key, dateBegin, dateEnd, df.schema)
+    scd2(conn, table, tableTmp, key, dateBegin, dateEnd, df.schema, excludeColumns)
     tableDrop(conn, tableTmp)
   }
 
-  def scd2(conn:Connection, table:String, tableTmp:String, key:String, dateBegin:String, dateEnd:String, rddSchema:StructType):Unit ={
-    val insCols =    rddSchema.fields.filter(x => x.name!=dateBegin).map(x => s"${x.name}").mkString(",") + "," + dateBegin
-    val insColsTmp = rddSchema.fields.filter(x => x.name!=dateBegin).map(x => s"tmp.${x.name}").mkString(",") + ", now()"
+  def scd2(conn:Connection, table:String, tableTmp:String, key:String, dateBegin:String, dateEnd:String, rddSchema:StructType, excludeColumns:List[String] = Nil):Unit ={
+    val insCols =    rddSchema.fields.filter(x => x.name!=dateBegin).filter(x => !excludeColumns.contains(x.name)).map(x => s"${x.name}").mkString(",") + "," + dateBegin
+    val insColsTmp = rddSchema.fields.filter(x => x.name!=dateBegin).filter(x => !excludeColumns.contains(x.name)).map(x => s"tmp.${x.name}").mkString(",") + ", now()"
 
     // update  where key AND  is distinct from
     // insert  where key AND  is distinct from

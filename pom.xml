@@ -18,7 +18,7 @@
     <maven.compiler.target>1.8</maven.compiler.target>
     <encoding>UTF-8</encoding>
     <scala.tools.version>2.11</scala.tools.version>
-    <scala.version>2.11.8</scala.version>
+    <scala.version>2.11.12</scala.version>
     <spark.version>2.4.0</spark.version>
     <logback.version>1.0.13</logback.version>
     <slf4j.version>1.7.25</slf4j.version>
@@ -106,6 +106,47 @@
     <sourceDirectory>src/main/scala</sourceDirectory>
     <testSourceDirectory>src/test/scala</testSourceDirectory>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.1.0</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <shadedArtifactAttached>true</shadedArtifactAttached>
+              <shadedClassifierName>shaded</shadedClassifierName>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+              <artifactSet>
+                <excludes>
+		  <!-- begin removed for livy-->
+                  <exclude>org.scala-lang:scala-library</exclude>
+                  <exclude>org.scala-lang:scala-reflect</exclude>
+                  <exclude>org.scala-lang.modules:scala-parser-combinators_2.11</exclude>
+                  <exclude>org.postgresql:postgresql</exclude>
+		  <!-- end   removed for livy-->
+                  <exclude>log4j:log4j</exclude>
+                  <exclude>org.slf4j:*</exclude>
+                </excludes>
+              </artifactSet>
+              <relocations>
+              </relocations>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
 
       <plugin>
         <!-- see http://davidb.github.com/scala-maven-plugin -->

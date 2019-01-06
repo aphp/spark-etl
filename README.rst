@@ -4,20 +4,26 @@ SPARK-POSTGRES
 spark-postgres is a set of function to better bridge postgres and spark. It
 focuses on stability and speed in ETL workloads.
 
-Usage
-*****
+Supported fields
+++++++++++++++++
+- numerics (int, bigint, float...)
+- strings
+- dates, timestamps
 
+Usage
++++++
 .. code-block:: scala
 	
 	import fr.aphp.eds.spark.postgres.PGUtil
 	// the connection looks into /home/$USER/.pgpass for a password
 	val url = "jdbc:postgresql://somehost:someport/somedb?user=someuser&currentSchema=someschema"
-	// get a dataframe from a PGCOPY stmt
-	val df = PGUtil.inputQueryBulkDf(spark, url, "select * from sometable", "/tmp/export.csv")
+	// get a dataframe from a PGCOPY stmt and copy to local 
+	val df = PGUtil.inputQueryBulkDf(spark, url, "select * from sometable", "file:///tmp/export.csv") // hdfs also supported
 	// bulk load a temporary table and apply a SCD1 on sometable from the previous df with a default batch size of 50k rows
 	PGUtil.outputBulkDfScd1(url, "sometable", "somekey", df)
 
-
+Functions:
+++++++++++
 
 Input from Postgres
 *******************
@@ -34,7 +40,6 @@ Slow Changing Dimension
 - `outputBulkDfScd1(url:String, table:String, key:String, df:Dataset[Row], batchsize:Int)`
 - `outputBulkDfScd2(url:String, table:String, key:String, dateBegin:String, dateEnd:String, df:Dataset[Row], batchsize:Int)`
 
-
 Table functions
 ***************
 - tableCreate
@@ -46,4 +51,13 @@ General functions
 *****************
 - `connOpen(url:Str):Connection`
 
+Benchmark
++++++++++
 
+Input
+******
+TODO
+
+Output
+******
+TODO

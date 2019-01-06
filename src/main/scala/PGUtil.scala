@@ -8,6 +8,7 @@ import java.util.Properties
 import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types._
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects, JdbcType}
 import org.apache.spark.sql.types._
 import org.postgresql.copy.{CopyManager,PGCopyInputStream}
@@ -18,6 +19,9 @@ import java.io.{BufferedInputStream, BufferedOutputStream, FileInputStream, File
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.FileSystem
 import org.apache.hadoop.fs.Path
+import java.util.UUID.randomUUID
+import scala.reflect.io.Directory
+
 
 object PGUtil extends java.io.Serializable {
 
@@ -94,21 +98,40 @@ object PGUtil extends java.io.Serializable {
     st.executeUpdate()
   }
 
-  def inputQueryDf(spark:SparkSession, url:String,query:String,partition_column:String,num_partitions:Int):Dataset[Row]={
-    // get min and max for partitioning
-    val queryStr = s"($query) as tmp"
-    val min_max_query = s"(SELECT cast(min($partition_column) as bigint), cast(max($partition_column) + 1 as bigint) FROM $queryStr) AS tmp1"
+  def getMinMaxForColumn(spark:SparkSession, url:String, query:String, partitionColumn:String):Tuple2[Long,Long]={
+    val min_max_query = s"(SELECT cast(min($partitionColumn) as bigint), cast(max($partitionColumn) as bigint) FROM $query) AS tmp1"
     val row  = spark.read.format("jdbc")
 	.option("url",url)
 	.option("driver","org.postgresql.Driver")
-	.option("dbtable",min_max_query).option("password",passwordFromConn(url)).load.first
-    val lower_bound = row.getLong(0)
-    val upper_bound = row.getLong(1)
+	.option("dbtable",min_max_query)
+        .option("password",passwordFromConn(url))
+        .load.first
+    val lowerBound = row.getLong(0)
+    val upperBound = row.getLong(1)
+    (lowerBound, upperBound)
+  }
+
+  def getPartitions(spark:SparkSession, lowerBound:Long, upperBound:Long, numPartitions:Int):Dataset[Row]={
+    val length = BigInt(1) + upperBound - lowerBound
+    val partitions = (0 until numPartitions).map { i =>
+      val start = lowerBound + ((i * length) / numPartitions)
+      val end = lowerBound + (((i + 1) * length) / numPartitions) - 1
+      Row(start.toLong, end.toLong)
+    }.toList
+    val schema = new StructType().add(StructField("lowerBound", LongType, true)).add(StructField("upperBound",LongType,true))
+    val rdd = spark.sparkContext.parallelize(partitions)
+    spark.createDataFrame(rdd, schema).repartition(numPartitions)
+  }
+
+  def inputQueryDf(spark:SparkSession, url:String, query:String,partitionColumn:String,numPartitions:Int):Dataset[Row]={
+    // get min and max for partitioning
+    val queryStr = s"($query) as tmp"
+    val (lowerBound, upperBound): Tuple2[Long,Long] = getMinMaxForColumn(spark, url, queryStr, partitionColumn)
     // get the partitionned dataset from multiple jdbc stmts
     spark.read.format("jdbc").option("url",url)
 	.option("dbtable",queryStr)
 	.option("driver","org.postgresql.Driver")
-	.option("partitionColumn",partition_column).option("lowerBound",lower_bound).option("upperBound",upper_bound).option("numPartitions",num_partitions).option("fetchsize",50000).option("password",passwordFromConn(url)).load
+	.option("partitionColumn",partitionColumn).option("lowerBound",lowerBound).option("upperBound",upperBound).option("numPartitions",numPartitions).option("fetchsize",50000).option("password",passwordFromConn(url)).load
     }
   
   def formatRow(lst:Seq[org.apache.spark.sql.Row]):String={
@@ -134,7 +157,7 @@ object PGUtil extends java.io.Serializable {
     val dialect = JdbcDialects.get(url)
     val copyColumns =  df.schema.fields.map(x => dialect.quoteIdentifier(x.name)).mkString(",")
 
-    df.rdd.mapPartitions(
+    val tmp = df.rdd.mapPartitions(
       batch => 
       {
       val conn = connOpen(url)
@@ -151,20 +174,34 @@ object PGUtil extends java.io.Serializable {
     batch 
     }).take(1)
   }
+  
+  def inputQueryPartBulkCsv(spark:SparkSession, fsConf:String, url:String, query:String, path:String, numPartitions:Int, partitionColumn:String) = {
+    val queryStr = s"($query) as tmp"
+    val (lowerBound, upperBound) = getMinMaxForColumn(spark, url, queryStr, partitionColumn)
+    val df = getPartitions(spark, lowerBound, upperBound, numPartitions)
+    val tmp = df.rdd.mapPartitions(
+      x => { 
+      val conn = connOpen(url)
+        x.foreach{ 
+          s => {
+          val queryPart = s"SELECT * FROM $queryStr WHERE $partitionColumn between ${s.get(0)} AND ${s.get(1)}"
+          println(queryPart)
+          inputQueryBulkCsv(fsConf, conn, queryPart, path)
+          }
+        }
+      conn.close()
+      x
+      }).take(1)
+  } 
 
-  def inputQueryBulkCsv(spark:SparkSession, conn:Connection, query:String, path:String) = {
+  def inputQueryBulkCsv(fsConf:String, conn:Connection, query:String, path:String) = {
     val sqlStr = s""" COPY ($query) TO STDOUT  WITH DELIMITER AS ',' NULL AS '' CSV  ENCODING 'UTF-8' QUOTE '"' ESCAPE '"' """
     val copyInputStream: PGCopyInputStream  = new PGCopyInputStream(conn.asInstanceOf[BaseConnection],sqlStr)
 
-    val defaultFSConf = spark.sessionState.newHadoopConf().get("fs.defaultFS")
     val conf = new Configuration()
-    if( path.startsWith("file:") ){
-        conf.set("fs.defaultFS", "file:///")
-    }else{
-        conf.set("fs.defaultFS", defaultFSConf)
-    }
+    conf.set("fs.defaultFS", fsConf)
     val fs= FileSystem.get(conf)
-    val output = fs.create(new Path(path))
+    val output = fs.create(new Path(path , "part-" + randomUUID.toString))
 
     var flag = true
     while(flag){
@@ -178,11 +215,23 @@ object PGUtil extends java.io.Serializable {
     }
   }
 
-  def inputQueryBulkDf(spark:SparkSession, url:String, query:String, path:String, isMultiline:Boolean = false):Dataset[Row]={
+  def inputQueryBulkDf(spark:SparkSession, url:String, query:String, path:String, isMultiline:Boolean = false, numPartitions:Int=1, partitionColumn:String=""):Dataset[Row]={
+    val defaultFSConf = spark.sessionState.newHadoopConf().get("fs.defaultFS")
+    val fsConf = if( path.startsWith("file:") ){ "file:///" }else{ defaultFSConf }
+
+    val conf = new Configuration()
+    conf.set("fs.defaultFS", fsConf)
+    val fs= FileSystem.get(conf)
+    fs.delete(new Path(path), true) // delete file, true for recursive 
+
     val schemaQuery = getSchemaQuery(spark, url, query)
+    if(numPartitions == 1){
     val conn = connOpen(url)
-    inputQueryBulkCsv(spark, conn, query, path)
+      inputQueryBulkCsv(fsConf, conn, query, path)
     conn.close
+    }else{
+      inputQueryPartBulkCsv(spark, fsConf, url, query, path, numPartitions, partitionColumn)
+    }
     spark.read.format("csv")
       .schema(schemaQuery)
       .option("multiline",isMultiline)

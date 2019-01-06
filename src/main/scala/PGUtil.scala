@@ -14,6 +14,10 @@ import org.postgresql.copy.{CopyManager,PGCopyInputStream}
 import org.postgresql.core.BaseConnection;
 import scala.util.control.Breaks._
 import org.apache.spark.sql.SparkSession
+import java.io.{BufferedInputStream, BufferedOutputStream, FileInputStream, FileOutputStream}
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.FileSystem
+import org.apache.hadoop.fs.Path
 
 object PGUtil extends java.io.Serializable {
 
@@ -148,17 +152,28 @@ object PGUtil extends java.io.Serializable {
     }).take(1)
   }
 
-  def inputQueryBulkCsv(conn:Connection, query:String, path:String) = {
+  def inputQueryBulkCsv(spark:SparkSession, conn:Connection, query:String, path:String) = {
     val sqlStr = s""" COPY ($query) TO STDOUT  WITH DELIMITER AS ',' NULL AS '' CSV  ENCODING 'UTF-8' QUOTE '"' ESCAPE '"' """
     val copyInputStream: PGCopyInputStream  = new PGCopyInputStream(conn.asInstanceOf[BaseConnection],sqlStr)
-    val outputFile: FileOutputStream = new FileOutputStream(new File(path));
+
+    val defaultFSConf = spark.sessionState.newHadoopConf().get("fs.defaultFS")
+    val conf = new Configuration()
+    if( path.startsWith("file:") ){
+        conf.set("fs.defaultFS", "file:///")
+    }else{
+        conf.set("fs.defaultFS", defaultFSConf)
+    }
+    val fs= FileSystem.get(conf)
+    val output = fs.create(new Path(path))
+
     var flag = true
     while(flag){
       val t = copyInputStream.read()
       if(t > 0){ 
-      outputFile.write(t);
-      outputFile.write( copyInputStream.readFromCopy());
+      output.write(t);
+      output.write(copyInputStream.readFromCopy());
       }else{
+      output.close()
       flag = false}
     }
   }
@@ -166,7 +181,7 @@ object PGUtil extends java.io.Serializable {
   def inputQueryBulkDf(spark:SparkSession, url:String, query:String, path:String, isMultiline:Boolean = false):Dataset[Row]={
     val schemaQuery = getSchemaQuery(spark, url, query)
     val conn = connOpen(url)
-    inputQueryBulkCsv(conn, query, path)
+    inputQueryBulkCsv(spark, conn, query, path)
     conn.close
     spark.read.format("csv")
       .schema(schemaQuery)

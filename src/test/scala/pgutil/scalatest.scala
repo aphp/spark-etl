@@ -30,6 +30,7 @@ import org.scalatest.Assertions
 import org.junit.Test
 import org.apache.spark.sql.Row
 
+
 class StackSuite extends Assertions {
 
   @Test def formatRowShouldBeRegularPgCsv() {

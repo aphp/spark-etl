@@ -120,7 +120,7 @@ object PGUtil extends java.io.Serializable {
     }.toList
     val schema = new StructType().add(StructField("lowerBound", LongType, true)).add(StructField("upperBound",LongType,true))
     val rdd = spark.sparkContext.parallelize(partitions)
-    spark.createDataFrame(rdd, schema).repartition(numPartitions)
+    spark.createDataFrame(rdd, schema)
   }
 
   def inputQueryDf(spark:SparkSession, url:String, query:String,partitionColumn:String,numPartitions:Int):Dataset[Row]={
@@ -179,13 +179,13 @@ object PGUtil extends java.io.Serializable {
     val queryStr = s"($query) as tmp"
     val (lowerBound, upperBound) = getMinMaxForColumn(spark, url, queryStr, partitionColumn)
     val df = getPartitions(spark, lowerBound, upperBound, numPartitions)
-    val tmp = df.rdd.mapPartitions(
+
+    val tmp = df.repartition(200).rdd.mapPartitions(
       x => { 
       val conn = connOpen(url)
         x.foreach{ 
           s => {
           val queryPart = s"SELECT * FROM $queryStr WHERE $partitionColumn between ${s.get(0)} AND ${s.get(1)}"
-          println(queryPart)
           inputQueryBulkCsv(fsConf, conn, queryPart, path)
           }
         }

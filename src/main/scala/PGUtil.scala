@@ -21,6 +21,7 @@ import org.apache.hadoop.fs.FileSystem
 import org.apache.hadoop.fs.Path
 import java.util.UUID.randomUUID
 import scala.reflect.io.Directory
+import org.apache.hadoop.fs.FileStatus
 
 
 object PGUtil extends java.io.Serializable {
@@ -157,7 +158,7 @@ object PGUtil extends java.io.Serializable {
     val dialect = JdbcDialects.get(url)
     val copyColumns =  df.schema.fields.map(x => dialect.quoteIdentifier(x.name)).mkString(",")
 
-    val tmp = df.rdd.mapPartitions(
+    val tmp = df.coalesce(8).rdd.mapPartitions(
       batch => 
       {
       val conn = connOpen(url)
@@ -165,6 +166,7 @@ object PGUtil extends java.io.Serializable {
          session => 
          {
            val str = formatRow(session)
+           //val str = session.mkString("\n").replaceAll("(?m)^\\[|\\]$","").replace("null","") 
            val targetStream = new ByteArrayInputStream(str.getBytes());
            val copyManager: CopyManager = new CopyManager(conn.asInstanceOf[BaseConnection] );
            copyManager.copyIn(s"""COPY $table ($copyColumns) FROM STDIN WITH CSV DELIMITER ',' ESCAPE '"' QUOTE '"' """, targetStream  );
@@ -174,13 +176,56 @@ object PGUtil extends java.io.Serializable {
     batch 
     }).take(1)
   }
+
+  def outputBulkCsv(spark:SparkSession, url:String, table:String, df:Dataset[Row], path:String) = {
+    //write a csv folder
+    df.write.format("csv")
+    .option("delimiter",",")
+    .option("header",false)
+    .option("emptyValue","")
+    .option("quote","\"")
+    .option("escape","\"")
+    .mode(org.apache.spark.sql.SaveMode.Overwrite)
+    .save(path)
+
+    // load the csv files from hdfs in parallel 
+    val fs = FileSystem.get(new Configuration())
+    val csvs = fs.listStatus(new Path(path))
+    val schema = new StructType().add(StructField("pah", StringType, true))
+    val rdd = spark.sparkContext.parallelize(csvs.filter(x => x.getPath.toString.endsWith(".csv")).map(x => Row(x.getPath.toString)).toSeq)
+    val dfPath = spark.createDataFrame(rdd, schema)
+    dfPath.coalesce(8).rdd.mapPartitions(
+      x => { 
+      val conn = connOpen(url)
+        x.foreach{ 
+          s => {
+          val stream = (FileSystem.get(new Configuration())).open(new Path(s.toSeq(0).toString)).getWrappedStream
+          val copyManager: CopyManager = new CopyManager(conn.asInstanceOf[BaseConnection] );
+          copyManager.copyIn(s"""COPY $table  FROM STDIN WITH CSV DELIMITER ',' ESCAPE '"' QUOTE '"' """, stream  );
+          }
+        }
+      conn.close()
+      x
+      }).take(1)
+  }
+
+  def output(url:String, table:String, df:Dataset[Row], batchsize:Int = 50000) = {
+    df.coalesce(8).write.mode(org.apache.spark.sql.SaveMode.Overwrite)
+      .format("jdbc")
+      .option("url",url)
+      .option("dbtable",table)
+      .option("batchsize",batchsize)
+      .option("password",passwordFromConn(url))
+      .option("driver","org.postgresql.Driver")
+      .save()
+  }
   
   def inputQueryPartBulkCsv(spark:SparkSession, fsConf:String, url:String, query:String, path:String, numPartitions:Int, partitionColumn:String) = {
     val queryStr = s"($query) as tmp"
     val (lowerBound, upperBound) = getMinMaxForColumn(spark, url, queryStr, partitionColumn)
     val df = getPartitions(spark, lowerBound, upperBound, numPartitions)
 
-    val tmp = df.repartition(200).rdd.mapPartitions(
+    val tmp = df.coalesce(200).rdd.mapPartitions(
       x => { 
       val conn = connOpen(url)
         x.foreach{ 
@@ -201,7 +246,7 @@ object PGUtil extends java.io.Serializable {
     val conf = new Configuration()
     conf.set("fs.defaultFS", fsConf)
     val fs= FileSystem.get(conf)
-    val output = fs.create(new Path(path , "part-" + randomUUID.toString))
+    val output = fs.create(new Path(path , "part-" + randomUUID.toString + ".csv"))
 
     var flag = true
     while(flag){

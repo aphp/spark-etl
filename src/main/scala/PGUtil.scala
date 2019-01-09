@@ -22,6 +22,13 @@ import org.apache.hadoop.fs.Path
 import java.util.UUID.randomUUID
 import scala.reflect.io.Directory
 import org.apache.hadoop.fs.FileStatus
+import org.apache.spark.Partitioner
+import org.apache.spark.rdd.RDD
+
+class ExactPartitioner[V](partitions: Int) extends Partitioner {
+  def getPartition(key: Any): Int = return math.abs(key.asInstanceOf[Int] % numPartitions())
+  def numPartitions() : Int = partitions
+}
 
 
 object PGUtil extends java.io.Serializable {
@@ -29,10 +36,13 @@ object PGUtil extends java.io.Serializable {
    private def dbPassword(hostname:String, port:String, database:String, username:String ):String = {
     // Usage: val thatPassWord = dbPassword(hostname,port,database,username)
     // .pgpass file format, hostname:port:database:username:password
-    val passwdFile = new java.io.File(scala.sys.env("HOME"), ".pgpass")
+
+    val fs = FileSystem.get(new java.net.URI("file:///"), new Configuration)
+    //val file = fs.open(new Path(scala.sys.env("HOME"), ".pgpass"))
+    val file = fs.open(new Path( ".pgpass"))
+    val content = Iterator.continually(file.readLine()).takeWhile(_ != null).mkString("\n")
     var passwd = ""
-    val fileSrc = scala.io.Source.fromFile(passwdFile)
-    fileSrc.getLines.foreach{line =>
+    content.split("\n").foreach{line =>
       val connCfg = line.split(":")
       if (hostname == connCfg(0)
         && port == connCfg(1)
@@ -42,7 +52,7 @@ object PGUtil extends java.io.Serializable {
         passwd = connCfg(4)
       }
     }
-    fileSrc.close
+    file.close()
     passwd
   }
 
@@ -112,16 +122,15 @@ object PGUtil extends java.io.Serializable {
     (lowerBound, upperBound)
   }
 
-  def getPartitions(spark:SparkSession, lowerBound:Long, upperBound:Long, numPartitions:Int):Dataset[Row]={
+  def getPartitions(spark:SparkSession, lowerBound:Long, upperBound:Long, numPartitions:Int):RDD[Tuple2[Int, String]]={
     val length = BigInt(1) + upperBound - lowerBound
+    import spark.implicits._
     val partitions = (0 until numPartitions).map { i =>
       val start = lowerBound + ((i * length) / numPartitions)
       val end = lowerBound + (((i + 1) * length) / numPartitions) - 1
-      Row(start.toLong, end.toLong)
-    }.toList
-    val schema = new StructType().add(StructField("lowerBound", LongType, true)).add(StructField("upperBound",LongType,true))
-    val rdd = spark.sparkContext.parallelize(partitions)
-    spark.createDataFrame(rdd, schema)
+      f"between $start AND $end"
+    }.zipWithIndex.map{case(a, index) => (index, a)}.toDS.rdd.partitionBy(new ExactPartitioner(numPartitions))
+    partitions
   }
 
   def inputQueryDf(spark:SparkSession, url:String, query:String,partitionColumn:String,numPartitions:Int):Dataset[Row]={
@@ -190,23 +199,22 @@ object PGUtil extends java.io.Serializable {
 
     // load the csv files from hdfs in parallel 
     val fs = FileSystem.get(new Configuration())
-    val csvs = fs.listStatus(new Path(path))
-    val schema = new StructType().add(StructField("pah", StringType, true))
-    val rdd = spark.sparkContext.parallelize(csvs.filter(x => x.getPath.toString.endsWith(".csv")).map(x => Row(x.getPath.toString)).toSeq)
-    val dfPath = spark.createDataFrame(rdd, schema)
-    dfPath.coalesce(8).rdd.mapPartitions(
+    import spark.implicits._
+    val rdd = fs.listStatus(new Path(path)).filter(x => x.getPath.toString.endsWith(".csv")).map(x => x.getPath.toString).toList.zipWithIndex.map{case(a,i) => (i,a)}.toDS.rdd.partitionBy(new ExactPartitioner(8))
+
+    rdd.foreachPartition(
       x => { 
       val conn = connOpen(url)
         x.foreach{ 
           s => {
-          val stream = (FileSystem.get(new Configuration())).open(new Path(s.toSeq(0).toString)).getWrappedStream
+          val stream = (FileSystem.get(new Configuration())).open(new Path(s._2)).getWrappedStream
           val copyManager: CopyManager = new CopyManager(conn.asInstanceOf[BaseConnection] );
           copyManager.copyIn(s"""COPY $table  FROM STDIN WITH CSV DELIMITER ',' ESCAPE '"' QUOTE '"' """, stream  );
           }
         }
       conn.close()
       x
-      }).take(1)
+      })
   }
 
   def output(url:String, table:String, df:Dataset[Row], batchsize:Int = 50000) = {
@@ -223,20 +231,20 @@ object PGUtil extends java.io.Serializable {
   def inputQueryPartBulkCsv(spark:SparkSession, fsConf:String, url:String, query:String, path:String, numPartitions:Int, partitionColumn:String) = {
     val queryStr = s"($query) as tmp"
     val (lowerBound, upperBound) = getMinMaxForColumn(spark, url, queryStr, partitionColumn)
-    val df = getPartitions(spark, lowerBound, upperBound, numPartitions)
+    val rdd = getPartitions(spark, lowerBound, upperBound, numPartitions)
 
-    val tmp = df.coalesce(200).rdd.mapPartitions(
+    val tmp = rdd.foreachPartition(
       x => { 
       val conn = connOpen(url)
         x.foreach{ 
           s => {
-          val queryPart = s"SELECT * FROM $queryStr WHERE $partitionColumn between ${s.get(0)} AND ${s.get(1)}"
+          val queryPart = s"SELECT * FROM $queryStr WHERE $partitionColumn ${s._2}"
           inputQueryBulkCsv(fsConf, conn, queryPart, path)
           }
         }
       conn.close()
-      x
-      }).take(1)
+      x.toIterator
+      })
   } 
 
   def inputQueryBulkCsv(fsConf:String, conn:Connection, query:String, path:String) = {
@@ -252,11 +260,11 @@ object PGUtil extends java.io.Serializable {
     while(flag){
       val t = copyInputStream.read()
       if(t > 0){ 
-      output.write(t);
-      output.write(copyInputStream.readFromCopy());
+        output.write(t);
+        output.write(copyInputStream.readFromCopy());
       }else{
-      output.close()
-      flag = false}
+        output.close()
+        flag = false}
     }
   }
 
@@ -277,6 +285,8 @@ object PGUtil extends java.io.Serializable {
     }else{
       inputQueryPartBulkCsv(spark, fsConf, url, query, path, numPartitions, partitionColumn)
     }
+
+    // read the resulting csv
     spark.read.format("csv")
       .schema(schemaQuery)
       .option("multiline",isMultiline)

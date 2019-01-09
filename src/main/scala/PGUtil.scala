@@ -30,6 +30,67 @@ class ExactPartitioner[V](partitions: Int) extends Partitioner {
   def numPartitions() : Int = partitions
 }
 
+class PGUtil(spark:SparkSession, url: String, tmpPath:String) {
+  private var password: String = ""
+
+  def setPassword(pwd:String = "") : PGUtil = {
+    password = PGUtil.passwordFromConn(url, pwd)
+    this
+  }
+
+  private def genPath() :String = {
+   tmpPath + randomUUID.toString
+  }
+
+  def tableCreate(table:String, schema: StructType, isUnlogged:Boolean = false): PGUtil = {
+  PGUtil.tableCreate(url, table, schema, isUnlogged, password)
+  this
+  }
+
+  def tableCopy(tableSrc:String, tableTarg:String, isUnlogged:Boolean = true): PGUtil = {
+  PGUtil.tableCopy(url, tableSrc, tableTarg, password, isUnlogged)
+  this
+  }
+
+  def tableTruncate(table:String): PGUtil = {
+  PGUtil.tableTruncate(url, table, password)
+  this
+  }
+
+  def tableDrop(table:String): PGUtil = {
+  PGUtil.tableDrop(url, table, password)
+  this
+  }
+
+  def inputBulk(query:String, isMultiline:Boolean = false, numPartitions:Int=1, partitionColumn:String=""):Dataset[Row]={
+  PGUtil.inputQueryBulkDf(spark, url, query, genPath, isMultiline, numPartitions, partitionColumn, password)
+  }
+
+  def outputBulk(table:String, df:Dataset[Row]): PGUtil = {
+  PGUtil.outputBulkCsv(spark, url, table, df, genPath, password)
+  this
+  }
+
+  def input(query:String, numPartitions:Int=1, partitionColumn:String=""):Dataset[Row]={
+  PGUtil.inputQueryDf(spark, url, query, numPartitions, partitionColumn, password)
+  }
+
+  def output(table:String, df:Dataset[Row], batchsize:Int = 50000):PGUtil = {
+  PGUtil.output(url, table, df, batchsize, password) 
+  this
+  }
+
+  def outputScd1(table:String, key:String, df:Dataset[Row], numPartitions:Int = 4, excludeColumns:List[String] = Nil):PGUtil = {
+  PGUtil.outputBulkDfScd1(spark, url, table, key, df, numPartitions, excludeColumns, genPath, password)
+  this
+  }
+
+  def outputScd2(table:String, key:String, dateBegin:String, dateEnd:String, df:Dataset[Row], numPartitions:Int = 4, excludeColumns:List[String] = Nil):PGUtil = {
+  PGUtil.outputBulkDfScd2(spark, url, table, key, dateBegin, dateEnd, df, numPartitions, excludeColumns, genPath, password)
+  this
+  }
+
+}
 
 object PGUtil extends java.io.Serializable {
 
@@ -38,8 +99,7 @@ object PGUtil extends java.io.Serializable {
     // .pgpass file format, hostname:port:database:username:password
 
     val fs = FileSystem.get(new java.net.URI("file:///"), new Configuration)
-    //val file = fs.open(new Path(scala.sys.env("HOME"), ".pgpass"))
-    val file = fs.open(new Path( ".pgpass"))
+    val file = fs.open(new Path(scala.sys.env("HOME"), ".pgpass"))
     val content = Iterator.continually(file.readLine()).takeWhile(_ != null).mkString("\n")
     var passwd = ""
     content.split("\n").foreach{line =>
@@ -56,15 +116,18 @@ object PGUtil extends java.io.Serializable {
     passwd
   }
 
-  def passwordFromConn(url:String):String = {
+  def passwordFromConn(url:String, password:String):String = {
+    if(!password.isEmpty){
+      return(password)
+    }
     val pattern = "jdbc:postgresql://(.*):(\\d+)/(\\w+)[?]user=(\\w+).*".r
     val pattern(host, port, database, username) = url
     dbPassword(host,port,database,username)
   }
 
-  def connOpen(url:String):Connection = {
+  def connOpen(url:String, password:String = ""):Connection = {
     val prop = new Properties()
-    prop.put("password", passwordFromConn(url))
+    prop.put("password", passwordFromConn(url, password))
     val dbc: Connection = DriverManager.getConnection(url, prop)
     dbc
   }
@@ -74,55 +137,63 @@ object PGUtil extends java.io.Serializable {
     getSchemaQuery(spark, url, query)
   }
 
-  private def getSchemaQuery(spark:SparkSession, url:String, query:String):StructType={
+  private def getSchemaQuery(spark:SparkSession, url:String, query:String, password:String = ""):StructType={
     val queryStr = s"""($query LIMIT 0) as tmp"""
     spark.read.format("jdbc")
       .option("url",url)
-      .option("password",passwordFromConn(url))
+      .option("password",passwordFromConn(url, password))
       .option("driver","org.postgresql.Driver")
       .option("dbtable", queryStr)
       .load.schema
   }
 
-  def tableTruncate(conn:Connection, table:String):Unit ={
+  def tableTruncate(url:String, table:String, password:String = ""):Unit ={
+    val conn = connOpen(url, password)
     val st: PreparedStatement = conn.prepareStatement(s"TRUNCATE TABLE $table")
     st.executeUpdate()
+    conn.close()
   }
 
-  def tableDrop(conn:Connection, table:String):Unit ={
+  def tableDrop(url:String, table:String, password:String = ""):Unit ={
+    val conn = connOpen(url, password)
     val st: PreparedStatement = conn.prepareStatement(s"DROP TABLE IF EXISTS $table")
     st.executeUpdate()
+    conn.close()
   }
 
-  def tableCreate(conn:Connection, table:String, schema:StructType, isUnlogged:Boolean):Unit ={
+  def tableCreate(url:String, table:String, schema:StructType, isUnlogged:Boolean, password:String = ""):Unit ={
+    val conn = connOpen(url, password)
     val unlogged = if(isUnlogged){"UNLOGGED"}else{""}
-    val fields = ""
+    val fields = "" //TODO
     val queryCreate = s"""CREATE TABLE $unlogged ($fields)"""
     val st: PreparedStatement = conn.prepareStatement(queryCreate)
     st.executeUpdate()
+    conn.close()
   }
 
-  def tableCopy(conn:Connection, tableSrc:String, tableTarg:String, isUnlogged:Boolean = true):Unit ={
+  def tableCopy(url:String, tableSrc:String, tableTarg:String, password:String = "", isUnlogged:Boolean = true):Unit ={
+    val conn = connOpen(url, password)
     val unlogged = if(isUnlogged){"UNLOGGED"}else{""}
     val queryCreate = s"""CREATE $unlogged TABLE $tableTarg (LIKE $tableSrc)"""
     val st: PreparedStatement = conn.prepareStatement(queryCreate)
     st.executeUpdate()
+    conn.close()
   }
 
-  def getMinMaxForColumn(spark:SparkSession, url:String, query:String, partitionColumn:String):Tuple2[Long,Long]={
+  private def getMinMaxForColumn(spark:SparkSession, url:String, query:String, partitionColumn:String, password: String = ""):Tuple2[Long,Long]={
     val min_max_query = s"(SELECT cast(min($partitionColumn) as bigint), cast(max($partitionColumn) as bigint) FROM $query) AS tmp1"
     val row  = spark.read.format("jdbc")
 	.option("url",url)
 	.option("driver","org.postgresql.Driver")
 	.option("dbtable",min_max_query)
-        .option("password",passwordFromConn(url))
+        .option("password",passwordFromConn(url, password))
         .load.first
     val lowerBound = row.getLong(0)
     val upperBound = row.getLong(1)
     (lowerBound, upperBound)
   }
 
-  def getPartitions(spark:SparkSession, lowerBound:Long, upperBound:Long, numPartitions:Int):RDD[Tuple2[Int, String]]={
+  private def getPartitions(spark:SparkSession, lowerBound:Long, upperBound:Long, numPartitions:Int):RDD[Tuple2[Int, String]]={
     val length = BigInt(1) + upperBound - lowerBound
     import spark.implicits._
     val partitions = (0 until numPartitions).map { i =>
@@ -133,60 +204,25 @@ object PGUtil extends java.io.Serializable {
     partitions
   }
 
-  def inputQueryDf(spark:SparkSession, url:String, query:String,partitionColumn:String,numPartitions:Int):Dataset[Row]={
+  def inputQueryDf(spark:SparkSession, url:String, query:String,numPartitions:Int, partitionColumn:String,password:String = ""):Dataset[Row]={
     // get min and max for partitioning
     val queryStr = s"($query) as tmp"
     val (lowerBound, upperBound): Tuple2[Long,Long] = getMinMaxForColumn(spark, url, queryStr, partitionColumn)
     // get the partitionned dataset from multiple jdbc stmts
-    spark.read.format("jdbc").option("url",url)
+    spark.read.format("jdbc")
+        .option("url",url)
 	.option("dbtable",queryStr)
 	.option("driver","org.postgresql.Driver")
-	.option("partitionColumn",partitionColumn).option("lowerBound",lowerBound).option("upperBound",upperBound).option("numPartitions",numPartitions).option("fetchsize",50000).option("password",passwordFromConn(url)).load
+	.option("partitionColumn",partitionColumn)
+        .option("lowerBound",lowerBound)
+        .option("upperBound",upperBound)
+        .option("numPartitions",numPartitions)
+        .option("fetchsize",50000)
+        .option("password",passwordFromConn(url, password))
+        .load
     }
   
-  def formatRow(lst:Seq[org.apache.spark.sql.Row]):String={
-  val str = StringBuilder.newBuilder
-  var count = 0
-  for(input <- lst){
-          for (i <- 0 to input.size -1){
-          if(i != 0){str.append(",")}
-            str.append(Option(input.get(i)) match {
-              case Some(d: String) if d.nonEmpty => if( d.contains(",") || d.contains("\n") ){"\"" + d.replace("\"","\"\"") + "\""}else{d}
-              case Some(None) => ""
-              case None => ""
-              case _ => input.get(i).toString
-            })
-          }
-   count += 1
-   if(count < lst.size){str.append("\n")}
-   }
-  str.toString
-  }
-
-  def outputBulk(url:String, table:String, df:Dataset[Row], batchsize:Int = 50000) = {
-    val dialect = JdbcDialects.get(url)
-    val copyColumns =  df.schema.fields.map(x => dialect.quoteIdentifier(x.name)).mkString(",")
-
-    val tmp = df.coalesce(8).rdd.mapPartitions(
-      batch => 
-      {
-      val conn = connOpen(url)
-      batch.grouped(batchsize).foreach{
-         session => 
-         {
-           val str = formatRow(session)
-           //val str = session.mkString("\n").replaceAll("(?m)^\\[|\\]$","").replace("null","") 
-           val targetStream = new ByteArrayInputStream(str.getBytes());
-           val copyManager: CopyManager = new CopyManager(conn.asInstanceOf[BaseConnection] );
-           copyManager.copyIn(s"""COPY $table ($copyColumns) FROM STDIN WITH CSV DELIMITER ',' ESCAPE '"' QUOTE '"' """, targetStream  );
-         }
-      }
-    conn.close()
-    batch 
-    }).take(1)
-  }
-
-  def outputBulkCsv(spark:SparkSession, url:String, table:String, df:Dataset[Row], path:String) = {
+  def outputBulkCsv(spark:SparkSession, url:String, table:String, df:Dataset[Row], path:String, password:String = "") = {
     //write a csv folder
     df.write.format("csv")
     .option("delimiter",",")
@@ -200,11 +236,14 @@ object PGUtil extends java.io.Serializable {
     // load the csv files from hdfs in parallel 
     val fs = FileSystem.get(new Configuration())
     import spark.implicits._
-    val rdd = fs.listStatus(new Path(path)).filter(x => x.getPath.toString.endsWith(".csv")).map(x => x.getPath.toString).toList.zipWithIndex.map{case(a,i) => (i,a)}.toDS.rdd.partitionBy(new ExactPartitioner(8))
+    val rdd = fs.listStatus(new Path(path))
+    .filter(x => x.getPath.toString.endsWith(".csv"))
+    .map(x => x.getPath.toString).toList.zipWithIndex.map{case(a,i) => (i,a)}
+    .toDS.rdd.partitionBy(new ExactPartitioner(8))
 
     rdd.foreachPartition(
       x => { 
-      val conn = connOpen(url)
+      val conn = connOpen(url, password)
         x.foreach{ 
           s => {
           val stream = (FileSystem.get(new Configuration())).open(new Path(s._2)).getWrappedStream
@@ -213,29 +252,29 @@ object PGUtil extends java.io.Serializable {
           }
         }
       conn.close()
-      x
+      x.toIterator
       })
   }
 
-  def output(url:String, table:String, df:Dataset[Row], batchsize:Int = 50000) = {
+  def output(url:String, table:String, df:Dataset[Row], batchsize:Int = 50000, password:String = "") = {
     df.coalesce(8).write.mode(org.apache.spark.sql.SaveMode.Overwrite)
       .format("jdbc")
       .option("url",url)
       .option("dbtable",table)
       .option("batchsize",batchsize)
-      .option("password",passwordFromConn(url))
+      .option("password",passwordFromConn(url, password))
       .option("driver","org.postgresql.Driver")
       .save()
   }
   
-  def inputQueryPartBulkCsv(spark:SparkSession, fsConf:String, url:String, query:String, path:String, numPartitions:Int, partitionColumn:String) = {
+  def inputQueryPartBulkCsv(spark:SparkSession, fsConf:String, url:String, query:String, path:String, numPartitions:Int, partitionColumn:String, password:String="") = {
     val queryStr = s"($query) as tmp"
     val (lowerBound, upperBound) = getMinMaxForColumn(spark, url, queryStr, partitionColumn)
     val rdd = getPartitions(spark, lowerBound, upperBound, numPartitions)
 
     val tmp = rdd.foreachPartition(
       x => { 
-      val conn = connOpen(url)
+      val conn = connOpen(url, password)
         x.foreach{ 
           s => {
           val queryPart = s"SELECT * FROM $queryStr WHERE $partitionColumn ${s._2}"
@@ -268,7 +307,7 @@ object PGUtil extends java.io.Serializable {
     }
   }
 
-  def inputQueryBulkDf(spark:SparkSession, url:String, query:String, path:String, isMultiline:Boolean = false, numPartitions:Int=1, partitionColumn:String=""):Dataset[Row]={
+  def inputQueryBulkDf(spark:SparkSession, url:String, query:String, path:String, isMultiline:Boolean = false, numPartitions:Int=1, partitionColumn:String="", password:String = ""):Dataset[Row]={
     val defaultFSConf = spark.sessionState.newHadoopConf().get("fs.defaultFS")
     val fsConf = if( path.startsWith("file:") ){ "file:///" }else{ defaultFSConf }
 
@@ -279,7 +318,7 @@ object PGUtil extends java.io.Serializable {
 
     val schemaQuery = getSchemaQuery(spark, url, query)
     if(numPartitions == 1){
-    val conn = connOpen(url)
+    val conn = connOpen(url, password)
       inputQueryBulkCsv(fsConf, conn, query, path)
     conn.close
     }else{
@@ -300,17 +339,17 @@ object PGUtil extends java.io.Serializable {
       .load(path)
   }
 
-  def outputBulkDfScd1(url:String, table:String, key:String, df:Dataset[Row], batchsize:Int = 50000, excludeColumns:List[String] = Nil):Unit ={
+  def outputBulkDfScd1(spark:SparkSession, url:String, table:String, key:String, df:Dataset[Row], batchsize:Int = 50000, excludeColumns:List[String] = Nil, path:String, password:String = ""):Unit ={
     val tableTmp = table + "_tmp"
-    val conn = connOpen(url)
-    tableDrop(conn, tableTmp)
-    tableCopy(conn, table, tableTmp)
-    outputBulk(url, tableTmp, df, batchsize)
-    scd1(conn, table, tableTmp, key, df.schema, excludeColumns)
-    tableDrop(conn, tableTmp)
+    tableDrop(url, tableTmp, password)
+    tableCopy(url, table, tableTmp, password)
+    outputBulkCsv(spark, url, tableTmp, df, path)
+    scd1(url, table, tableTmp, key, df.schema, excludeColumns, password)
+    tableDrop(url, tableTmp, password)
   }
 
-  def scd1(conn:Connection, table:String, tableTarg:String, key:String, rddSchema:StructType, excludeColumns:List[String] = Nil):Unit ={
+  def scd1(url:String, table:String, tableTarg:String, key:String, rddSchema:StructType, excludeColumns:List[String] = Nil, password:String = ""):Unit ={
+    val conn = connOpen(url, password)
     val updSet =  rddSchema.fields.filter(x => !key.equals(x.name)).filter(x => !excludeColumns.contains(x.name)).map(x => s"${x.name} = tmp.${x.name}").mkString(",")
     val updIsDistinct =  rddSchema.fields.filter(x => !key.equals(x.name)).filter(x => !excludeColumns.contains(x.name)).map(x => s"tmp.${x.name} IS DISTINCT FROM tmp.${x.name}").mkString(" OR ")
     val upd = s"""
@@ -334,20 +373,20 @@ object PGUtil extends java.io.Serializable {
     AND targ.$key IS NULL
     """
     conn.prepareStatement(ins).executeUpdate()
-
+    conn.close()
   }
 
-  def outputBulkDfScd2(url:String, table:String, key:String, dateBegin:String, dateEnd:String, df:Dataset[Row], batchsize:Int = 50000, excludeColumns:List[String] = Nil):Unit ={
+  def outputBulkDfScd2(spark:SparkSession, url:String, table:String, key:String, dateBegin:String, dateEnd:String, df:Dataset[Row], batchsize:Int = 50000, excludeColumns:List[String] = Nil, path:String, password:String = ""):Unit ={
     val tableTmp = table + "_tmp"
-    val conn = connOpen(url)
-    tableDrop(conn, tableTmp)
-    tableCopy(conn, table, tableTmp)
-    outputBulk(url, tableTmp, df, batchsize)
-    scd2(conn, table, tableTmp, key, dateBegin, dateEnd, df.schema, excludeColumns)
-    tableDrop(conn, tableTmp)
+    tableDrop(url, tableTmp, password)
+    tableCopy(url, table, tableTmp, password)
+    outputBulkCsv(spark, url, tableTmp, df, path)
+    scd2(url, table, tableTmp, key, dateBegin, dateEnd, df.schema, excludeColumns, password)
+    tableDrop(url, tableTmp, password)
   }
 
-  def scd2(conn:Connection, table:String, tableTmp:String, key:String, dateBegin:String, dateEnd:String, rddSchema:StructType, excludeColumns:List[String] = Nil):Unit ={
+  def scd2(url:String, table:String, tableTmp:String, key:String, dateBegin:String, dateEnd:String, rddSchema:StructType, excludeColumns:List[String] = Nil, password:String = ""):Unit ={
+    val conn = connOpen(url, password)
     val insCols =    rddSchema.fields.filter(x => x.name!=dateBegin).filter(x => !excludeColumns.contains(x.name)).map(x => s"${x.name}").mkString(",") + "," + dateBegin
     val insColsTmp = rddSchema.fields.filter(x => x.name!=dateBegin).filter(x => !excludeColumns.contains(x.name)).map(x => s"tmp.${x.name}").mkString(",") + ", now()"
 
@@ -381,7 +420,6 @@ object PGUtil extends java.io.Serializable {
     WHERE c.$key IS null;
     """
     conn.prepareStatement(newRows).executeUpdate()
-
+    conn.close()
   }
-
 }

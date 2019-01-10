@@ -39,7 +39,16 @@ class PGUtil(spark:SparkSession, url: String, tmpPath:String) {
   }
 
   private def genPath() :String = {
-   tmpPath + randomUUID.toString
+   tmpPath + "/"  + randomUUID.toString
+  }
+
+  def purgeTmp():Boolean = {
+    val defaultFSConf = spark.sessionState.newHadoopConf().get("fs.defaultFS")
+    val fsConf = if( tmpPath.startsWith("file:") ){ "file:///" }else{ defaultFSConf }
+    val conf = new Configuration()
+    conf.set("fs.defaultFS", fsConf)
+    val fs= FileSystem.get(conf)
+    fs.delete(new Path(tmpPath), true) // delete file, true for recursive 
   }
 
   def tableCreate(table:String, schema: StructType, isUnlogged:Boolean = false): PGUtil = {

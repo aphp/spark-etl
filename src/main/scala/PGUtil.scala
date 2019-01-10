@@ -38,6 +38,10 @@ class PGUtil(spark:SparkSession, url: String, tmpPath:String) {
     this
   }
 
+  def showPassword() : Unit = {
+    println(password)
+  }
+
   private def genPath() :String = {
    tmpPath + "/"  + randomUUID.toString
   }
@@ -72,7 +76,7 @@ class PGUtil(spark:SparkSession, url: String, tmpPath:String) {
   }
 
   def inputBulk(query:String, isMultiline:Boolean = false, numPartitions:Int=1, partitionColumn:String=""):Dataset[Row]={
-  PGUtil.inputQueryBulkDf(spark, url, query, genPath, isMultiline, numPartitions, partitionColumn, password)
+  PGUtil.inputQueryBulkDf(spark, url, query, genPath, isMultiline, numPartitions, partitionColumn, password=password)
   }
 
   def outputBulk(table:String, df:Dataset[Row]): PGUtil = {
@@ -325,13 +329,13 @@ object PGUtil extends java.io.Serializable {
     val fs= FileSystem.get(conf)
     fs.delete(new Path(path), true) // delete file, true for recursive 
 
-    val schemaQuery = getSchemaQuery(spark, url, query)
+    val schemaQuery = getSchemaQuery(spark, url, query, password)
     if(numPartitions == 1){
     val conn = connOpen(url, password)
       inputQueryBulkCsv(fsConf, conn, query, path)
     conn.close
     }else{
-      inputQueryPartBulkCsv(spark, fsConf, url, query, path, numPartitions, partitionColumn)
+      inputQueryPartBulkCsv(spark, fsConf, url, query, path, numPartitions, partitionColumn, password)
     }
 
     // read the resulting csv

@@ -2,13 +2,15 @@ SPARK-POSTGRES
 ==============
 
 spark-postgres is a set of function to better bridge postgres and spark. It
-focuses on stability and speed in ETL workloads.
+focuses on stability and speed in ETL workloads. In particular it provides
+access to the postgres bulk load function (COPY)
 
 Supported fields
 ++++++++++++++++
 - numerics (int, bigint, float...)
 - strings
 - dates, timestamps
+- array (TODO)
 
 Usage
 +++++
@@ -17,10 +19,17 @@ Usage
 	import fr.aphp.eds.spark.postgres.PGUtil
 	// the connection looks into /home/$USER/.pgpass for a password
 	val url = "jdbc:postgresql://somehost:someport/somedb?user=someuser&currentSchema=someschema"
-	// get a dataframe from a PGCOPY stmt and copy to local 
-	val df = PGUtil.inputQueryBulkDf(spark, url, "select * from sometable", "file:///tmp/export.csv") // hdfs also supported
-	// bulk load a temporary table and apply a SCD1 on sometable from the previous df with a default batch size of 50k rows
-	PGUtil.outputBulkDfScd1(url, "sometable", "somekey", df)
+
+        val pg = new PGUtil(sparkSession, url, "spark-postgres-tmp" ) // specify a temporary folder in hdfs or locally
+        val df = pg
+          .tableDrop("person_tmp") // drop table if exists
+          .tableCopy("person","person_tmp") // duplicate the table without data
+          .inputBulk(query="select * from person",  numPartitions=4, partitionColumn="person_id") // get a df from the table
+
+        pg.outputBulk("person_tmp", df) // load the new table with the df
+          .tableDrop("person_tmp") // drop the temparary table
+          .purgeTmp() // purge the temporary folder
+
 
 Functions:
 ++++++++++

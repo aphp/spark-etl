@@ -33,25 +33,25 @@ import org.apache.spark.sql.Row
 
 class StackSuite extends Assertions {
 
-  @Test def formatRowShouldBeRegularPgCsv() {
-    val l1 = (Row(null,3.2)::Row(None,2)::Nil).toSeq
-    val r1 = """,3.2
-,2"""
-    assert(PGUtil.formatRow(l1) === r1)
-
-    val l2 = (Row(null,"hello\nworld")::Row(None,"nothing")::Nil).toSeq
-    val r2 = ""","hello
-world"
-,nothing"""
-    assert(PGUtil.formatRow(l2) === r2)
-
-    val l3 = (Row(null,"hello\"\n\"world")::Row(None,"nothing")::Nil).toSeq
-    val r3 = ""","hello""
-""world"
-,nothing"""
-    assert(PGUtil.formatRow(l3) === r3)
-
-  }
+//  @Test def formatRowShouldBeRegularPgCsv() {
+//    val l1 = (Row(null,3.2)::Row(None,2)::Nil).toSeq
+//    val r1 = """,3.2
+//,2"""
+//    assert(PGUtil.formatRow(l1) === r1)
+//
+//    val l2 = (Row(null,"hello\nworld")::Row(None,"nothing")::Nil).toSeq
+//    val r2 = ""","hello
+//world"
+//,nothing"""
+//    assert(PGUtil.formatRow(l2) === r2)
+//
+//    val l3 = (Row(null,"hello\"\n\"world")::Row(None,"nothing")::Nil).toSeq
+//    val r3 = ""","hello""
+//""world"
+//,nothing"""
+//    assert(PGUtil.formatRow(l3) === r3)
+//
+//  }
 
 }
 

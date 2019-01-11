@@ -5,12 +5,30 @@ spark-postgres is a set of function to better bridge postgres and spark. It
 focuses on stability and speed in ETL workloads. In particular it provides
 access to the postgres bulk load function (COPY)
 
+Supported version
++++++++++++++++++
+- spark scala V2+ in yarn or local mode
+- postgres v9+
+
 Supported fields
 ++++++++++++++++
 - numerics (int, bigint, float...)
 - strings
 - dates, timestamps
 - array (TODO)
+
+Use the lib
++++++++++++
+
+To compile the code, clone it and use maven to build the shaded jar into the target folder.
+
+- `mvn install`
+
+The lib need the postgresql jdbc driver. You can download it from the
+postgresql website. The lib works either in local mode, in yarn mode and has
+been tested with apache livy.
+
+- `spark-shell --driver-class-path /opt/lib/postgresql-42.2.5.jar  --jars "postgresql-42.2.5.jar,spark-postgres-2.0.1-SNAPSHOT-shaded.jar"  --master yarn`
 
 Usage
 +++++

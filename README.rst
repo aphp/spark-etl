@@ -28,7 +28,7 @@ The lib need the postgresql jdbc driver. You can download it from the
 postgresql website. The lib works either in local mode, in yarn mode and has
 been tested with apache livy.
 
-- `spark-shell --driver-class-path /opt/lib/postgresql-42.2.5.jar  --jars "postgresql-42.2.5.jar,spark-postgres-2.0.1-SNAPSHOT-shaded.jar"  --master yarn`
+- `spark-shell --driver-class-path postgresql-42.2.5.jar  --jars "postgresql-42.2.5.jar,spark-postgres-2.0.1-SNAPSHOT-shaded.jar"  --master yarn`
 
 Usage
 +++++

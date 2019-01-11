@@ -151,7 +151,7 @@ object PGUtil extends java.io.Serializable {
   }
 
   private def getSchemaQuery(spark:SparkSession, url:String, query:String, password:String = ""):StructType={
-    val queryStr = s"""($query LIMIT 0) as tmp"""
+    val queryStr = s"""(SELECT * FROM ($query) as tmp1 LIMIT 0) as tmp"""
     spark.read.format("jdbc")
       .option("url",url)
       .option("password",passwordFromConn(url, password))

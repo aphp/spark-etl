@@ -75,8 +75,8 @@ class PGUtil(spark:SparkSession, url: String, tmpPath:String) {
   this
   }
 
-  def inputBulk(query:String, isMultiline:Boolean = false, numPartitions:Int=1, partitionColumn:String=""):Dataset[Row]={
-  PGUtil.inputQueryBulkDf(spark, url, query, genPath, isMultiline, numPartitions, partitionColumn, password=password)
+  def inputBulk(query:String, isMultiline:Boolean = false, numPartitions:Int=1, splitFactor:Int=1, partitionColumn:String=""):Dataset[Row]={
+  PGUtil.inputQueryBulkDf(spark, url, query, genPath, isMultiline, numPartitions, partitionColumn, splitFactor, password=password)
   }
 
   def outputBulk(table:String, df:Dataset[Row]): PGUtil = {
@@ -206,12 +206,12 @@ object PGUtil extends java.io.Serializable {
     (lowerBound, upperBound)
   }
 
-  private def getPartitions(spark:SparkSession, lowerBound:Long, upperBound:Long, numPartitions:Int):RDD[Tuple2[Int, String]]={
+  private def getPartitions(spark:SparkSession, lowerBound:Long, upperBound:Long, numPartitions:Int, splitFactor:Int = 1):RDD[Tuple2[Int, String]]={
     val length = BigInt(1) + upperBound - lowerBound
     import spark.implicits._
-    val partitions = (0 until numPartitions).map { i =>
-      val start = lowerBound + ((i * length) / numPartitions)
-      val end = lowerBound + (((i + 1) * length) / numPartitions) - 1
+    val partitions = (0 until numPartitions * splitFactor).map { i =>
+      val start = lowerBound + ((i * length) / numPartitions / splitFactor)
+      val end = lowerBound + (((i + 1) * length) / numPartitions / splitFactor) - 1
       f"between $start AND $end"
     }.zipWithIndex.map{case(a, index) => (index, a)}.toDS.rdd.partitionBy(new ExactPartitioner(numPartitions))
     partitions
@@ -280,10 +280,10 @@ object PGUtil extends java.io.Serializable {
       .save()
   }
   
-  def inputQueryPartBulkCsv(spark:SparkSession, fsConf:String, url:String, query:String, path:String, numPartitions:Int, partitionColumn:String, password:String="") = {
+  def inputQueryPartBulkCsv(spark:SparkSession, fsConf:String, url:String, query:String, path:String, numPartitions:Int, partitionColumn:String, splitFactor:Int = 1, password:String="") = {
     val queryStr = s"($query) as tmp"
     val (lowerBound, upperBound) = getMinMaxForColumn(spark, url, queryStr, partitionColumn)
-    val rdd = getPartitions(spark, lowerBound, upperBound, numPartitions)
+    val rdd = getPartitions(spark, lowerBound, upperBound, numPartitions, splitFactor)
 
     val tmp = rdd.foreachPartition(
       x => { 
@@ -320,7 +320,7 @@ object PGUtil extends java.io.Serializable {
     }
   }
 
-  def inputQueryBulkDf(spark:SparkSession, url:String, query:String, path:String, isMultiline:Boolean = false, numPartitions:Int=1, partitionColumn:String="", password:String = ""):Dataset[Row]={
+  def inputQueryBulkDf(spark:SparkSession, url:String, query:String, path:String, isMultiline:Boolean = false, numPartitions:Int=1, partitionColumn:String="", splitFactor:Int = 1,password:String = ""):Dataset[Row]={
     val defaultFSConf = spark.sessionState.newHadoopConf().get("fs.defaultFS")
     val fsConf = if( path.startsWith("file:") ){ "file:///" }else{ defaultFSConf }
 
@@ -335,7 +335,7 @@ object PGUtil extends java.io.Serializable {
       inputQueryBulkCsv(fsConf, conn, query, path)
     conn.close
     }else{
-      inputQueryPartBulkCsv(spark, fsConf, url, query, path, numPartitions, partitionColumn, password)
+      inputQueryPartBulkCsv(spark, fsConf, url, query, path, numPartitions, partitionColumn, splitFactor, password)
     }
 
     // read the resulting csv

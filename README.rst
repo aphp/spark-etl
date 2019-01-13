@@ -48,6 +48,14 @@ Usage
           .tableDrop("person_tmp") // drop the temparary table
           .purgeTmp() // purge the temporary folder
 
+	// exemple for multiline textual content
+	// isMultiline allow the csv reader not to crash
+	// splitFactor allow creating more csv, to increase paralleism for reading
+        val df_multi = pg
+          .tableDrop("note_tmp") // drop table if exists
+          .tableCopy("note","note_tmp") // duplicate the table without data
+          .inputBulk(query="select * from note",  isMultiline=true, numPartitions=4, splitFactor=10, partitionColumn="note_id") // get a df from the table
+
 
 Functions:
 ++++++++++

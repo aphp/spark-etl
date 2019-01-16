@@ -329,7 +329,7 @@ object PGUtil extends java.io.Serializable {
     val fs= FileSystem.get(conf)
     fs.delete(new Path(path), true) // delete file, true for recursive 
 
-    val schemaQuery = getSchemaQuery(spark, url, query, password)
+    val schemaQueryComplex = getSchemaQuery(spark, url, query, password)
     if(numPartitions == 1){
     val conn = connOpen(url, password)
       inputQueryBulkCsv(fsConf, conn, query, path)
@@ -337,10 +337,11 @@ object PGUtil extends java.io.Serializable {
     }else{
       inputQueryPartBulkCsv(spark, fsConf, url, query, path, numPartitions, partitionColumn, splitFactor, password)
     }
-
+    
+    val schemaQuerySimple = schemaSimplify(schemaQueryComplex)
     // read the resulting csv
-    spark.read.format("csv")
-      .schema(schemaQuery)
+    val dfSimple = spark.read.format("csv")
+      .schema(schemaQuerySimple)
       .option("multiline",isMultiline)
       .option("delimiter",",")
       .option("header",false)
@@ -350,6 +351,26 @@ object PGUtil extends java.io.Serializable {
       .option("dateFormat", "yyyy-MM-dd")
       .option("mode","FAILFAST")
       .load(path)
+
+    val dfComplex = dataframeComplexify(spark, dfSimple, schemaQueryComplex)
+    dfComplex
+  }
+
+  def schemaSimplify(schema: StructType): StructType = {
+    StructType(schema.fields.map { field =>
+      field.dataType match {
+        case struct: org.apache.spark.sql.types.BooleanType =>
+          field.copy(dataType = org.apache.spark.sql.types.StringType )
+        case _ =>
+          field
+      }
+    })
+  }
+
+  def dataframeComplexify(spark:SparkSession, dfSimple:Dataset[Row], schemaQueryComplex:StructType):Dataset[Row]= {
+    dfSimple.registerTempTable("df_tmp")
+    val sqlQuery = "SELECT " + schemaQueryComplex.map(a => {if(a.dataType.simpleString=="boolean"){"CAST(" + a.name +" as boolean) as "+ a.name}else{a.name}}).mkString(", ") + " FROM df_tmp"
+    spark.sql(sqlQuery)
   }
 
   def outputBulkDfScd1(spark:SparkSession, url:String, table:String, key:String, df:Dataset[Row], batchsize:Int = 50000, excludeColumns:List[String] = Nil, path:String, password:String = ""):Unit ={

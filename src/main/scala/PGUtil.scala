@@ -25,11 +25,6 @@ import org.apache.hadoop.fs.FileStatus
 import org.apache.spark.Partitioner
 import org.apache.spark.rdd.RDD
 
-class ExactPartitioner[V](partitions: Int) extends Partitioner {
-  def getPartition(key: Any): Int = return math.abs(key.asInstanceOf[Int] % numPartitions())
-  def numPartitions() : Int = partitions
-}
-
 class PGUtil(spark:SparkSession, url: String, tmpPath:String) {
   private var password: String = ""
 
@@ -62,6 +57,11 @@ class PGUtil(spark:SparkSession, url: String, tmpPath:String) {
 
   def tableCopy(tableSrc:String, tableTarg:String, isUnlogged:Boolean = true): PGUtil = {
   PGUtil.tableCopy(url, tableSrc, tableTarg, password, isUnlogged)
+  this
+  }
+
+  def tableMove(tableSrc:String, tableTarg:String): PGUtil = {
+  PGUtil.tableMove(url, tableSrc, tableTarg, password)
   this
   }
 
@@ -102,10 +102,12 @@ class PGUtil(spark:SparkSession, url: String, tmpPath:String) {
   PGUtil.outputBulkDfScd2(spark, url, table, key, dateBegin, dateEnd, df, numPartitions, excludeColumns, genPath, password)
   this
   }
-
 }
 
+
 object PGUtil extends java.io.Serializable {
+
+   def apply(spark: SparkSession, url: String, tmpPath:String):PGUtil = new PGUtil(spark, url, tmpPath + randomUUID.toString)
 
    private def dbPassword(hostname:String, port:String, database:String, username:String ):String = {
     // Usage: val thatPassWord = dbPassword(hostname,port,database,username)
@@ -188,6 +190,14 @@ object PGUtil extends java.io.Serializable {
     val conn = connOpen(url, password)
     val unlogged = if(isUnlogged){"UNLOGGED"}else{""}
     val queryCreate = s"""CREATE $unlogged TABLE $tableTarg (LIKE $tableSrc)"""
+    val st: PreparedStatement = conn.prepareStatement(queryCreate)
+    st.executeUpdate()
+    conn.close()
+  }
+
+  def tableMove(url:String, tableSrc:String, tableTarg:String, password:String = ""):Unit ={
+    val conn = connOpen(url, password)
+    val queryCreate = s"""ALTER TABLE $tableSrc RENAME TO $tableTarg"""
     val st: PreparedStatement = conn.prepareStatement(queryCreate)
     st.executeUpdate()
     conn.close()
@@ -368,13 +378,14 @@ object PGUtil extends java.io.Serializable {
   }
 
   def dataframeComplexify(spark:SparkSession, dfSimple:Dataset[Row], schemaQueryComplex:StructType):Dataset[Row]= {
-    dfSimple.registerTempTable("df_tmp")
-    val sqlQuery = "SELECT " + schemaQueryComplex.map(a => {if(a.dataType.simpleString=="boolean"){"CAST(" + a.name +" as boolean) as "+ a.name}else{a.name}}).mkString(", ") + " FROM df_tmp"
+    val tableTmp = "table_" + randomUUID.toString.replaceAll( ".*-", "" )
+    dfSimple.registerTempTable(tableTmp)
+    val sqlQuery = "SELECT " + schemaQueryComplex.map(a => {if(a.dataType.simpleString=="boolean"){"CAST(" + a.name +" as boolean) as "+ a.name}else{a.name}}).mkString(", ") + " FROM " + tableTmp
     spark.sql(sqlQuery)
   }
 
   def outputBulkDfScd1(spark:SparkSession, url:String, table:String, key:String, df:Dataset[Row], numpartitions:Int=8, excludeColumns:List[String] = Nil, path:String, password:String = ""):Unit ={
-    val tableTmp = table + "_tmp"
+    val tableTmp = "table_" + randomUUID.toString.replaceAll( ".*-", "" )
     tableDrop(url, tableTmp, password)
     tableCopy(url, table, tableTmp, password)
     outputBulkCsv(spark, url, tableTmp, df, path, numpartitions, password)
@@ -411,7 +422,7 @@ object PGUtil extends java.io.Serializable {
   }
 
   def outputBulkDfScd2(spark:SparkSession, url:String, table:String, key:String, dateBegin:String, dateEnd:String, df:Dataset[Row], numPartitions:Int=8, excludeColumns:List[String] = Nil, path:String, password:String = ""):Unit ={
-    val tableTmp = table + "_tmp"
+    val tableTmp = "table_" + randomUUID.toString.replaceAll( ".*-", "" )
     tableDrop(url, tableTmp, password)
     tableCopy(url, table, tableTmp, password)
     outputBulkCsv(spark, url, tableTmp, df, path, numPartitions, password)
@@ -456,4 +467,9 @@ object PGUtil extends java.io.Serializable {
     conn.prepareStatement(newRows).executeUpdate()
     conn.close()
   }
+}
+
+class ExactPartitioner[V](partitions: Int) extends Partitioner {
+  def getPartition(key: Any): Int = return math.abs(key.asInstanceOf[Int] % numPartitions())
+  def numPartitions() : Int = partitions
 }

@@ -107,7 +107,7 @@ class PGUtil(spark:SparkSession, url: String, tmpPath:String) {
 
 object PGUtil extends java.io.Serializable {
 
-   def apply(spark: SparkSession, url: String, tmpPath:String):PGUtil = new PGUtil(spark, url, tmpPath + randomUUID.toString)
+   def apply(spark: SparkSession, url: String, tmpPath:String):PGUtil = new PGUtil(spark, url, tmpPath + randomUUID.toString).setPassword("")
 
    private def dbPassword(hostname:String, port:String, database:String, username:String ):String = {
     // Usage: val thatPassWord = dbPassword(hostname,port,database,username)

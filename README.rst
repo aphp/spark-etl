@@ -38,13 +38,13 @@ Usage
 	// the connection looks into /home/$USER/.pgpass for a password
 	val url = "jdbc:postgresql://somehost:someport/somedb?user=someuser&currentSchema=someschema"
 
-        val pg = new PGUtil(sparkSession, url, "spark-postgres-tmp" ) // specify a temporary folder in hdfs or locally
+        val pg = PGUtil(sparkSession, url, "spark-postgres-tmp" ) // specify a temporary folder in hdfs or locally
         val df = pg
           .tableDrop("person_tmp") // drop table if exists
           .tableCopy("person","person_tmp") // duplicate the table without data
           .inputBulk(query="select * from person",  numPartitions=4, partitionColumn="person_id") // get a df from the table
 
-        pg.outputBulk("person_tmp", df) // load the new table with the df
+        pg.outputBulk("person_tmp", df, numPartitions=4) // load the new table with the df with 4 thread
           .tableDrop("person_tmp") // drop the temparary table
           .purgeTmp() // purge the temporary folder
 

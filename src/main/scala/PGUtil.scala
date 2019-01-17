@@ -79,8 +79,8 @@ class PGUtil(spark:SparkSession, url: String, tmpPath:String) {
   PGUtil.inputQueryBulkDf(spark, url, query, genPath, isMultiline, numPartitions, partitionColumn, splitFactor, password=password)
   }
 
-  def outputBulk(table:String, df:Dataset[Row]): PGUtil = {
-  PGUtil.outputBulkCsv(spark, url, table, df, genPath, password)
+  def outputBulk(table:String, df:Dataset[Row], numPartitions:Int=8): PGUtil = {
+  PGUtil.outputBulkCsv(spark, url, table, df, genPath, numPartitions, password)
   this
   }
 
@@ -235,7 +235,7 @@ object PGUtil extends java.io.Serializable {
         .load
     }
   
-  def outputBulkCsv(spark:SparkSession, url:String, table:String, df:Dataset[Row], path:String, password:String = "") = {
+  def outputBulkCsv(spark:SparkSession, url:String, table:String, df:Dataset[Row], path:String, numPartitions:Int=8, password:String = "") = {
     //write a csv folder
     df.write.format("csv")
     .option("delimiter",",")
@@ -252,7 +252,7 @@ object PGUtil extends java.io.Serializable {
     val rdd = fs.listStatus(new Path(path))
     .filter(x => x.getPath.toString.endsWith(".csv"))
     .map(x => x.getPath.toString).toList.zipWithIndex.map{case(a,i) => (i,a)}
-    .toDS.rdd.partitionBy(new ExactPartitioner(8))
+    .toDS.rdd.partitionBy(new ExactPartitioner(numPartitions))
 
     rdd.foreachPartition(
       x => { 
@@ -373,11 +373,11 @@ object PGUtil extends java.io.Serializable {
     spark.sql(sqlQuery)
   }
 
-  def outputBulkDfScd1(spark:SparkSession, url:String, table:String, key:String, df:Dataset[Row], batchsize:Int = 50000, excludeColumns:List[String] = Nil, path:String, password:String = ""):Unit ={
+  def outputBulkDfScd1(spark:SparkSession, url:String, table:String, key:String, df:Dataset[Row], numpartitions:Int=8, excludeColumns:List[String] = Nil, path:String, password:String = ""):Unit ={
     val tableTmp = table + "_tmp"
     tableDrop(url, tableTmp, password)
     tableCopy(url, table, tableTmp, password)
-    outputBulkCsv(spark, url, tableTmp, df, path)
+    outputBulkCsv(spark, url, tableTmp, df, path, numpartitions, password)
     scd1(url, table, tableTmp, key, df.schema, excludeColumns, password)
     tableDrop(url, tableTmp, password)
   }
@@ -410,11 +410,11 @@ object PGUtil extends java.io.Serializable {
     conn.close()
   }
 
-  def outputBulkDfScd2(spark:SparkSession, url:String, table:String, key:String, dateBegin:String, dateEnd:String, df:Dataset[Row], batchsize:Int = 50000, excludeColumns:List[String] = Nil, path:String, password:String = ""):Unit ={
+  def outputBulkDfScd2(spark:SparkSession, url:String, table:String, key:String, dateBegin:String, dateEnd:String, df:Dataset[Row], numPartitions:Int=8, excludeColumns:List[String] = Nil, path:String, password:String = ""):Unit ={
     val tableTmp = table + "_tmp"
     tableDrop(url, tableTmp, password)
     tableCopy(url, table, tableTmp, password)
-    outputBulkCsv(spark, url, tableTmp, df, path)
+    outputBulkCsv(spark, url, tableTmp, df, path, numPartitions, password)
     scd2(url, table, tableTmp, key, dateBegin, dateEnd, df.schema, excludeColumns, password)
     tableDrop(url, tableTmp, password)
   }

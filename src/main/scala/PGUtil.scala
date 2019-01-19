@@ -50,11 +50,6 @@ class PGUtil(spark:SparkSession, url: String, tmpPath:String) {
     fs.delete(new Path(tmpPath), true) // delete file, true for recursive 
   }
 
-  def tableCreate(table:String, schema: StructType, isUnlogged:Boolean = false): PGUtil = {
-  PGUtil.tableCreate(url, table, schema, isUnlogged, password)
-  this
-  }
-
   def tableCopy(tableSrc:String, tableTarg:String, isUnlogged:Boolean = true): PGUtil = {
   PGUtil.tableCopy(url, tableSrc, tableTarg, password, isUnlogged)
   this
@@ -107,7 +102,7 @@ class PGUtil(spark:SparkSession, url: String, tmpPath:String) {
 
 object PGUtil extends java.io.Serializable {
 
-   def apply(spark: SparkSession, url: String, tmpPath:String):PGUtil = new PGUtil(spark, url, tmpPath + randomUUID.toString).setPassword("")
+   def apply(spark: SparkSession, url: String, tmpPath:String):PGUtil = new PGUtil(spark, url, tmpPath + "/" + randomUUID.toString).setPassword("")
 
    private def dbPassword(hostname:String, port:String, database:String, username:String ):String = {
     // Usage: val thatPassWord = dbPassword(hostname,port,database,username)
@@ -176,16 +171,6 @@ object PGUtil extends java.io.Serializable {
     conn.close()
   }
 
-  def tableCreate(url:String, table:String, schema:StructType, isUnlogged:Boolean, password:String = ""):Unit ={
-    val conn = connOpen(url, password)
-    val unlogged = if(isUnlogged){"UNLOGGED"}else{""}
-    val fields = "" //TODO
-    val queryCreate = s"""CREATE TABLE $unlogged ($fields)"""
-    val st: PreparedStatement = conn.prepareStatement(queryCreate)
-    st.executeUpdate()
-    conn.close()
-  }
-
   def tableCopy(url:String, tableSrc:String, tableTarg:String, password:String = "", isUnlogged:Boolean = true):Unit ={
     val conn = connOpen(url, password)
     val unlogged = if(isUnlogged){"UNLOGGED"}else{""}
@@ -246,8 +231,10 @@ object PGUtil extends java.io.Serializable {
     }
   
   def outputBulkCsv(spark:SparkSession, url:String, table:String, df:Dataset[Row], path:String, numPartitions:Int=8, password:String = "") = {
+    //transform arrays to string
+    val dfTmp = dataframeToPgCsv(spark, df, df.schema)
     //write a csv folder
-    df.write.format("csv")
+    dfTmp.write.format("csv")
     .option("delimiter",",")
     .option("header",false)
     .option("emptyValue","")
@@ -362,7 +349,7 @@ object PGUtil extends java.io.Serializable {
       .option("mode","FAILFAST")
       .load(path)
 
-    val dfComplex = dataframeComplexify(spark, dfSimple, schemaQueryComplex)
+    val dfComplex = dataframeFromPgCsv(spark, dfSimple, schemaQueryComplex)
     dfComplex
   }
 
@@ -371,16 +358,41 @@ object PGUtil extends java.io.Serializable {
       field.dataType match {
         case struct: org.apache.spark.sql.types.BooleanType =>
           field.copy(dataType = org.apache.spark.sql.types.StringType )
+        case struct: org.apache.spark.sql.types.ArrayType =>
+          field.copy(dataType = org.apache.spark.sql.types.StringType )
         case _ =>
           field
       }
     })
   }
 
-  def dataframeComplexify(spark:SparkSession, dfSimple:Dataset[Row], schemaQueryComplex:StructType):Dataset[Row]= {
+  def dataframeFromPgCsv(spark:SparkSession, dfSimple:Dataset[Row], schemaQueryComplex:StructType):Dataset[Row]= {
     val tableTmp = "table_" + randomUUID.toString.replaceAll( ".*-", "" )
     dfSimple.registerTempTable(tableTmp)
-    val sqlQuery = "SELECT " + schemaQueryComplex.map(a => {if(a.dataType.simpleString=="boolean"){"CAST(" + a.name +" as boolean) as "+ a.name}else{a.name}}).mkString(", ") + " FROM " + tableTmp
+    val sqlQuery = "SELECT " + schemaQueryComplex.map(a => {
+            if( a.dataType.simpleString == "boolean" ) {
+                    "CAST(" + a.name +" as boolean) as "+ a.name
+                }else if ( a.dataType.simpleString.indexOf("array") == 0 ) {
+                    "CAST(SPLIT(REGEXP_REPLACE(" + a.name + ", '^[{]|[}]$', ''), ',') AS " + a.dataType.simpleString + ") as " + a.name
+                }else {
+                    a.name
+                }
+            })
+        .mkString(", ") + " FROM " + tableTmp
+    spark.sql(sqlQuery)
+  }
+
+  def dataframeToPgCsv(spark:SparkSession, dfSimple:Dataset[Row], schemaQueryComplex:StructType):Dataset[Row]= {
+    val tableTmp = "table_" + randomUUID.toString.replaceAll( ".*-", "" )
+    dfSimple.registerTempTable(tableTmp)
+    val sqlQuery = "SELECT " + schemaQueryComplex.map(a => {
+                if ( a.dataType.simpleString.indexOf("array") == 0 ) {
+                    "REGEXP_REPLACE(REGEXP_REPLACE(CAST(" + a.name + " AS string), '^.', '{'), '.$', '}') AS " + a.name
+                }else {
+                    a.name
+                }
+            })
+        .mkString(", ") + " FROM " + tableTmp
     spark.sql(sqlQuery)
   }
 

@@ -15,7 +15,8 @@ Supported fields
 - numerics (int, bigint, float...)
 - strings
 - dates, timestamps
-- array (TODO)
+- boolean
+- array[] (int, double, string...)
 
 Use the lib
 +++++++++++
@@ -28,7 +29,7 @@ The lib need the postgresql jdbc driver. You can download it from the
 postgresql website. The lib works either in local mode, in yarn mode and has
 been tested with apache livy.
 
-- `spark-shell --driver-class-path postgresql-42.2.5.jar  --jars "postgresql-42.2.5.jar,spark-postgres-2.0.1-SNAPSHOT-shaded.jar"  --master yarn`
+- `spark-shell --driver-class-path postgresql-42.2.5.jar  --jars "postgresql-42.2.5.jar,spark-postgres-2.3.0-SNAPSHOT-shaded.jar"  --master yarn`
 
 Usage
 +++++
@@ -57,34 +58,19 @@ Usage
           .inputBulk(query="select * from note",  isMultiline=true, numPartitions=4, splitFactor=10, partitionColumn="note_id") // get a df from the table
 
 
-Functions:
-++++++++++
+Features
+++++++++
 
-Input from Postgres
-*******************
-- `inputQueryDf(spark:SparkSession, url:String,query:String,partition_column:String,num_partitions:Int):Dataset[Row]`
-- `inputQueryBulkDf(spark:SparkSession, url:String, query:String, path:String, isMultiline:Boolean):Dataset[Row]`
-- `inputQueryBulkCsv(conn:Connection, query:String, path:String)`
-
-Ouput to Postgres
-*****************
-- `outputBulk(url:String, table:String, df:Dataset[Row], batchsize:Int)`
-
-Slow Changing Dimension
-***********************
-- `outputBulkDfScd1(url:String, table:String, key:String, df:Dataset[Row], batchsize:Int)`
-- `outputBulkDfScd2(url:String, table:String, key:String, dateBegin:String, dateEnd:String, df:Dataset[Row], batchsize:Int)`
-
-Table functions
-***************
-- tableCreate
-- tableCopy
+- input
+- inputBulk
+- output
+- ouputBulk
+- outputScd1
+- outputScd2
 - tableTruncate
 - tableDrop
-
-General functions
-*****************
-- `connOpen(url:Str):Connection`
+- tableCopy
+- tableMove
 
 Benchmark
 +++++++++

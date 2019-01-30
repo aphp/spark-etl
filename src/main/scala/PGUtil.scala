@@ -71,8 +71,7 @@ class PGUtil(spark:SparkSession, url: String, tmpPath:String) {
   }
 
   def inputBulk(query:String, isMultiline:Boolean = false, numPartitions:Int=1, splitFactor:Int=1, partitionColumn:String=""):Dataset[Row]={
-  PGUtil.inputQueryBulkDf(spark, url, query, genPath, isMultiline, numPartitions, partitionColumn, splitFactor, password=password)
-  }
+  PGUtil.inputQueryBulkDf(spark, url, query, genPath, isMultiline, numPartitions, partitionColumn, splitFactor, password=password) }
 
   def outputBulk(table:String, df:Dataset[Row], numPartitions:Int=8): PGUtil = {
   PGUtil.outputBulkCsv(spark, url, table, df, genPath, numPartitions, password)
@@ -97,6 +96,12 @@ class PGUtil(spark:SparkSession, url: String, tmpPath:String) {
   PGUtil.outputBulkDfScd2(spark, url, table, key, dateBegin, dateEnd, df, numPartitions, excludeColumns, genPath, password)
   this
   }
+
+  def outputBulkCsv(table:String, columns:String, path:String, numPartitions:Int=8, delimiter:String=",", csvPattern:String=".*.csv"):PGUtil = {
+  PGUtil.outputBulkCsvLow(spark, url, table, columns, path, numPartitions, delimiter, csvPattern, password) 
+  this
+  }
+
 }
 
 
@@ -231,6 +236,7 @@ object PGUtil extends java.io.Serializable {
     }
   
   def outputBulkCsv(spark:SparkSession, url:String, table:String, df:Dataset[Row], path:String, numPartitions:Int=8, password:String = "") = {
+    val columns =  df.schema.fields.map(x => s"${x.name}").mkString(",")
     //transform arrays to string
     val dfTmp = dataframeToPgCsv(spark, df, df.schema)
     //write a csv folder
@@ -242,14 +248,19 @@ object PGUtil extends java.io.Serializable {
     .option("escape","\"")
     .mode(org.apache.spark.sql.SaveMode.Overwrite)
     .save(path)
+    outputBulkCsvLow(spark, url, table, columns, path, numPartitions, ",", ".*.csv", password)
+  }
+
+  def outputBulkCsvLow(spark:SparkSession, url:String, table:String, columns:String, path:String, numPartitions:Int=8, delimiter:String=",", csvPattern:String=".*.csv",password:String = "") = {
 
     // load the csv files from hdfs in parallel 
     val fs = FileSystem.get(new Configuration())
     import spark.implicits._
     val rdd = fs.listStatus(new Path(path))
-    .filter(x => x.getPath.toString.endsWith(".csv"))
+    .filter(x => x.getPath.toString.matches("^.*/" + csvPattern + "$"))
     .map(x => x.getPath.toString).toList.zipWithIndex.map{case(a,i) => (i,a)}
     .toDS.rdd.partitionBy(new ExactPartitioner(numPartitions))
+
 
     rdd.foreachPartition(
       x => { 
@@ -258,7 +269,7 @@ object PGUtil extends java.io.Serializable {
           s => {
           val stream = (FileSystem.get(new Configuration())).open(new Path(s._2)).getWrappedStream
           val copyManager: CopyManager = new CopyManager(conn.asInstanceOf[BaseConnection] );
-          copyManager.copyIn(s"""COPY $table  FROM STDIN WITH CSV DELIMITER ',' ESCAPE '"' QUOTE '"' """, stream  );
+          copyManager.copyIn(s"""COPY $table ($columns) FROM STDIN WITH CSV DELIMITER '$delimiter' ESCAPE '"' QUOTE '"' """, stream  );
           }
         }
       conn.close()

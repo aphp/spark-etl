@@ -70,6 +70,11 @@ class PGUtil(spark:SparkSession, url: String, tmpPath:String) {
   this
   }
 
+  def sqlExec(query:String): PGUtil = {
+  PGUtil.sqlExec(url, query, password)
+  this
+  }
+
   def inputBulk(query:String, isMultiline:Boolean = false, numPartitions:Int=1, splitFactor:Int=1, partitionColumn:String=""):Dataset[Row]={
   PGUtil.inputQueryBulkDf(spark, url, query, genPath, isMultiline, numPartitions, partitionColumn, splitFactor, password=password) }
 
@@ -172,6 +177,13 @@ object PGUtil extends java.io.Serializable {
   def tableDrop(url:String, table:String, password:String = ""):Unit ={
     val conn = connOpen(url, password)
     val st: PreparedStatement = conn.prepareStatement(s"DROP TABLE IF EXISTS $table")
+    st.executeUpdate()
+    conn.close()
+  }
+
+  def sqlExec(url:String, query:String, password:String = ""):Unit ={
+    val conn = connOpen(url, password)
+    val st: PreparedStatement = conn.prepareStatement(s"$query")
     st.executeUpdate()
     conn.close()
   }

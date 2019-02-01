@@ -3,7 +3,7 @@ SPARK-POSTGRES
 
 spark-postgres is a set of function to better bridge postgres and spark. It
 focuses on stability and speed in ETL workloads. In particular it provides
-access to the postgres bulk load function (COPY).
+access to the postgres bulk load function (COPY) and also provides SQL access.
 
 It can be used from **scala-spark** and **pySpark**
 
@@ -49,6 +49,7 @@ Usage Scala
           .inputBulk(query="select * from person",  numPartitions=4, partitionColumn="person_id") // get a df from the table
 
         pg.outputBulk("person_tmp", df, numPartitions=4) // load the new table with the df with 4 thread
+          .sqlExec("UPDATE logs set active = true")
           .tableDrop("person_tmp") // drop the temparary table
           .purgeTmp() // purge the temporary folder
 
@@ -85,6 +86,7 @@ Features
 - tableDrop
 - tableCopy
 - tableMove
+- sqlExec
 
 Benchmark
 +++++++++

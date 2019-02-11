@@ -230,21 +230,31 @@ object PGUtil extends java.io.Serializable {
   }
 
   def inputQueryDf(spark:SparkSession, url:String, query:String,numPartitions:Int, partitionColumn:String,password:String = ""):Dataset[Row]={
-    // get min and max for partitioning
-    val queryStr = s"($query) as tmp"
-    val (lowerBound, upperBound): Tuple2[Long,Long] = getMinMaxForColumn(spark, url, queryStr, partitionColumn)
-    // get the partitionned dataset from multiple jdbc stmts
-    spark.read.format("jdbc")
-        .option("url",url)
-	.option("dbtable",queryStr)
-	.option("driver","org.postgresql.Driver")
-	.option("partitionColumn",partitionColumn)
-        .option("lowerBound",lowerBound)
-        .option("upperBound",upperBound)
-        .option("numPartitions",numPartitions)
-        .option("fetchsize",50000)
-        .option("password",passwordFromConn(url, password))
-        .load
+        val queryStr = s"($query) as tmp"
+    if(partitionColumn != ""){
+        // get min and max for partitioning
+        val (lowerBound, upperBound): Tuple2[Long,Long] = getMinMaxForColumn(spark, url, queryStr, partitionColumn)
+        // get the partitionned dataset from multiple jdbc stmts
+        spark.read.format("jdbc")
+            .option("url",url)
+	    .option("dbtable",queryStr)
+	    .option("driver","org.postgresql.Driver")
+	    .option("partitionColumn",partitionColumn)
+            .option("lowerBound",lowerBound)
+            .option("upperBound",upperBound)
+            .option("numPartitions",numPartitions)
+            .option("fetchsize",50000)
+            .option("password",passwordFromConn(url, password))
+            .load
+    }else{
+        spark.read.format("jdbc")
+            .option("url",url)
+	        .option("dbtable",queryStr)
+	        .option("driver","org.postgresql.Driver")
+            .option("fetchsize",50000)
+            .option("password",passwordFromConn(url, password))
+            .load
+    }
     }
   
   def outputBulkCsv(spark:SparkSession, url:String, table:String, df:Dataset[Row], path:String, numPartitions:Int=8, password:String = "") = {

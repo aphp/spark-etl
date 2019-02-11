@@ -66,7 +66,7 @@ Usage pySpark
 
 .. code-block:: python
 
-	val url = "jdbc:postgresql://somehost:someport/somedb?user=someuser&currentSchema=someschema"
+    url = "jdbc:postgresql://somehost:someport/somedb?user=someuser&currentSchema=someschema"
     pg = sc._jvm.fr.aphp.eds.spark.postgres.PGUtil.apply(spark._jsparkSession, url, "/tmp/")
     pg.inputBulk("select * from test2",False, 1, 1, "col").show()
     pg.purgeTmp()

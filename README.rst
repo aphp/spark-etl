@@ -16,7 +16,7 @@ Supported version
 Supported fields
 ++++++++++++++++
 - numerics (int, bigint, float...)
-- strings
+- strings (included multiline strings)
 - dates, timestamps
 - boolean
 - array[] (int, double, string...)

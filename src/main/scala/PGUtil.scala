@@ -206,7 +206,7 @@ object PGUtil extends java.io.Serializable {
   }
 
   private def getMinMaxForColumn(spark:SparkSession, url:String, query:String, partitionColumn:String, password: String = ""):Tuple2[Long,Long]={
-    val min_max_query = s"(SELECT cast(min($partitionColumn) as bigint), cast(max($partitionColumn) as bigint) FROM $query) AS tmp1"
+    val min_max_query = s"(SELECT coalesce(cast(min($partitionColumn) as bigint), 0) as min, coalesce(cast(max($partitionColumn) as bigint),0) as max FROM $query) AS tmp1"
     val row  = spark.read.format("jdbc")
 	.option("url",url)
 	.option("driver","org.postgresql.Driver")

@@ -92,8 +92,13 @@ class PGUtil(spark:SparkSession, url: String, tmpPath:String) {
   this
   }
 
-  def outputScd1(table:String, key:String, df:Dataset[Row], numPartitions:Int = 4, excludeColumns:List[String] = Nil):PGUtil = {
-  PGUtil.outputBulkDfScd1(spark, url, table, key, df, numPartitions, excludeColumns, genPath, password)
+  def outputScd1(table:String, key:String, df:Dataset[Row], numPartitions:Int = 4, excludeColumns:List[String] = Nil, includeColumns:List[String]):PGUtil = {
+  PGUtil.outputBulkDfScd1(spark, url, table, key, df, numPartitions, excludeColumns, includeColumns, genPath, password)
+  this
+  }
+
+  def outputScd1Hash(table:String, key:String, df:Dataset[Row], numPartitions:Int = 4, hash:String = "hash"):PGUtil = {
+  PGUtil.outputBulkDfScd1Hash(spark, url, table, key, df, numPartitions, hash, genPath, password)
   this
   }
 
@@ -429,19 +434,52 @@ object PGUtil extends java.io.Serializable {
     spark.sql(sqlQuery)
   }
 
-  def outputBulkDfScd1(spark:SparkSession, url:String, table:String, key:String, df:Dataset[Row], numpartitions:Int=8, excludeColumns:List[String] = Nil, path:String, password:String = ""):Unit ={
+  def outputBulkDfScd1(spark:SparkSession, url:String, table:String, key:String, df:Dataset[Row], numpartitions:Int=8, excludeColumns:List[String] = Nil, includeColumns:List[String] = Nil, path:String, password:String = ""):Unit ={
     val tableTmp = "table_" + randomUUID.toString.replaceAll( ".*-", "" )
     tableDrop(url, tableTmp, password)
     tableCopy(url, table, tableTmp, password)
     outputBulkCsv(spark, url, tableTmp, df, path, numpartitions, password)
-    scd1(url, table, tableTmp, key, df.schema, excludeColumns, password)
+    scd1Update(url, table, tableTmp, key, df.schema, excludeColumns, includeColumns, false, password)
+    scd1Insert(url, table, tableTmp, key, df.schema, excludeColumns, includeColumns, password)
     tableDrop(url, tableTmp, password)
   }
 
-  def scd1(url:String, table:String, tableTarg:String, key:String, rddSchema:StructType, excludeColumns:List[String] = Nil, password:String = ""):Unit ={
+  def outputBulkDfScd1Hash(spark:SparkSession, url:String, table:String, key:String, df:Dataset[Row], numPartitions:Int=8, hash:String, path:String, password:String = ""):Unit ={
+    // fetch both ID and HASH from the entire target table to spark
+    // compare ID and HASH from target table and source table:
+    //     create new rows
+    //     create rows to update
+    // insert new rows directly
+    // insert rows to update in a temp table, and update
+    val rand = randomUUID.toString.replaceAll( ".*-", "" )
+    val tableTmp = "table_" +  rand
+    tableDrop(url, tableTmp, password)
+    tableCopy(url, table, tableTmp, password)
+    val query = f"select $key, $hash from $table"
+    df.registerTempTable(f"df_$rand")
+    val fetch = inputQueryBulkDf(spark, url, query, path, isMultiline=false, numPartitions, partitionColumn=key, splitFactor=1, password=password).cache()
+    fetch.registerTempTable(f"fetch_$rand")
+    val updDf = spark.sql(f"select df.* from df_$rand df join fetch_$rand fetch on df.$key = fetch.$key where fetch.$hash IS DISTINCT FROM df.$hash")
+    val insDf = spark.sql(f"select df.* from df_$rand df left join fetch_$rand fetch on df.$key=fetch.$key where fetch.$key is null")
+    outputBulkCsv(spark, url, tableTmp, updDf, path + "/upd", numPartitions, password)
+    outputBulkCsv(spark, url, table, insDf, path + "/ins", numPartitions, password)
+    scd1Update(url, table, tableTmp, key, df.schema, excludeColumns=Nil, includeColumns=Nil, isCompare=false, password)
+    tableDrop(url, tableTmp, password)
+  }
+
+  def scd1Update(url:String, table:String, tableTarg:String, key:String, rddSchema:StructType, excludeColumns:List[String] = Nil, includeColumns:List[String] = Nil, isCompare:Boolean=true, password:String = ""):Unit ={
     val conn = connOpen(url, password)
+
     val updSet =  rddSchema.fields.filter(x => !key.equals(x.name)).filter(x => !excludeColumns.contains(x.name)).map(x => s"${x.name} = tmp.${x.name}").mkString(",")
-    val updIsDistinct =  rddSchema.fields.filter(x => !key.equals(x.name)).filter(x => !excludeColumns.contains(x.name)).map(x => s"tmp.${x.name} IS DISTINCT FROM tmp.${x.name}").mkString(" OR ")
+    var updIsDistinct =  rddSchema.fields.filter(x => !key.equals(x.name)).filter(x => !excludeColumns.contains(x.name)).map(x => s"tmp.${x.name} IS DISTINCT FROM tmp.${x.name}").mkString(" OR ")
+    if(includeColumns.size != 0){//Either exclude or include
+      updIsDistinct = includeColumns.map(x => s"tmp.${x} IS DISTINCT FROM tmp.${x}").mkString(" OR ")
+    }
+    if(!isCompare){ //update in any case
+      updIsDistinct = "1 = 1"
+    }
+
+
     val upd = s"""
     UPDATE $table as targ
     SET $updSet
@@ -452,8 +490,15 @@ object PGUtil extends java.io.Serializable {
     """
     conn.prepareStatement(upd).executeUpdate()
 
+    conn.close()
+  }
+
+  def scd1Insert(url:String, table:String, tableTarg:String, key:String, rddSchema:StructType, excludeColumns:List[String] = Nil, includeColumns:List[String] = Nil, password:String = ""):Unit ={
+    val conn = connOpen(url, password)
+
     val insSet =  rddSchema.fields.filter(x => !excludeColumns.contains(x.name)).map(x => s"${x.name}").mkString(",")
     val insSetTarg =  rddSchema.fields.filter(x => !excludeColumns.contains(x.name)).map(x => s"tmp.${x.name}").mkString(",")
+
     val ins = s"""
     INSERT INTO $table ($insSet)
     SELECT $insSetTarg

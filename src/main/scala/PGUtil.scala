@@ -131,7 +131,7 @@ object PGUtil extends java.io.Serializable {
       val connCfg = line.split(":")
       if (hostname == connCfg(0)
         && port == connCfg(1)
-        && database == connCfg(2)
+        && (database == connCfg(2) || database == "*")
         && username == connCfg(3)
       ) { 
         passwd = connCfg(4)
@@ -196,7 +196,7 @@ object PGUtil extends java.io.Serializable {
   def tableCopy(url:String, tableSrc:String, tableTarg:String, password:String = "", isUnlogged:Boolean = true):Unit ={
     val conn = connOpen(url, password)
     val unlogged = if(isUnlogged){"UNLOGGED"}else{""}
-    val queryCreate = s"""CREATE $unlogged TABLE $tableTarg (LIKE $tableSrc)"""
+    val queryCreate = s"""CREATE $unlogged TABLE $tableTarg (LIKE $tableSrc  INCLUDING DEFAULTS)"""
     val st: PreparedStatement = conn.prepareStatement(queryCreate)
     st.executeUpdate()
     conn.close()
@@ -452,19 +452,24 @@ object PGUtil extends java.io.Serializable {
     // insert new rows directly
     // insert rows to update in a temp table, and update
     val rand = randomUUID.toString.replaceAll( ".*-", "" )
-    val tableTmp = "table_" +  rand
-    tableDrop(url, tableTmp, password)
-    tableCopy(url, table, tableTmp, password)
+    val tableUpdTmp = "table_upd_" +  rand
+    val tableDelTmp = "table_del_" +  rand
+    tableCopy(url, table, tableUpdTmp, password)
+    sqlExec(url=url, query=f"create table $tableDelTmp ($key text)", password=password)
     val query = f"select $key, $hash from $table"
     df.registerTempTable(f"df_$rand")
-    val fetch = inputQueryBulkDf(spark, url, query, path, isMultiline=false, numPartitions, partitionColumn=key, splitFactor=1, password=password).cache()
+    val fetch = inputQueryBulkDf(spark, url, query, path, isMultiline=false, numPartitions=1, partitionColumn=key, splitFactor=1, password=password).cache()
     fetch.registerTempTable(f"fetch_$rand")
     val updDf = spark.sql(f"select df.* from df_$rand df join fetch_$rand fetch on df.$key = fetch.$key where fetch.$hash IS DISTINCT FROM df.$hash")
     val insDf = spark.sql(f"select df.* from df_$rand df left join fetch_$rand fetch on df.$key=fetch.$key where fetch.$key is null")
-    outputBulkCsv(spark, url, tableTmp, updDf, path + "/upd", numPartitions, password)
+    val delDf = spark.sql(f"select fetch.$key from fetch_$rand fetch left join  df_$rand df on df.$key=fetch.$key where df.$key is null")
+    outputBulkCsv(spark, url, tableUpdTmp, updDf, path + "/upd", numPartitions, password)
+    outputBulkCsv(spark, url, tableDelTmp, delDf, path + "/del", numPartitions, password)
     outputBulkCsv(spark, url, table, insDf, path + "/ins", numPartitions, password)
-    scd1Update(url, table, tableTmp, key, df.schema, excludeColumns=Nil, includeColumns=Nil, isCompare=false, password)
-    tableDrop(url, tableTmp, password)
+    scd1Update(url, table, tableUpdTmp, key, df.schema, excludeColumns=Nil, includeColumns=Nil, isCompare=false, password)
+    sqlExec(url=url, query=f"delete from $table ta using $tableDelTmp tm where ta.key = tm.key", password=password)
+    tableDrop(url, tableUpdTmp, password)
+    tableDrop(url, tableDelTmp, password)
   }
 
   def scd1Update(url:String, table:String, tableTarg:String, key:String, rddSchema:StructType, excludeColumns:List[String] = Nil, includeColumns:List[String] = Nil, isCompare:Boolean=true, password:String = ""):Unit ={

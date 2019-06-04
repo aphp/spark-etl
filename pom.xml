@@ -1,0 +1,64 @@
+  <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>io.frama.parisni</groupId>
+    <artifactId>spark-etl</artifactId>
+    <packaging>pom</packaging>
+    <version>1.0.0-SNAPSHOT</version>
+    <name>spark-etl</name>
+    <url>http://maven.apache.org</url>
+    <licenses>
+      <license>
+        <name>Apache License, Version 2.0</name>
+        <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        <distribution>repo</distribution>
+        <comments>A business-friendly OSS license</comments>
+      </license>
+    </licenses>
+    <!-- maven central with sonatype tutorial here
+https://dzone.com/articles/deploy-maven-central -->
+    <parent>
+      <groupId>org.sonatype.oss</groupId>
+      <artifactId>oss-parent</artifactId>
+      <version>9</version>
+    </parent>
+    <modules>
+      <module>spark-dataframe</module>
+      <module>spark-csv</module>
+      <module>spark-postgres</module>
+      <module>spark-hive</module>
+    </modules>
+    <properties>
+      <maven.compiler.source>1.8</maven.compiler.source>
+      <maven.compiler.target>1.8</maven.compiler.target>
+      <encoding>UTF-8</encoding>
+      <spark-csv.version>0.0.1-SNAPSHOT</spark-csv.version>
+      <spark-dataframe.version>0.0.1-SNAPSHOT</spark-dataframe.version>
+      <scala.tools.version>2.11</scala.tools.version>
+      <scala.version>2.11.12</scala.version>
+      <spark.version>2.4.3</spark.version>
+      <logback.version>1.0.13</logback.version>
+      <slf4j.version>1.7.25</slf4j.version>
+      <scala-logging.version>3.9.2</scala-logging.version>
+      <postgres.version>42.2.5</postgres.version>
+      <spark-testing.version>2.4.0_0.11.0</spark-testing.version>
+      <hive.version>2.3.5</hive.version>
+      <scala-yaml.version>0.4.0</scala-yaml.version>
+    </properties>
+    <build>
+      <sourceDirectory>src/main/scala</sourceDirectory>
+      <testSourceDirectory>src/test/scala</testSourceDirectory>
+      <plugins>
+        <!-- begin mvn site -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-site-plugin</artifactId>
+          <version>3.7.1</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-project-info-reports-plugin</artifactId>
+          <version>3.0.0</version>
+        </plugin>
+      </plugins>
+    </build>
+  </project>

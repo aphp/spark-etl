@@ -289,7 +289,8 @@ object PGUtil extends java.io.Serializable {
     dfTmp.write.format("csv")
       .option("delimiter", ",")
       .option("header", false)
-      .option("nullValue", "\\N")
+      .option("nullValue", null)
+      .option("emptyValue", "\"\"")
       .option("quote", "\"")
       .option("escape", "\"")
       .option("ignoreLeadingWhiteSpace",false)
@@ -317,7 +318,7 @@ object PGUtil extends java.io.Serializable {
             {
               val stream = (FileSystem.get(new Configuration())).open(new Path(s._2)).getWrappedStream
               val copyManager: CopyManager = new CopyManager(conn.asInstanceOf[BaseConnection]);
-              copyManager.copyIn(s"""COPY $table ($columns) FROM STDIN WITH CSV DELIMITER '$delimiter'  ESCAPE '"' QUOTE '"' """, stream);
+              copyManager.copyIn(s"""COPY $table ($columns) FROM STDIN WITH CSV DELIMITER '$delimiter'  NULL '' ESCAPE '"' QUOTE '"' """, stream);
             }
         }
         conn.close()
@@ -357,7 +358,7 @@ object PGUtil extends java.io.Serializable {
   }
 
   def inputQueryBulkCsv(fsConf: String, conn: Connection, query: String, path: String) = {
-    val sqlStr = s""" COPY ($query) TO STDOUT  WITH DELIMITER AS ',' CSV  ENCODING 'UTF-8' QUOTE '"' ESCAPE '"' """
+    val sqlStr = s""" COPY ($query) TO STDOUT  WITH DELIMITER AS ',' CSV NULL '' ENCODING 'UTF-8' QUOTE '"' ESCAPE '"' """
     val copyInputStream: PGCopyInputStream = new PGCopyInputStream(conn.asInstanceOf[BaseConnection], sqlStr)
 
     val conf = new Configuration()
@@ -405,7 +406,8 @@ object PGUtil extends java.io.Serializable {
       .option("header", false)
       .option("quote", "\"")
       .option("escape", "\"")
-      .option("nullValue", "\\N")
+      .option("nullValue", null)
+      .option("emptyValue", "\"\"")
       .option("ignoreLeadingWhiteSpace",false)
       .option("ignoreTrailingWhiteSpace",false)
       .option("timestampFormat", "yyyy-MM-dd HH:mm:ss")

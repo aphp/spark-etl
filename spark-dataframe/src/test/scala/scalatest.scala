@@ -20,7 +20,7 @@ import org.apache.spark.sql.internal.SQLConf.WHOLESTAGE_CODEGEN_ENABLED
 class AppTest extends FunSuite with SharedSparkContext with DataFrameSuiteBase {
 
   override implicit def reuseContextIfPossible: Boolean = true
-val dfTool = DFTool
+  val dfTool = DFTool
   test("test reorder") {
 
     val inputDF = sqlContext.sql("select 1 as c2, 2 as c1")
@@ -53,7 +53,7 @@ val dfTool = DFTool
   test("test mandatory columns") {
     val mb = new MetadataBuilder()
     val m = mb.putNull("default").build
-    val schema = StructType(StructField("c1", IntegerType) :: StructField("c2", IntegerType, true, m) :: Nil)
+    val schema = StructType(StructField("c1", IntegerType, false) :: StructField("c2", IntegerType, true, m) :: Nil)
     val mandatorySchema = StructType(StructField("c1", IntegerType) :: Nil)
 
     assert(DFTool.getMandatoryColumns(schema).toDDL == mandatorySchema.toDDL)
@@ -63,7 +63,7 @@ val dfTool = DFTool
   test("test optional columns") {
     val mb = new MetadataBuilder()
     val m = mb.putNull("default").build
-    val schema = StructType(StructField("c1", IntegerType) :: StructField("c2", IntegerType, true, m) :: Nil)
+    val schema = StructType(StructField("c1", IntegerType, false) :: StructField("c2", IntegerType, true, m) :: Nil)
     val optionalSchema = StructType(StructField("c2", IntegerType, true, m) :: Nil)
 
     assert(DFTool.getOptionalColumns(schema).toDDL == optionalSchema.toDDL)
@@ -81,6 +81,26 @@ val dfTool = DFTool
 
   }
 
-  
+  test("test rename columns") {
+    val mb = new MetadataBuilder()
+    val m = mb.putNull("default").build
+    val optionalSchema = StructType(StructField("c3", IntegerType, true, m) :: Nil)
+    val inputDF = sqlContext.sql("select '2' as c1, '1' as c2")
+    val resultDF = sqlContext.sql("select '2' as bob, '1' as jim")
+
+    val columns = Map("c1" -> "bob", "c2" -> "jim")
+
+    assertDataFrameEquals(DFTool.dfRenameColumn(inputDF, columns), resultDF)
+
+  }
+
+  test("generate case classes") {
+    val struct = StructType(StructField("bob", IntegerType) :: Nil)
+    val test = spark.sql("select 1 as bob, 2 as jim")
+    val result = spark.sql("select 1 as bob")
+    val testDF = DFTool.applySchema(test, struct)
+    val resultDF = DFTool.applySchema(result, struct)
+    assertDataFrameEquals(testDF,resultDF)
+  }
 
 }

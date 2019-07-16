@@ -23,6 +23,22 @@ object DFTool extends LazyLogging {
    *
    */
   def applySchema(df: DataFrame, schema: StructType): DataFrame = {
+    val dfReorder = applySchemaSoft(df, schema)
+    val result = castColumns(dfReorder, schema)
+
+    result
+  }
+
+  /**
+   * Apply a schema on the given DataFrame. It reorders the
+   *  columns, removes the bad columns, add the defaults values
+   *
+   *  @param df their name
+   *  @param schema the schema as a StructType
+   *  @return a validated DataFrame
+   *
+   */
+  def applySchemaSoft(df: DataFrame, schema: StructType): DataFrame = {
     val mandatoryColumns = DFTool.getMandatoryColumns(schema)
     val optionalColumns = DFTool.getOptionalColumns(schema)
 
@@ -30,9 +46,8 @@ object DFTool extends LazyLogging {
     val dfWithoutCol = removeBadColumns(df, schema)
     val dfWithCol = addMissingColumns(dfWithoutCol, optionalColumns)
     val dfReorder = reorderColumns(dfWithCol, schema)
-    val result = castColumns(dfReorder, schema)
 
-    result
+    dfReorder
   }
 
   /**
@@ -257,7 +272,5 @@ object DFTool extends LazyLogging {
     })
     retDf
   }
-
-
 
 }

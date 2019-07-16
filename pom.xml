@@ -32,7 +32,7 @@ https://dzone.com/articles/deploy-maven-central -->
       <maven.compiler.target>1.8</maven.compiler.target>
       <encoding>UTF-8</encoding>
       <spark-csv.version>0.0.1-SNAPSHOT</spark-csv.version>
-      <spark-dataframe.version>0.0.1-SNAPSHOT</spark-dataframe.version>
+      <spark-dataframe.version>0.0.4</spark-dataframe.version>
       <scala.tools.version>2.11</scala.tools.version>
       <scala.version>2.11.12</scala.version>
       <spark.version>2.4.3</spark.version>

@@ -20,8 +20,6 @@ class AppTest extends FunSuite with SharedSparkContext with DataFrameSuiteBase {
 
   override implicit def reuseContextIfPossible: Boolean = true
 
- 
-
   test("test read csv1") {
     val mb = new MetadataBuilder()
     val m = mb.putString("default", "123").build
@@ -43,7 +41,7 @@ class AppTest extends FunSuite with SharedSparkContext with DataFrameSuiteBase {
     assertDataFrameEquals(inputDF, res)
 
   }
-    test("test read csv2") {
+  test("test read csv2") {
     val mb = new MetadataBuilder()
     val m = mb.putString("default", "1515-01-01").build
     val schema = StructType(
@@ -59,11 +57,26 @@ class AppTest extends FunSuite with SharedSparkContext with DataFrameSuiteBase {
       union all 
       select cast(null as int) as c1, cast(1 as int) as c2, cast('1515-01-01' as date) as c3 
       """)
-      
+
     val res = spark.createDataFrame(resultDF.rdd, schema)
     inputDF.show
     assertDataFrameEquals(inputDF, res)
 
+  }
+
+  test("test get headers") {
+    val original = Array("c1", "c2")
+    val heads = CSVTool.getCsvHeaders(spark, "test1.csv", Some(","))
+    assert(original.mkString == heads.mkString)
+  }
+
+  test("test get simple struct") {
+    val schema = StructType(
+      StructField("c1", StringType)
+        :: StructField("c2", StringType)
+        :: Nil)
+    val res = CSVTool.getStringStructFromArray(CSVTool.getCsvHeaders(spark, "test1.csv", Some(",")))
+    assert(schema.prettyJson == res.prettyJson)
   }
 
 }

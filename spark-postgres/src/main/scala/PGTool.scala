@@ -3,11 +3,12 @@ package io.frama.parisni.spark.postgres
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.FileOutputStream
-import java.sql._
+//import java.sql._
+import java.sql.{ Connection, ResultSet, DriverManager, PreparedStatement, ResultSetMetaData }
 import java.util.Properties
 import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.Row
-import org.apache.spark.sql.functions._
+//import org.apache.spark.sql.functions.
 import org.apache.spark.sql.jdbc.{ JdbcDialect, JdbcDialects, JdbcType }
 import org.apache.spark.sql.types._
 import org.postgresql.copy.{ CopyManager, PGCopyInputStream }
@@ -23,12 +24,13 @@ import scala.reflect.io.Directory
 import org.apache.hadoop.fs.FileStatus
 import org.apache.spark.Partitioner
 import org.apache.spark.rdd.RDD
+import io.frama.parisni.spark.dataframe.DFTool
 
-class PGUtil(spark: SparkSession, url: String, tmpPath: String) {
+class PGTool(spark: SparkSession, url: String, tmpPath: String) {
   private var password: String = ""
 
-  def setPassword(pwd: String = ""): PGUtil = {
-    password = PGUtil.passwordFromConn(url, pwd)
+  def setPassword(pwd: String = ""): PGTool = {
+    password = PGTool.passwordFromConn(url, pwd)
     this
   }
 
@@ -49,75 +51,100 @@ class PGUtil(spark: SparkSession, url: String, tmpPath: String) {
     fs.delete(new Path(tmpPath), true) // delete file, true for recursive
   }
 
-  def tableCopy(tableSrc: String, tableTarg: String, isUnlogged: Boolean = true): PGUtil = {
-    PGUtil.tableCopy(url, tableSrc, tableTarg, password, isUnlogged)
+  /**
+   * Copy a table from an other table excluding data
+   *
+   *  @param tableSrc String
+   *  @param tableTarg String
+   *  @param isUnlogged Boolean
+   *
+   *
+   */
+  def tableCopy(tableSrc: String, tableTarg: String, isUnlogged: Boolean = true): PGTool = {
+    PGTool.tableCopy(url, tableSrc, tableTarg, password, isUnlogged)
     this
   }
 
-  def tableMove(tableSrc: String, tableTarg: String): PGUtil = {
-    PGUtil.tableMove(url, tableSrc, tableTarg, password)
+  def tableMove(tableSrc: String, tableTarg: String): PGTool = {
+    PGTool.tableMove(url, tableSrc, tableTarg, password)
     this
   }
 
-  def tableTruncate(table: String): PGUtil = {
-    PGUtil.tableTruncate(url, table, password)
+  def tableTruncate(table: String): PGTool = {
+    PGTool.tableTruncate(url, table, password)
     this
   }
 
-  def tableDrop(table: String): PGUtil = {
-    PGUtil.tableDrop(url, table, password)
+  def tableDrop(table: String): PGTool = {
+    PGTool.tableDrop(url, table, password)
     this
   }
 
-  def sqlExec(query: String): PGUtil = {
-    PGUtil.sqlExec(url, query, password)
+  def sqlExec(query: String): PGTool = {
+    PGTool.sqlExec(url, query, password)
     this
   }
 
+  def sqlExecWithResult(query: String): Dataset[Row] = {
+    PGTool.sqlExecWithResult(spark, url, query, password)
+  }
+
+  /**
+   * Get a spark dataframe from a postgres SQL using
+   * the built-in COPY
+   *
+   *  @return DataFrame
+   *
+   */
   def inputBulk(query: String, isMultiline: Option[Boolean] = None, numPartitions: Option[Int] = None, splitFactor: Option[Int] = None, partitionColumn: String = ""): Dataset[Row] = {
-    PGUtil.inputQueryBulkDf(spark, url, query, genPath, isMultiline.getOrElse(false), numPartitions.getOrElse(1), partitionColumn, splitFactor.getOrElse(1), password = password)
+    PGTool.inputQueryBulkDf(spark, url, query, genPath, isMultiline.getOrElse(false), numPartitions.getOrElse(1), partitionColumn, splitFactor.getOrElse(1), password = password)
   }
 
-  def outputBulk(table: String, df: Dataset[Row], numPartitions: Int = 8): PGUtil = {
-    PGUtil.outputBulkCsv(spark, url, table, df, genPath, numPartitions, password)
+  /**
+   * Write a spark dataframe into a postgres table using
+   * the built-in COPY
+   *
+   */
+  def outputBulk(table: String, df: Dataset[Row], numPartitions: Int = 8): PGTool = {
+    PGTool.outputBulkCsv(spark, url, table, df, genPath, numPartitions, password)
     this
   }
 
   def input(query: String, numPartitions: Int = 1, partitionColumn: String = ""): Dataset[Row] = {
-    PGUtil.inputQueryDf(spark, url, query, numPartitions, partitionColumn, password)
+    PGTool.inputQueryDf(spark, url, query, numPartitions, partitionColumn, password)
   }
 
-  def output(table: String, df: Dataset[Row], batchsize: Int = 50000): PGUtil = {
-    PGUtil.output(url, table, df, batchsize, password)
+  def output(table: String, df: Dataset[Row], batchsize: Int = 50000): PGTool = {
+    PGTool.output(url, table, df, batchsize, password)
     this
   }
 
-//  def outputScd1(table: String, key: String, df: Dataset[Row], numPartitions: Int = 4, excludeColumns: List[String] = Nil, includeColumns: List[String]): PGUtil = {
-//    PGUtil.outputBulkDfScd1(spark, url, table, key, df, numPartitions, excludeColumns, includeColumns, genPath, password)
-//    this
-//  }
+  //  def outputScd1(table: String, key: String, df: Dataset[Row], numPartitions: Int = 4, excludeColumns: List[String] = Nil, includeColumns: List[String]): PGUtil = {
+  //    PGUtil.outputBulkDfScd1(spark, url, table, key, df, numPartitions, excludeColumns, includeColumns, genPath, password)
+  //    this
+  //  }
 
-  def outputScd1Hash(table: String, key: List[String], df: Dataset[Row], numPartitions: Option[Int] = None, hash: Option[String] = None, insertDatetime: Option[String] = None, updateDatetime: Option[String] = None, deleteDatetime: Option[String] = None, isDelete: Boolean= false): PGUtil = {
+  def outputScd1Hash(table: String, key: List[String], df: Dataset[Row], numPartitions: Option[Int] = None, hash: Option[String] = None, insertDatetime: Option[String] = None, updateDatetime: Option[String] = None, deleteDatetime: Option[String] = None, isDelete: Boolean = false): PGTool = {
 
-    PGUtil.outputBulkDfScd1Hash(spark, url, table, key, df, numPartitions.getOrElse(4), hash.getOrElse("hash"), insertDatetime.getOrElse("insert_datetime"), updateDatetime.getOrElse("update_datetime"), deleteDatetime.getOrElse("delete_datetime"), genPath, isDelete, password)
+    PGTool.outputBulkDfScd1Hash(spark, url, table, key, df, numPartitions.getOrElse(4), hash.getOrElse("hash"), insertDatetime.getOrElse("insert_datetime"), updateDatetime.getOrElse("update_datetime"), deleteDatetime.getOrElse("delete_datetime"), genPath, isDelete, password)
     this
   }
 
-//  def outputScd2(table: String, key: String, dateBegin: String, dateEnd: String, df: Dataset[Row], numPartitions: Int = 4, excludeColumns: List[String] = Nil): PGUtil = {
-//    PGUtil.outputBulkDfScd2(spark, url, table, key, dateBegin, dateEnd, df, numPartitions, excludeColumns, genPath, password)
-//    this
-//  }
+  //  def outputScd2(table: String, key: String, dateBegin: String, dateEnd: String, df: Dataset[Row], numPartitions: Int = 4, excludeColumns: List[String] = Nil): PGUtil = {
+  //    PGUtil.outputBulkDfScd2(spark, url, table, key, dateBegin, dateEnd, df, numPartitions, excludeColumns, genPath, password)
+  //    this
+  //  }
 
-  def outputBulkCsv(table: String, columns: String, path: String, numPartitions: Int = 8, delimiter: String = ",", csvPattern: String = ".*.csv"): PGUtil = {
-    PGUtil.outputBulkCsvLow(spark, url, table, columns, path, numPartitions, delimiter, csvPattern, password)
+  def outputBulkCsv(table: String, columns: String, path: String, numPartitions: Int = 8, delimiter: String = ",", csvPattern: String = ".*.csv"): PGTool = {
+    PGTool.outputBulkCsvLow(spark, url, table, columns, path, numPartitions, delimiter, csvPattern, password)
     this
   }
 
 }
 
-object PGUtil extends java.io.Serializable {
+object PGTool extends java.io.Serializable {
 
-  def apply(spark: SparkSession, url: String, tmpPath: String): PGUtil = new PGUtil(spark, url, tmpPath + "/" + randomUUID.toString).setPassword("")
+  def apply(spark: SparkSession, url: String, tmpPath: String): PGTool = new PGTool(spark, url, tmpPath + "/" + randomUUID.toString).setPassword("")
 
   private def dbPassword(hostname: String, port: String, database: String, username: String): String = {
     // Usage: val thatPassWord = dbPassword(hostname,port,database,username)
@@ -212,6 +239,62 @@ object PGUtil extends java.io.Serializable {
     conn.close()
   }
 
+  def sqlExecWithResult(spark: SparkSession, url: String, query: String, password: String = ""): Dataset[Row] = {
+    val conn = connOpen(url, password)
+    try {
+
+      val st = conn.createStatement()
+      val rs = st.executeQuery(query)
+
+      val columnsName = (1 to rs.getMetaData.getColumnCount.toInt).map(
+        idx => rs.getMetaData.getColumnLabel(idx)).toList
+
+      import scala.collection.mutable.ListBuffer
+      var c = new ListBuffer[Row]()
+      while (rs.next()) {
+        val b = (1 to rs.getMetaData.getColumnCount.toInt).map {
+          idx =>
+            rs.getMetaData.getColumnClassName(idx).toString match {
+              case "java.lang.String"     => rs.getString(idx)
+              case "java.lang.Boolean"    => rs.getBoolean(idx)
+              case "java.lang.Integer"    => rs.getInt(idx)
+              case "java.math.BigDecimal" => rs.getDouble(idx)
+              case "java.sql.Date"        => rs.getDate(idx)
+              case "java.sql.Timestamp"   => rs.getTimestamp(idx)
+              case _                      => rs.getString(idx)
+            }
+        }
+        //        .toList match{
+        //          case List(a) => (a)
+        //        }
+        c += Row.fromSeq(b)
+      }
+      import spark.implicits._
+      val b = spark.sparkContext.makeRDD(c)
+      val schema = jdbcMetadataToStructType(rs.getMetaData)
+
+      spark.createDataFrame(b, schema)
+      //b.toDF(columnsName.toArray: _*)
+    } finally {
+      conn.close()
+    }
+  }
+
+  def jdbcMetadataToStructType(meta: ResultSetMetaData): StructType = {
+    StructType((1 to meta.getColumnCount.toInt).map {
+      idx =>
+        meta.getColumnClassName(idx).toString match {
+          case "java.lang.String"     => StructField(meta.getColumnLabel(idx), StringType)
+          case "java.lang.Boolean"    => StructField(meta.getColumnLabel(idx), BooleanType)
+          case "java.lang.Integer"    => StructField(meta.getColumnLabel(idx), IntegerType)
+          case "java.math.BigDecimal" => StructField(meta.getColumnLabel(idx), DoubleType)
+          case "java.sql.Date"        => StructField(meta.getColumnLabel(idx), DateType)
+          case "java.sql.Timestamp"   => StructField(meta.getColumnLabel(idx), TimestampType)
+          case _                      => StructField(meta.getColumnLabel(idx), StringType)
+        }
+    })
+  }
+
   def tableCopy(url: String, tableSrc: String, tableTarg: String, password: String = "", isUnlogged: Boolean = true): Unit = {
     val conn = connOpen(url, password)
     val unlogged = if (isUnlogged) { "UNLOGGED" } else { "" }
@@ -293,8 +376,8 @@ object PGUtil extends java.io.Serializable {
       .option("emptyValue", "\"\"")
       .option("quote", "\"")
       .option("escape", "\"")
-      .option("ignoreLeadingWhiteSpace",false)
-      .option("ignoreTrailingWhiteSpace",false)
+      .option("ignoreLeadingWhiteSpace", false)
+      .option("ignoreTrailingWhiteSpace", false)
       .mode(org.apache.spark.sql.SaveMode.Overwrite)
       .save(path)
     outputBulkCsvLow(spark, url, table, columns, path, numPartitions, ",", ".*.csv", password)
@@ -408,8 +491,8 @@ object PGUtil extends java.io.Serializable {
       .option("escape", "\"")
       .option("nullValue", null)
       .option("emptyValue", "\"\"")
-      .option("ignoreLeadingWhiteSpace",false)
-      .option("ignoreTrailingWhiteSpace",false)
+      .option("ignoreLeadingWhiteSpace", false)
+      .option("ignoreTrailingWhiteSpace", false)
       .option("timestampFormat", "yyyy-MM-dd HH:mm:ss")
       .option("dateFormat", "yyyy-MM-dd")
       .option("mode", "FAILFAST")
@@ -509,7 +592,7 @@ object PGUtil extends java.io.Serializable {
       // we tag the row as deleted
       sqlExec(url = url, query = f"update $table df set $deleteDatetime = now() from $tableDelTmp f where $joinColumns", password = password)
     }
-	// insert at the end to lighter the update and delete part
+    // insert at the end to lighter the update and delete part
     outputBulkCsv(spark, url, table, insDf, path + "/ins", numPartitions, password)
     tableDrop(url, tableUpdTmp, password)
     tableDrop(url, tableDelTmp, password)
@@ -517,7 +600,7 @@ object PGUtil extends java.io.Serializable {
 
   def scd1Update(url: String, table: String, tableTarg: String, key: List[String], rddSchema: StructType, excludeColumns: List[String] = Nil, includeColumns: List[String] = Nil, isCompare: Boolean = true, password: String = ""): Unit = {
     val conn = connOpen(url, password)
-    val joinColumns =     key.map(x => s"targ.${x} = tmp.${x}").mkString(" AND ")
+    val joinColumns = key.map(x => s"targ.${x} = tmp.${x}").mkString(" AND ")
     val updSet = rddSchema.fields.filter(x => !key.contains(x.name)).filter(x => !excludeColumns.contains(x.name)).map(x => s"${x.name} = tmp.${x.name}").mkString(",")
     var updIsDistinct = rddSchema.fields.filter(x => !key.contains(x.name)).filter(x => !excludeColumns.contains(x.name)).map(x => s"tmp.${x.name} IS DISTINCT FROM tmp.${x.name}").mkString(" OR ")
     if (includeColumns.size != 0) { //Either exclude or include
@@ -540,70 +623,70 @@ object PGUtil extends java.io.Serializable {
     conn.close()
   }
 
-//  def scd1Insert(url: String, table: String, tableTarg: String, key: String, rddSchema: StructType, excludeColumns: List[String] = Nil, includeColumns: List[String] = Nil, password: String = ""): Unit = {
-//    val conn = connOpen(url, password)
-//
-//    val insSet = rddSchema.fields.filter(x => !excludeColumns.contains(x.name)).map(x => s"${x.name}").mkString(",")
-//    val insSetTarg = rddSchema.fields.filter(x => !excludeColumns.contains(x.name)).map(x => s"tmp.${x.name}").mkString(",")
-//
-//    val ins = s"""
-//    INSERT INTO $table ($insSet)
-//    SELECT $insSetTarg
-//    FROM $tableTarg as tmp
-//    LEFT JOIN $table as targ USING ($key)
-//    WHERE TRUE
-//    AND targ.$key IS NULL
-//    """
-//    conn.prepareStatement(ins).executeUpdate()
-//    conn.close()
-//  }
+  //  def scd1Insert(url: String, table: String, tableTarg: String, key: String, rddSchema: StructType, excludeColumns: List[String] = Nil, includeColumns: List[String] = Nil, password: String = ""): Unit = {
+  //    val conn = connOpen(url, password)
+  //
+  //    val insSet = rddSchema.fields.filter(x => !excludeColumns.contains(x.name)).map(x => s"${x.name}").mkString(",")
+  //    val insSetTarg = rddSchema.fields.filter(x => !excludeColumns.contains(x.name)).map(x => s"tmp.${x.name}").mkString(",")
+  //
+  //    val ins = s"""
+  //    INSERT INTO $table ($insSet)
+  //    SELECT $insSetTarg
+  //    FROM $tableTarg as tmp
+  //    LEFT JOIN $table as targ USING ($key)
+  //    WHERE TRUE
+  //    AND targ.$key IS NULL
+  //    """
+  //    conn.prepareStatement(ins).executeUpdate()
+  //    conn.close()
+  //  }
 
-//  def outputBulkDfScd2(spark: SparkSession, url: String, table: String, key: String, dateBegin: String, dateEnd: String, df: Dataset[Row], numPartitions: Int = 8, excludeColumns: List[String] = Nil, path: String, password: String = ""): Unit = {
-//    val tableTmp = "table_" + randomUUID.toString.replaceAll(".*-", "")
-//    tableDrop(url, tableTmp, password)
-//    tableCopy(url, table, tableTmp, password)
-//    outputBulkCsv(spark, url, tableTmp, df, path, numPartitions, password)
-//    scd2(url, table, tableTmp, key, dateBegin, dateEnd, df.schema, excludeColumns, password)
-//    tableDrop(url, tableTmp, password)
-//  }
+  //  def outputBulkDfScd2(spark: SparkSession, url: String, table: String, key: String, dateBegin: String, dateEnd: String, df: Dataset[Row], numPartitions: Int = 8, excludeColumns: List[String] = Nil, path: String, password: String = ""): Unit = {
+  //    val tableTmp = "table_" + randomUUID.toString.replaceAll(".*-", "")
+  //    tableDrop(url, tableTmp, password)
+  //    tableCopy(url, table, tableTmp, password)
+  //    outputBulkCsv(spark, url, tableTmp, df, path, numPartitions, password)
+  //    scd2(url, table, tableTmp, key, dateBegin, dateEnd, df.schema, excludeColumns, password)
+  //    tableDrop(url, tableTmp, password)
+  //  }
 
-//  def scd2(url: String, table: String, tableTmp: String, key: String, dateBegin: String, dateEnd: String, rddSchema: StructType, excludeColumns: List[String] = Nil, password: String = ""): Unit = {
-//    val conn = connOpen(url, password)
-//    val insCols = rddSchema.fields.filter(x => x.name != dateBegin).filter(x => !excludeColumns.contains(x.name)).map(x => s"${x.name}").mkString(",") + "," + dateBegin
-//    val insColsTmp = rddSchema.fields.filter(x => x.name != dateBegin).filter(x => !excludeColumns.contains(x.name)).map(x => s"tmp.${x.name}").mkString(",") + ", now()"
-//
-//    // update  where key AND  is distinct from
-//    // insert  where key AND  is distinct from
-//    val oldRows = s"""
-//    WITH
-//    upd AS (
-//    UPDATE $table c
-//    SET $dateEnd = now()
-//    FROM $tableTmp tmp
-//    WHERE TRUE
-//    AND tmp.$key  = c.$key 
-//    AND c.$dateEnd IS null
-//    AND tmp.concept_code IS DISTINCT FROM c.concept_code
-//    RETURNING c.$key
-//    )
-//    INSERT INTO $table ($insCols)
-//    SELECT $insColsTmp 
-//    FROM $tableTmp tmp
-//    JOIN upd USING ($key)
-//    """
-//    conn.prepareStatement(oldRows).executeUpdate()
-//
-//    // insert  where key AND left join null
-//    val newRows = s"""
-//    INSERT INTO $table ($insCols)
-//    SELECT $insColsTmp 
-//    FROM $tableTmp tmp
-//    LEFT JOIN $table c USING ($key)
-//    WHERE c.$key IS null;
-//    """
-//    conn.prepareStatement(newRows).executeUpdate()
-//    conn.close()
-//  }
+  //  def scd2(url: String, table: String, tableTmp: String, key: String, dateBegin: String, dateEnd: String, rddSchema: StructType, excludeColumns: List[String] = Nil, password: String = ""): Unit = {
+  //    val conn = connOpen(url, password)
+  //    val insCols = rddSchema.fields.filter(x => x.name != dateBegin).filter(x => !excludeColumns.contains(x.name)).map(x => s"${x.name}").mkString(",") + "," + dateBegin
+  //    val insColsTmp = rddSchema.fields.filter(x => x.name != dateBegin).filter(x => !excludeColumns.contains(x.name)).map(x => s"tmp.${x.name}").mkString(",") + ", now()"
+  //
+  //    // update  where key AND  is distinct from
+  //    // insert  where key AND  is distinct from
+  //    val oldRows = s"""
+  //    WITH
+  //    upd AS (
+  //    UPDATE $table c
+  //    SET $dateEnd = now()
+  //    FROM $tableTmp tmp
+  //    WHERE TRUE
+  //    AND tmp.$key  = c.$key
+  //    AND c.$dateEnd IS null
+  //    AND tmp.concept_code IS DISTINCT FROM c.concept_code
+  //    RETURNING c.$key
+  //    )
+  //    INSERT INTO $table ($insCols)
+  //    SELECT $insColsTmp
+  //    FROM $tableTmp tmp
+  //    JOIN upd USING ($key)
+  //    """
+  //    conn.prepareStatement(oldRows).executeUpdate()
+  //
+  //    // insert  where key AND left join null
+  //    val newRows = s"""
+  //    INSERT INTO $table ($insCols)
+  //    SELECT $insColsTmp
+  //    FROM $tableTmp tmp
+  //    LEFT JOIN $table c USING ($key)
+  //    WHERE c.$key IS null;
+  //    """
+  //    conn.prepareStatement(newRows).executeUpdate()
+  //    conn.close()
+  //  }
 }
 
 class ExactPartitioner[V](partitions: Int) extends Partitioner {

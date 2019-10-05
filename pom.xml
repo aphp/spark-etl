@@ -25,7 +25,7 @@ https://dzone.com/articles/deploy-maven-central -->
       <module>spark-dataframe</module>
       <module>spark-csv</module>
       <module>spark-postgres</module>
-  <!--    <module>spark-hive</module> -->
+     <module>spark-hive</module>
     </modules>
     <properties>
       <maven.compiler.source>1.8</maven.compiler.source>

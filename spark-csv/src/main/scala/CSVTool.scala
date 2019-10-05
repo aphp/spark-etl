@@ -60,6 +60,7 @@ object CSVTool extends LazyLogging {
       .mode(mode)
       .save(path)
   }
+  
   def read(spark: SparkSession, path: String, delimiter: Option[String] = None, escape: Option[String], multiline: Option[Boolean] = None, dateFormat: Option[String], timestampFormat: Option[String] = None): Dataset[Row] = {
     val headers = getCsvHeaders(spark, path, delimiter)
     val schemaSimple = getStringStructFromArray(headers)

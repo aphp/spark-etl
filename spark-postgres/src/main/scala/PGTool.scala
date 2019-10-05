@@ -1,30 +1,20 @@
 package io.frama.parisni.spark.postgres
-
-import java.io.ByteArrayInputStream
-import java.io.File
-import java.io.FileOutputStream
 //import java.sql._
-import java.sql.{ Connection, ResultSet, DriverManager, PreparedStatement, ResultSetMetaData }
+import java.sql.{Connection, DriverManager, PreparedStatement, ResultSetMetaData}
 import java.util.Properties
-import org.apache.spark.sql.Dataset
-import org.apache.spark.sql.Row
+
+import org.apache.spark.sql.{Dataset, Row}
 //import org.apache.spark.sql.functions.
-import org.apache.spark.sql.jdbc.{ JdbcDialect, JdbcDialects, JdbcType }
-import org.apache.spark.sql.types._
-import org.postgresql.copy.{ CopyManager, PGCopyInputStream }
-import org.postgresql.core.BaseConnection;
-import scala.util.control.Breaks._
-import org.apache.spark.sql.SparkSession
-import java.io.{ BufferedInputStream, BufferedOutputStream, FileInputStream, FileOutputStream }
-import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.FileSystem
-import org.apache.hadoop.fs.Path
 import java.util.UUID.randomUUID
-import scala.reflect.io.Directory
-import org.apache.hadoop.fs.FileStatus
+
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.Partitioner
 import org.apache.spark.rdd.RDD
-import io.frama.parisni.spark.dataframe.DFTool
+import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.types._
+import org.postgresql.copy.{CopyManager, PGCopyInputStream}
+import org.postgresql.core.BaseConnection
 
 class PGTool(spark: SparkSession, url: String, tmpPath: String) {
   private var password: String = ""
@@ -269,7 +259,6 @@ object PGTool extends java.io.Serializable {
         //        }
         c += Row.fromSeq(b)
       }
-      import spark.implicits._
       val b = spark.sparkContext.makeRDD(c)
       val schema = jdbcMetadataToStructType(rs.getMetaData)
 
@@ -585,13 +574,13 @@ object PGTool extends java.io.Serializable {
     outputBulkCsv(spark, url, tableUpdTmp, updDf, path + "/upd", numPartitions, password)
     outputBulkCsv(spark, url, tableDelTmp, delDf, path + "/del", numPartitions, password)
     scd1Update(url, table, tableUpdTmp, key, df.schema, excludeColumns = Nil, includeColumns = Nil, isCompare = false, password)
-    if (isDelete) {
-      // the rows are deleted
-      sqlExec(url = url, query = f"delete from $table df using $tableDelTmp f where $joinColumns", password = password)
-    } else {
-      // we tag the row as deleted
-      sqlExec(url = url, query = f"update $table df set $deleteDatetime = now() from $tableDelTmp f where $joinColumns", password = password)
-    }
+    //if (isDelete) {
+    //  // the rows are deleted
+    //  sqlExec(url = url, query = f"delete from $table df using $tableDelTmp f where $joinColumns", password = password)
+    //} else {
+    //  // we tag the row as deleted
+    //  sqlExec(url = url, query = f"update $table df set $deleteDatetime = now() from $tableDelTmp f where $joinColumns", password = password)
+    //}
     // insert at the end to lighter the update and delete part
     outputBulkCsv(spark, url, table, insDf, path + "/ins", numPartitions, password)
     tableDrop(url, tableUpdTmp, password)

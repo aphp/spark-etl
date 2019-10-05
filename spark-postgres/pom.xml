@@ -48,6 +48,11 @@
         <version>${scala.version}</version>
       </dependency>
       <dependency>
+        <groupId>com.typesafe.scala-logging</groupId>
+        <artifactId>scala-logging_2.11</artifactId>
+        <version>${scala-logging.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.apache.spark</groupId>
         <artifactId>spark-core_${scala.tools.version}</artifactId>
         <version>${spark.version}</version>

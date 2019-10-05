@@ -100,7 +100,16 @@ class AppTest extends FunSuite with SharedSparkContext with DataFrameSuiteBase {
     val result = spark.sql("select 1 as bob")
     val testDF = DFTool.applySchema(test, struct)
     val resultDF = DFTool.applySchema(result, struct)
-    assertDataFrameEquals(testDF,resultDF)
+    assertDataFrameEquals(testDF, resultDF)
+  }
+
+  test("test pivot") {
+    val df = spark.sql("""
+       select 1 group, 'bob' key, 'so' value 
+       union all
+    		 select 2 group, 'jim' key, 'tore' value 
+       """)
+    DFTool.simplePivot(df, col("group"), col("key"), "array(value)", "bob"::"jim"::Nil).show
   }
 
 }

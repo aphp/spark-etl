@@ -5,10 +5,13 @@ import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.functions.{ hash, col, lit, row_number }
+import org.apache.spark.sql.functions.{ hash, col, lit, row_number, map_from_entries, collect_list, struct }
 import org.apache.spark.sql.expressions.Window
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.types.IntegerType
+import org.apache.spark.sql.Column
+import org.apache.spark.sql.functions.expr
+
 
 /** Factory for [[io.frama.parisni.spark.dataframe.DFTool]] instances. */
 object DFTool extends LazyLogging {
@@ -271,6 +274,26 @@ object DFTool extends LazyLogging {
       f => { retDf = retDf.withColumnRenamed(f._1, f._2) }
     })
     retDf
+  }
+  /*
+   * from pyspark.sql.functions import col,collect_list,regexp_replace,map_from_entries,struct,count
+
+def pivot(df, group_by, key, aggFunction, levels=[]):
+    if not levels:
+        levels = [row[key] for row in df.filter(col(key).isNotNull()).groupBy(col(key)).agg(count(key)).select(key).collect()]
+    return df.filter(col(key).isin(*levels) == True).groupBy(group_by)
+    .agg(map_from_entries(collect_list(struct(key, aggFunction))).alias("group_map")).select([group_by] + ["group_map." + l for l in levels])
+   */
+  def simplePivot(df: DataFrame, groupBy: Column, key: Column, aggCol: String, _levels: List[String] = Nil): DataFrame = {
+    val levels =
+      if (_levels.isEmpty) df.filter(key.isNotNull).select(key).distinct().collect().map(row => row.getString(0)).toList
+      else _levels
+
+    df
+      .filter(key.isInCollection(levels))
+      .groupBy(groupBy)
+      .agg(map_from_entries(collect_list(struct(key, expr(aggCol)))).alias("group_map"))
+      .select(groupBy.toString, levels.map(f => "group_map." + f): _*)
   }
 
 }

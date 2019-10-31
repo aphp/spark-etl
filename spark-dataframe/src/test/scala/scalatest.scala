@@ -1,25 +1,15 @@
 
 package io.frama.parisni.spark.dataframe
 
-import org.scalatest.FunSpec
-import org.scalatest.BeforeAndAfterAll
-import scala.collection.mutable.Stack
 import com.holdenkarau.spark.testing._
-import com.holdenkarau.spark.testing.DataFrameSuiteBase._
-import org.scalatest.FunSuite
-import org.apache.spark.sql.SparkSession
-import org.apache.spark.SparkContext
-import org.apache.spark._
-import org.apache.spark.sql.types._
-import org.apache.spark.sql.SaveMode._
 import org.apache.spark.sql.functions._
-import java.sql.Timestamp
-import scala.transient
-import org.apache.spark.sql.internal.SQLConf.WHOLESTAGE_CODEGEN_ENABLED
+import org.apache.spark.sql.types._
+import org.scalatest.FunSuite
 
 class AppTest extends FunSuite with SharedSparkContext with DataFrameSuiteBase {
 
   override implicit def reuseContextIfPossible: Boolean = true
+
   val dfTool = DFTool
   test("test reorder") {
 
@@ -104,12 +94,22 @@ class AppTest extends FunSuite with SharedSparkContext with DataFrameSuiteBase {
   }
 
   test("test pivot") {
-    val df = spark.sql("""
+    val df = spark.sql(
+      """
        select 1 group, 'bob' key, 'so' value 
        union all
     		 select 2 group, 'jim' key, 'tore' value 
        """)
-    DFTool.simplePivot(df, col("group"), col("key"), "array(value)", "bob"::"jim"::Nil).show
+    DFTool.simplePivot(df, col("group"), col("key"), "array(value)", "bob" :: "jim" :: Nil).show
   }
 
+  test("test special character columns") {
+    val struct = StructType(StructField("bob.jim", IntegerType) :: Nil)
+    val test = spark.sql("select 1 as bob, 2 as jim")
+      .withColumn("bob.jim", col("bob"))
+    val result = spark.sql("select 1 as `bob.jim`")
+    val testDF = DFTool.applySchemaSoft(test, struct)
+    val resultDF = DFTool.applySchemaSoft(result, struct)
+    assertDataFrameEquals(testDF, resultDF)
+  }
 }

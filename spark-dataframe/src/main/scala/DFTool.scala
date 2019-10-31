@@ -1,16 +1,10 @@
 package io.frama.parisni.spark.dataframe
 
-import org.apache.spark.sql.Dataset
-import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.types._
-import org.apache.spark.sql.functions.{ hash, col, lit, row_number, map_from_entries, collect_list, struct }
-import org.apache.spark.sql.expressions.Window
 import com.typesafe.scalalogging.LazyLogging
-import org.apache.spark.sql.types.IntegerType
-import org.apache.spark.sql.Column
-import org.apache.spark.sql.functions.expr
+import org.apache.spark.sql.{Column, DataFrame, Row, SparkSession}
+import org.apache.spark.sql.expressions.Window
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types._
 
 
 /** Factory for [[io.frama.parisni.spark.dataframe.DFTool]] instances. */
@@ -18,11 +12,11 @@ object DFTool extends LazyLogging {
 
   /**
    * Apply a schema on the given DataFrame. It reorders the
-   *  columns, cast them, validates the non-nullable columns.
+   * columns, cast them, validates the non-nullable columns.
    *
-   *  @param df their name
-   *  @param schema the schema as a StructType
-   *  @return a validated DataFrame
+   * @param df     their name
+   * @param schema the schema as a StructType
+   * @return a validated DataFrame
    *
    */
   def applySchema(df: DataFrame, schema: StructType): DataFrame = {
@@ -34,11 +28,11 @@ object DFTool extends LazyLogging {
 
   /**
    * Apply a schema on the given DataFrame. It reorders the
-   *  columns, removes the bad columns, add the defaults values
+   * columns, removes the bad columns, add the defaults values
    *
-   *  @param df their name
-   *  @param schema the schema as a StructType
-   *  @return a validated DataFrame
+   * @param df     their name
+   * @param schema the schema as a StructType
+   * @return a validated DataFrame
    *
    */
   def applySchemaSoft(df: DataFrame, schema: StructType): DataFrame = {
@@ -55,24 +49,25 @@ object DFTool extends LazyLogging {
 
   /**
    * Apply a schema on the given DataFrame. It reorders the
-   *  columns.
+   * columns.
    *
-   *  @param df their name
-   *  @param schema the schema as a StructType
-   *  @return a validated DataFrame
+   * @param df     their name
+   * @param schema the schema as a StructType
+   * @return a validated DataFrame
    *
    */
   def reorderColumns(df: DataFrame, schema: StructType): DataFrame = {
-    val reorderedColumnNames = schema.fieldNames
+    val reorderedColumnNames = schema.fieldNames.map(x => "`" + x + "`")
     df.select(reorderedColumnNames.head, reorderedColumnNames.tail: _*)
   }
+
 
   /**
    * Apply a schema on the given DataFrame. It casts the columns.
    *
-   *  @param df their name
-   *  @param schema the schema as a StructType
-   *  @return a validated DataFrame
+   * @param df     their name
+   * @param schema the schema as a StructType
+   * @return a validated DataFrame
    *
    */
   def castColumns(df: DataFrame, schema: StructType): DataFrame = {
@@ -85,11 +80,11 @@ object DFTool extends LazyLogging {
 
   /**
    * Apply a schema on the given DataFrame. It validates
-   *  the non-null columns.
+   * the non-null columns.
    *
-   *  @param df their name
-   *  @param schema the schema as a StructType
-   *  @return a validated DataFrame
+   * @param df     their name
+   * @param schema the schema as a StructType
+   * @return a validated DataFrame
    *
    */
   def validateNull(df: DataFrame, schema: StructType): DataFrame = {
@@ -99,11 +94,11 @@ object DFTool extends LazyLogging {
 
   /**
    * Validate schema on the given DataFrame. It verifies if
-   *  the columns exists independently on the schema.
+   * the columns exists independently on the schema.
    *
-   *  @param df their name
-   *  @param schema the schema as a StructType
-   *  @return a validated DataFrame
+   * @param df            their name
+   * @param columnsNeeded the schema as a StructType
+   * @return a validated DataFrame
    *
    */
   def existColumns(df: DataFrame, columnsNeeded: StructType) = {
@@ -121,8 +116,8 @@ object DFTool extends LazyLogging {
   /**
    * Look for mandatory columns within the schema.
    *
-   *  @param schema : a StructType
-   *  @return a StructType
+   * @param schema : a StructType
+   * @return a StructType
    *
    */
   def getMandatoryColumns(schema: StructType): StructType = {
@@ -132,8 +127,8 @@ object DFTool extends LazyLogging {
   /**
    * Look for optionnal columns within the schema.
    *
-   *  @param schema : a StructType
-   *  @return a StructType
+   * @param schema : a StructType
+   * @return a StructType
    *
    */
   def getOptionalColumns(schema: StructType): StructType = {
@@ -142,11 +137,11 @@ object DFTool extends LazyLogging {
 
   /**
    * Add missing columns and apply the default value
-   *  specified as a Metadata passed with the StrucType
+   * specified as a Metadata passed with the StrucType
    *
-   *  @param df : a DataFrame
-   *  @param missingSchema : StructType
-   *  @return a DataFrame
+   * @param df            : a DataFrame
+   * @param missingSchema : StructType
+   * @return a DataFrame
    *
    */
   def addMissingColumns(df: DataFrame, missingSchema: StructType): DataFrame = {
@@ -155,17 +150,18 @@ object DFTool extends LazyLogging {
       f => {
         logger.debug(f"Added ${f.name} column")
         if (!df.columns.contains(f.name))
-          result = result.withColumn(f.name, lit(f.metadata.getString("default")).cast(f.dataType))
+          result = result.withColumn("`" + f.name + "`", lit(f.metadata.getString("default")).cast(f.dataType))
 
       })
     result
   }
+
   /**
-   *  Remove unspecified columns
+   * Remove unspecified columns
    *
-   *  @param df : a DataFrame
-   *  @param schema : StructType
-   *  @return a DataFrame
+   * @param df     : a DataFrame
+   * @param schema : StructType
+   * @return a DataFrame
    *
    */
   def removeBadColumns(df: DataFrame, schema: StructType): DataFrame = {
@@ -175,7 +171,7 @@ object DFTool extends LazyLogging {
       f => {
         logger.debug(f"Added ${f.name} column")
         if (!schema.fieldNames.contains(f.name))
-          result = result.drop(f.name)
+          result = result.drop("`" + f.name + "`")
       })
     result
   }
@@ -183,9 +179,9 @@ object DFTool extends LazyLogging {
   /**
    * Create an empty DataFrame accordingly to a schema.
    *
-   *  @param spark: a SparkSession
-   *  @param schema : a schema as a StructType
-   *  @return a DataFrame
+   * @param spark  : a SparkSession
+   * @param schema : a schema as a StructType
+   * @return a DataFrame
    *
    */
   def createEmptyDataFrame(spark: SparkSession, schema: StructType): DataFrame = {
@@ -194,11 +190,11 @@ object DFTool extends LazyLogging {
 
   /**
    * Remove rows from a DataFrame, given a specified
-   *  colum
+   * colum
    *
-   *  @param df: a DataFrame
-   *  @param column: a String
-   *  @return a DataFrameType
+   * @param df     : a DataFrame
+   * @param column : a String
+   * @return a DataFrameType
    *
    */
   def removeNullRows(df: DataFrame, column: String): DataFrame = {
@@ -212,9 +208,9 @@ object DFTool extends LazyLogging {
   /**
    * Remove duplicates and show a report
    *
-   *  @param df: a DataFrame
-   *  @param colum: the columns not to be duplicated
-   *  @return a DataFrameType
+   * @param df     : a DataFrame
+   * @param column : the columns not to be duplicated
+   * @return a DataFrameType
    *
    */
   def removeDuplicate(df: DataFrame, column: String*): DataFrame = {
@@ -231,23 +227,23 @@ object DFTool extends LazyLogging {
   /**
    * Adds a hash column based on several other columns
    *
-   *  @param df DataFrame
-   *  @param columnsToExclude List[String] the columns not to be hashed
-   *  @return DataFrame
+   * @param df               DataFrame
+   * @param columnsToExclude List[String] the columns not to be hashed
+   * @return DataFrame
    *
    */
   def dfAddHash(df: DataFrame, columnsToExclude: List[String] = Nil): DataFrame = {
 
-    df.withColumn("hash", hash(df.columns.filter(x => !columnsToExclude.contains(x)).map(x => col(x)): _*))
+    df.withColumn("hash", hash(df.columns.filter(x => !columnsToExclude.contains(x)).map(x => col("`" + x + "`")): _*))
 
   }
 
   /**
    * Adds a hash column based on several other columns
    *
-   *  @param df DataFrame
-   *  @param columnsToExclude List[String] the columns not to be hashed
-   *  @return DataFrame
+   * @param df         DataFrame
+   * @param columnName List[String] the columns not to be hashed
+   * @return DataFrame
    *
    */
   def dfAddSequence(df: DataFrame, columnName: String, indexBegin: Long = 0): DataFrame = {
@@ -263,18 +259,21 @@ object DFTool extends LazyLogging {
   /**
    * Rename multiple columns
    *
-   *  @param df DataFrame
-   *  @param columns Map[String -> String]
-   *  @return DataFrame
+   * @param df      DataFrame
+   * @param columns Map[String -> String]
+   * @return DataFrame
    *
    */
   def dfRenameColumn(df: DataFrame, columns: Map[String, String]): DataFrame = {
     var retDf = df
     columns.foreach({
-      f => { retDf = retDf.withColumnRenamed(f._1, f._2) }
+      f => {
+        retDf = retDf.withColumnRenamed(f._1, f._2)
+      }
     })
     retDf
   }
+
   /*
    * from pyspark.sql.functions import col,collect_list,regexp_replace,map_from_entries,struct,count
 

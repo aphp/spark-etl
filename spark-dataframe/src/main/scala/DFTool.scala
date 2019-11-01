@@ -150,7 +150,7 @@ object DFTool extends LazyLogging {
       f => {
         logger.debug(f"Added ${f.name} column")
         if (!df.columns.contains(f.name))
-          result = result.withColumn("`" + f.name + "`", lit(f.metadata.getString("default")).cast(f.dataType))
+          result = result.withColumn(f.name, lit(f.metadata.getString("default")).cast(f.dataType))
 
       })
     result

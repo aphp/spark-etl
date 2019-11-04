@@ -3,8 +3,8 @@ package io.frama.parisni.spark.postgres
 import java.sql.{Connection, DriverManager, PreparedStatement, ResultSetMetaData}
 import java.util.Properties
 
+import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.{Dataset, Row}
-//import org.apache.spark.sql.functions.
 import java.util.UUID.randomUUID
 
 import org.apache.hadoop.conf.Configuration
@@ -132,7 +132,7 @@ class PGTool(spark: SparkSession, url: String, tmpPath: String) {
 
 }
 
-object PGTool extends java.io.Serializable {
+object PGTool extends java.io.Serializable with LazyLogging {
 
   def apply(spark: SparkSession, url: String, tmpPath: String): PGTool = new PGTool(spark, url, tmpPath + "/" + randomUUID.toString).setPassword("")
 
@@ -247,6 +247,7 @@ object PGTool extends java.io.Serializable {
             rs.getMetaData.getColumnClassName(idx).toString match {
               case "java.lang.String"     => rs.getString(idx)
               case "java.lang.Boolean"    => rs.getBoolean(idx)
+              case "java.lang.Long"       => rs.getLong(idx)
               case "java.lang.Integer"    => rs.getInt(idx)
               case "java.math.BigDecimal" => rs.getDouble(idx)
               case "java.sql.Date"        => rs.getDate(idx)
@@ -254,9 +255,6 @@ object PGTool extends java.io.Serializable {
               case _                      => rs.getString(idx)
             }
         }
-        //        .toList match{
-        //          case List(a) => (a)
-        //        }
         c += Row.fromSeq(b)
       }
       val b = spark.sparkContext.makeRDD(c)
@@ -276,6 +274,7 @@ object PGTool extends java.io.Serializable {
           case "java.lang.String"     => StructField(meta.getColumnLabel(idx), StringType)
           case "java.lang.Boolean"    => StructField(meta.getColumnLabel(idx), BooleanType)
           case "java.lang.Integer"    => StructField(meta.getColumnLabel(idx), IntegerType)
+          case "java.lang.Long"       => StructField(meta.getColumnLabel(idx), LongType)
           case "java.math.BigDecimal" => StructField(meta.getColumnLabel(idx), DoubleType)
           case "java.sql.Date"        => StructField(meta.getColumnLabel(idx), DateType)
           case "java.sql.Timestamp"   => StructField(meta.getColumnLabel(idx), TimestampType)
@@ -551,29 +550,40 @@ object PGTool extends java.io.Serializable {
     //     create rows to update
     // insert new rows directly
     // insert rows to update in a temp table, and update
-    df.cache
-    val selectColumns = key.map(x => s"f.${x}").mkString(", ")
+    // df.cache
+    // val selectColumns = key.map(x => s"f.${x}").mkString(", ")
     val selectColumnsBasic = key.mkString(", ")
     val joinColumns = key.map(x => s"df.${x} = f.${x}").mkString(" AND ")
 
     val rand = randomUUID.toString.replaceAll(".*-", "")
     val tableUpdTmp = "table_upd_" + rand
-    val tableDelTmp = "table_del_" + rand
+    //val tableDelTmp = "table_del_" + rand
     tableCopy(url, table, tableUpdTmp, password)
-    sqlExec(url = url, query = getCreateStmtFromSchema(getSchemaQuery(spark, url, query = f"select $selectColumnsBasic from $table", password), tableDelTmp, excludeColumns = Nil), password = password)
-    val query = f"select $selectColumnsBasic, $hash from $table"
+    //sqlExec(url = url, query = getCreateStmtFromSchema(getSchemaQuery(spark, url, query = f"select $selectColumnsBasic from $table", password), tableDelTmp, excludeColumns = Nil), password = password)
     df.registerTempTable(f"df_$rand")
-    val fetch = inputQueryBulkDf(spark, url, query, path, isMultiline = false, numPartitions = 1, password = password).cache()
+
+    // the hash/pk of the table
+    val query = f"select $selectColumnsBasic, $hash from $table"
+    val fetch = inputQueryBulkDf(spark, url, query, path, isMultiline = true, numPartitions = 1, password = password)
     fetch.registerTempTable(f"fetch_$rand")
+
     val insertDate = if (!isDelete) { f", current_timestamp as $insertDatetime" } else { "" }
-    val insDf = spark.sql(f"select df.* $insertDate from df_$rand df        left join fetch_$rand f     on ($joinColumns) where f.${key(0)} is null")
     val updateDate = if (!isDelete) { f", current_timestamp as $updateDatetime" } else { "" }
+
+    // we insert the rows that are not yet present
+    val insDf = spark.sql(f"select df.* $insertDate from df_$rand df left join fetch_$rand f  on ($joinColumns) where f.${key(0)} is null")
+
     val updDf = spark.sql(f"select df.* $updateDate from df_$rand df        join fetch_$rand f          on ($joinColumns) where f.$hash IS DISTINCT FROM df.$hash")
-    val delDf = spark.sql(f"select $selectColumns                             from fetch_$rand f  left join  df_$rand df          on ($joinColumns) where df.$hash is null")
+
     // to UPDATE -> table update (all columns but
     outputBulkCsv(spark, url, tableUpdTmp, updDf, path + "/upd", numPartitions, password)
-    outputBulkCsv(spark, url, tableDelTmp, delDf, path + "/del", numPartitions, password)
     scd1Update(url, table, tableUpdTmp, key, df.schema, excludeColumns = Nil, includeColumns = Nil, isCompare = false, password)
+
+    outputBulkCsv(spark, url, table, insDf, path + "/ins", numPartitions, password)
+    tableDrop(url, tableUpdTmp, password)
+
+    //val delDf = spark.sql(f"select $selectColumns                             from fetch_$rand f  left join  df_$rand df          on ($joinColumns) where df.$hash is null")
+    //outputBulkCsv(spark, url, tableDelTmp, delDf, path + "/del", numPartitions, password)
     //if (isDelete) {
     //  // the rows are deleted
     //  sqlExec(url = url, query = f"delete from $table df using $tableDelTmp f where $joinColumns", password = password)
@@ -582,9 +592,7 @@ object PGTool extends java.io.Serializable {
     //  sqlExec(url = url, query = f"update $table df set $deleteDatetime = now() from $tableDelTmp f where $joinColumns", password = password)
     //}
     // insert at the end to lighter the update and delete part
-    outputBulkCsv(spark, url, table, insDf, path + "/ins", numPartitions, password)
-    tableDrop(url, tableUpdTmp, password)
-    tableDrop(url, tableDelTmp, password)
+    //tableDrop(url, tableDelTmp, password)
   }
 
   def scd1Update(url: String, table: String, tableTarg: String, key: List[String], rddSchema: StructType, excludeColumns: List[String] = Nil, includeColumns: List[String] = Nil, isCompare: Boolean = true, password: String = ""): Unit = {

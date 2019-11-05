@@ -1,5 +1,7 @@
 package io.frama.parisni.spark.postgres
+
 //import java.sql._
+
 import java.sql.{Connection, DriverManager, PreparedStatement, ResultSetMetaData}
 import java.util.Properties
 
@@ -34,7 +36,11 @@ class PGTool(spark: SparkSession, url: String, tmpPath: String) {
 
   def purgeTmp(): Boolean = {
     val defaultFSConf = spark.sessionState.newHadoopConf().get("fs.defaultFS")
-    val fsConf = if (tmpPath.startsWith("file:")) { "file:///" } else { defaultFSConf }
+    val fsConf = if (tmpPath.startsWith("file:")) {
+      "file:///"
+    } else {
+      defaultFSConf
+    }
     val conf = new Configuration()
     conf.set("fs.defaultFS", fsConf)
     val fs = FileSystem.get(conf)
@@ -44,9 +50,9 @@ class PGTool(spark: SparkSession, url: String, tmpPath: String) {
   /**
    * Copy a table from an other table excluding data
    *
-   *  @param tableSrc String
-   *  @param tableTarg String
-   *  @param isUnlogged Boolean
+   * @param tableSrc   String
+   * @param tableTarg  String
+   * @param isUnlogged Boolean
    *
    *
    */
@@ -83,7 +89,7 @@ class PGTool(spark: SparkSession, url: String, tmpPath: String) {
    * Get a spark dataframe from a postgres SQL using
    * the built-in COPY
    *
-   *  @return DataFrame
+   * @return DataFrame
    *
    */
   def inputBulk(query: String, isMultiline: Option[Boolean] = None, numPartitions: Option[Int] = None, splitFactor: Option[Int] = None, partitionColumn: String = ""): Dataset[Row] = {
@@ -243,17 +249,20 @@ object PGTool extends java.io.Serializable with LazyLogging {
       var c = new ListBuffer[Row]()
       while (rs.next()) {
         val b = (1 to rs.getMetaData.getColumnCount.toInt).map {
-          idx =>
-            rs.getMetaData.getColumnClassName(idx).toString match {
-              case "java.lang.String"     => rs.getString(idx)
-              case "java.lang.Boolean"    => rs.getBoolean(idx)
-              case "java.lang.Long"       => rs.getLong(idx)
-              case "java.lang.Integer"    => rs.getInt(idx)
+          idx => {
+            val res = rs.getMetaData.getColumnClassName(idx).toString match {
+              case "java.lang.String" => rs.getString(idx)
+              case "java.lang.Boolean" => rs.getBoolean(idx)
+              case "java.lang.Long" => rs.getLong(idx)
+              case "java.lang.Integer" => rs.getInt(idx)
               case "java.math.BigDecimal" => rs.getDouble(idx)
-              case "java.sql.Date"        => rs.getDate(idx)
-              case "java.sql.Timestamp"   => rs.getTimestamp(idx)
-              case _                      => rs.getString(idx)
+              case "java.sql.Date" => rs.getDate(idx)
+              case "java.sql.Timestamp" => rs.getTimestamp(idx)
+              case _ => rs.getString(idx)
             }
+            if (rs.wasNull()) null // test wether the value was null
+            else res
+          }
         }
         c += Row.fromSeq(b)
       }
@@ -271,25 +280,58 @@ object PGTool extends java.io.Serializable with LazyLogging {
     StructType((1 to meta.getColumnCount.toInt).map {
       idx =>
         meta.getColumnClassName(idx).toString match {
-          case "java.lang.String"     => StructField(meta.getColumnLabel(idx), StringType)
-          case "java.lang.Boolean"    => StructField(meta.getColumnLabel(idx), BooleanType)
-          case "java.lang.Integer"    => StructField(meta.getColumnLabel(idx), IntegerType)
-          case "java.lang.Long"       => StructField(meta.getColumnLabel(idx), LongType)
+          case "java.lang.String" => StructField(meta.getColumnLabel(idx), StringType)
+          case "java.lang.Boolean" => StructField(meta.getColumnLabel(idx), BooleanType)
+          case "java.lang.Integer" => StructField(meta.getColumnLabel(idx), IntegerType)
+          case "java.lang.Long" => StructField(meta.getColumnLabel(idx), LongType)
           case "java.math.BigDecimal" => StructField(meta.getColumnLabel(idx), DoubleType)
-          case "java.sql.Date"        => StructField(meta.getColumnLabel(idx), DateType)
-          case "java.sql.Timestamp"   => StructField(meta.getColumnLabel(idx), TimestampType)
-          case _                      => StructField(meta.getColumnLabel(idx), StringType)
+          case "java.sql.Date" => StructField(meta.getColumnLabel(idx), DateType)
+          case "java.sql.Timestamp" => StructField(meta.getColumnLabel(idx), TimestampType)
+          case _ => StructField(meta.getColumnLabel(idx), StringType)
         }
     })
   }
 
   def tableCopy(url: String, tableSrc: String, tableTarg: String, password: String = "", isUnlogged: Boolean = true): Unit = {
     val conn = connOpen(url, password)
-    val unlogged = if (isUnlogged) { "UNLOGGED" } else { "" }
+    val unlogged = if (isUnlogged) {
+      "UNLOGGED"
+    } else {
+      ""
+    }
     val queryCreate = s"""CREATE $unlogged TABLE $tableTarg (LIKE $tableSrc  INCLUDING DEFAULTS)"""
     val st: PreparedStatement = conn.prepareStatement(queryCreate)
     st.executeUpdate()
     conn.close()
+  }
+
+  def tableCreate(url: String, tableSrc: String, tableTarg: String, schema: StructType, password: String = "", isUnlogged: Boolean = true): Unit = {
+    val conn = connOpen(url, password)
+    val unlogged = if (isUnlogged) {
+      "UNLOGGED"
+    } else {
+      ""
+    }
+    val queryCreate = schema.fields.map(f => {
+      "%s %s".format(f.name, toPostgresDdl(f.dataType.typeName))
+    }).mkString(s"CREATE $unlogged TABLE $tableTarg (", ",", ");")
+
+    val st: PreparedStatement = conn.prepareStatement(queryCreate)
+    st.executeUpdate()
+    conn.close()
+  }
+
+  def toPostgresDdl(s: String): String = {
+    s match {
+      case "string" => "text"
+      case "double" => "double precision"
+      case "long" => "bigint"
+      case "integer" => "integer"
+      case "timestamp" => "timestamp"
+      case "date" => "date"
+      case "boolean" => "boolean"
+      case _ => "text" //throw new Exception("data type not handled yet:%s".format(s))
+    }
   }
 
   def tableMove(url: String, tableSrc: String, tableTarg: String, password: String = ""): Unit = {
@@ -385,12 +427,11 @@ object PGTool extends java.io.Serializable with LazyLogging {
       x => {
         val conn = connOpen(url, password)
         x.foreach {
-          s =>
-            {
-              val stream = (FileSystem.get(new Configuration())).open(new Path(s._2)).getWrappedStream
-              val copyManager: CopyManager = new CopyManager(conn.asInstanceOf[BaseConnection]);
-              copyManager.copyIn(s"""COPY $table ($columns) FROM STDIN WITH CSV DELIMITER '$delimiter'  NULL '' ESCAPE '"' QUOTE '"' """, stream);
-            }
+          s => {
+            val stream = (FileSystem.get(new Configuration())).open(new Path(s._2)).getWrappedStream
+            val copyManager: CopyManager = new CopyManager(conn.asInstanceOf[BaseConnection]);
+            copyManager.copyIn(s"""COPY $table ($columns) FROM STDIN WITH CSV DELIMITER '$delimiter'  NULL '' ESCAPE '"' QUOTE '"' """, stream);
+          }
         }
         conn.close()
         x.toIterator
@@ -412,16 +453,14 @@ object PGTool extends java.io.Serializable with LazyLogging {
     val queryStr = s"($query) as tmp"
     val (lowerBound, upperBound) = getMinMaxForColumn(spark, url, queryStr, partitionColumn)
     val rdd = getPartitions(spark, lowerBound, upperBound, numPartitions, splitFactor)
-
-    val tmp = rdd.foreachPartition(
+    rdd.foreachPartition(
       x => {
         val conn = connOpen(url, password)
         x.foreach {
-          s =>
-            {
-              val queryPart = s"SELECT * FROM $queryStr WHERE $partitionColumn ${s._2}"
-              inputQueryBulkCsv(fsConf, conn, queryPart, path)
-            }
+          s => {
+            val queryPart = s"SELECT * FROM $queryStr WHERE $partitionColumn ${s._2}"
+            inputQueryBulkCsv(fsConf, conn, queryPart, path)
+          }
         }
         conn.close()
         x.toIterator
@@ -452,7 +491,11 @@ object PGTool extends java.io.Serializable with LazyLogging {
 
   def inputQueryBulkDf(spark: SparkSession, url: String, query: String, path: String, isMultiline: Boolean = false, numPartitions: Int = 1, partitionColumn: String = "", splitFactor: Int = 1, password: String = ""): Dataset[Row] = {
     val defaultFSConf = spark.sessionState.newHadoopConf().get("fs.defaultFS")
-    val fsConf = if (path.startsWith("file:")) { "file:///" } else { defaultFSConf }
+    val fsConf = if (path.startsWith("file:")) {
+      "file:///"
+    } else {
+      defaultFSConf
+    }
 
     val conf = new Configuration()
     conf.set("fs.defaultFS", fsConf)
@@ -558,7 +601,8 @@ object PGTool extends java.io.Serializable with LazyLogging {
     val rand = randomUUID.toString.replaceAll(".*-", "")
     val tableUpdTmp = "table_upd_" + rand
     //val tableDelTmp = "table_del_" + rand
-    tableCopy(url, table, tableUpdTmp, password)
+    tableCreate(url, table, tableUpdTmp, df.schema, password)
+    //tableCopy(url, table, tableUpdTmp, password)
     //sqlExec(url = url, query = getCreateStmtFromSchema(getSchemaQuery(spark, url, query = f"select $selectColumnsBasic from $table", password), tableDelTmp, excludeColumns = Nil), password = password)
     df.registerTempTable(f"df_$rand")
 
@@ -567,8 +611,19 @@ object PGTool extends java.io.Serializable with LazyLogging {
     val fetch = inputQueryBulkDf(spark, url, query, path, isMultiline = true, numPartitions = 1, password = password)
     fetch.registerTempTable(f"fetch_$rand")
 
-    val insertDate = if (!isDelete) { f", current_timestamp as $insertDatetime" } else { "" }
-    val updateDate = if (!isDelete) { f", current_timestamp as $updateDatetime" } else { "" }
+    //val insertDate = if (!isDelete) {
+    //  f", current_timestamp as $insertDatetime"
+    //} else {
+    //  ""
+    //}
+    //val updateDate = if (!isDelete) {
+    //  f", current_timestamp as $updateDatetime"
+    //} else {
+    //  ""
+    //}
+
+    val insertDate = ""
+    val updateDate = ""
 
     // we insert the rows that are not yet present
     val insDf = spark.sql(f"select df.* $insertDate from df_$rand df left join fetch_$rand f  on ($joinColumns) where f.${key(0)} is null")
@@ -607,7 +662,8 @@ object PGTool extends java.io.Serializable with LazyLogging {
       updIsDistinct = "1 = 1"
     }
 
-    val upd = s"""
+    val upd =
+      s"""
     UPDATE $table as targ
     SET $updSet
     FROM $tableTarg as tmp
@@ -688,5 +744,6 @@ object PGTool extends java.io.Serializable with LazyLogging {
 
 class ExactPartitioner[V](partitions: Int) extends Partitioner {
   def getPartition(key: Any): Int = return math.abs(key.asInstanceOf[Int] % numPartitions())
+
   def numPartitions(): Int = partitions
 }

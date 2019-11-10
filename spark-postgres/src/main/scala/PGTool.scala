@@ -1,7 +1,5 @@
 package io.frama.parisni.spark.postgres
 
-//import java.sql._
-
 import java.sql.{Connection, DriverManager, PreparedStatement, ResultSetMetaData}
 import java.util.Properties
 
@@ -31,7 +29,7 @@ class PGTool(spark: SparkSession, url: String, tmpPath: String) {
   }
 
   private def genPath(): String = {
-    tmpPath + "/" + randomUUID.toString
+    tmpPath + "/spark-postgres-" + randomUUID.toString
   }
 
   def purgeTmp(): Boolean = {
@@ -44,7 +42,7 @@ class PGTool(spark: SparkSession, url: String, tmpPath: String) {
     val conf = new Configuration()
     conf.set("fs.defaultFS", fsConf)
     val fs = FileSystem.get(conf)
-    fs.delete(new Path(tmpPath), true) // delete file, true for recursive
+    fs.deleteOnExit (new Path(tmpPath)) // delete file when spark quits
   }
 
   /**
@@ -58,6 +56,11 @@ class PGTool(spark: SparkSession, url: String, tmpPath: String) {
    */
   def tableCopy(tableSrc: String, tableTarg: String, isUnlogged: Boolean = true): PGTool = {
     PGTool.tableCopy(url, tableSrc, tableTarg, password, isUnlogged)
+    this
+  }
+
+  def tableCreate(tableTarg: String, schema: StructType, isUnlogged: Boolean = true): PGTool = {
+    PGTool.tableCreate(url, tableTarg, schema, password, isUnlogged = false)
     this
   }
 
@@ -136,11 +139,15 @@ class PGTool(spark: SparkSession, url: String, tmpPath: String) {
     this
   }
 
+  def getSchemaQuery(query: String): StructType = {
+    PGTool.getSchemaQuery(spark, url, query, password)
+  }
+
 }
 
 object PGTool extends java.io.Serializable with LazyLogging {
 
-  def apply(spark: SparkSession, url: String, tmpPath: String): PGTool = new PGTool(spark, url, tmpPath + "/" + randomUUID.toString).setPassword("")
+  def apply(spark: SparkSession, url: String, tmpPath: String): PGTool = new PGTool(spark, url, tmpPath + "/spark-postgres-" + randomUUID.toString).setPassword("")
 
   private def dbPassword(hostname: String, port: String, database: String, username: String): String = {
     // Usage: val thatPassWord = dbPassword(hostname,port,database,username)
@@ -150,14 +157,15 @@ object PGTool extends java.io.Serializable with LazyLogging {
     val file = fs.open(new Path(scala.sys.env("HOME"), ".pgpass"))
     val content = Iterator.continually(file.readLine()).takeWhile(_ != null).mkString("\n")
     var passwd = ""
-    content.split("\n").foreach { line =>
-      val connCfg = line.split(":")
-      if (hostname == connCfg(0)
-        && port == connCfg(1)
-        && (database == connCfg(2) || database == "*")
-        && username == connCfg(3)) {
-        passwd = connCfg(4)
-      }
+    content.split("\n").foreach {
+      line =>
+        val connCfg = line.split(":")
+        if (hostname == connCfg(0)
+          && port == connCfg(1)
+          && (database == connCfg(2) || connCfg(2) == "*")
+          && username == connCfg(3)) {
+          passwd = connCfg(4)
+        }
     }
     file.close()
     passwd
@@ -305,7 +313,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
     conn.close()
   }
 
-  def tableCreate(url: String, tableSrc: String, tableTarg: String, schema: StructType, password: String = "", isUnlogged: Boolean = true): Unit = {
+  def tableCreate(url: String, tableTarg: String, schema: StructType, password: String = "", isUnlogged: Boolean = true): Unit = {
     val conn = connOpen(url, password)
     val unlogged = if (isUnlogged) {
       "UNLOGGED"
@@ -670,7 +678,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
     val rand = randomUUID.toString.replaceAll(".*-", "")
     val tableUpdTmp = "table_upd_" + rand
     //val tableDelTmp = "table_del_" + rand
-    tableCreate(url, table, tableUpdTmp, df.schema, password)
+    tableCreate(url, tableUpdTmp, df.schema, password)
     //tableCopy(url, table, tableUpdTmp, password)
     //sqlExec(url = url, query = getCreateStmtFromSchema(getSchemaQuery(spark, url, query = f"select $selectColumnsBasic from $table", password), tableDelTmp, excludeColumns = Nil), password = password)
     df.registerTempTable(f"df_$rand")

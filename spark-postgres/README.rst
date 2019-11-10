@@ -2,39 +2,25 @@ SPARK-POSTGRES
 ==============
 
 spark-postgres is a set of function to better bridge postgres and spark. It
-focuses on stability and speed in ETL workloads. In particular it provides
-access to the postgres bulk load function (COPY) and also provides SQL access.
-The API provides both a regular spark-datasource (postgres), and several usefull functions
+focuses on stability and speed in ETL workloads. The API provides both a
+regular spark-datasource (postgres), and several useful functions.
+
+spark-postgres is designed for large datasets. It outperforms Apache Sqoop by
+factor 8 for both reading/writing to postgres.
+- use of pg COPY statements
+- parallel reads/writes
+- use of hdfs to store intermediary csv [optional]
+- reindex after bulk-loading
+- SCD1 computations done on the spark side
+- use unlogged tables when needed
+
+spark-postgres is reliable and handles  array types and also multiline text
+columns.
 
 It can be used from **scala-spark** and **pySpark**
 
-Supported version
-+++++++++++++++++
-- spark scala V2+ in yarn or local mode
-- postgres v9+
 
-Supported fields
-++++++++++++++++
-- numerics (int, bigint, float...)
-- strings (included multiline strings)
-- dates, timestamps
-- boolean
-- array[] (int, double, string...)
-
-Use the lib
-+++++++++++
-
-To compile the code, clone it and use maven to build the shaded jar into the target folder.
-
-- `mvn install`
-
-The lib need the postgresql jdbc driver. You can download it from the
-postgresql website. The lib works either in local mode, in yarn mode and has
-been tested with apache livy.
-
-- `spark-shell --driver-class-path postgresql-42.2.5.jar  --jars "postgresql-42.2.5.jar,spark-postgres-2.3.0-SNAPSHOT-shaded.jar"  --master yarn`
-
-Usage Datasource
+Datasource Usage
 ++++++++++++++++
 .. code-block:: scala
 	
@@ -81,8 +67,8 @@ Usage Datasource
       .option("schema","mySchema")
       .load
       
-Usage Scala
-+++++++++++
+Complete API Scala
++++++++++++++++++++
 .. code-block:: scala
 	
 	import io.frama.parisni.PGUtil
@@ -108,8 +94,8 @@ Usage Scala
           .tableCopy("note","note_tmp") // duplicate the table without data
           .inputBulk(query="select * from note",  isMultiline=true, numPartitions=4, splitFactor=10, partitionColumn="note_id") // get a df from the table
 
-Usage pySpark
-+++++++++++++
+Complete API pySpark
++++++++++++++++++++++
 
 .. code-block:: python
 
@@ -118,30 +104,28 @@ Usage pySpark
     pg.inputBulk("select * from test2",False, 1, 1, "col").show()
     pg.purgeTmp()
 
+Supported version
++++++++++++++++++
+- spark scala V2.4+ in yarn or local mode
+- postgres v9+
 
+Supported fields
+++++++++++++++++
+- numerics (int, bigint, float...)
+- strings (included multiline strings)
+- dates, timestamps
+- boolean
+- array[] (int, double, string...)
 
-Features
-++++++++
+Compile
++++++++
 
-- input
-- inputBulk
-- output
-- ouputBulk
-- outputScd1
-- outputScd2
-- tableTruncate
-- tableDrop
-- tableCopy
-- tableMove
-- sqlExec
+To compile the code, clone it and use maven to build the shaded jar into the target folder.
 
-Benchmark
-+++++++++
+- `mvn install`
 
-Input
-******
-TODO
+The lib need the postgresql jdbc driver. You can download it from the
+postgresql website. The lib works either in local mode, in yarn mode and has
+been tested with apache livy.
 
-Output
-******
-TODO
+- `spark-shell --driver-class-path postgresql-42.2.5.jar  --jars "postgresql-42.2.5.jar,spark-postgres-2.3.0-SNAPSHOT-shaded.jar"  --master yarn`

@@ -101,8 +101,8 @@ class PGTool(spark: SparkSession, url: String, tmpPath: String) {
    * the built-in COPY
    *
    */
-  def outputBulk(table: String, df: Dataset[Row], numPartitions: Int = 8): PGTool = {
-    PGTool.outputBulkCsv(spark, url, table, df, genPath, numPartitions, password)
+  def outputBulk(table: String, df: Dataset[Row], numPartitions: Int = 8, reindex: Boolean = false): PGTool = {
+    PGTool.outputBulkCsv(spark, url, table, df, genPath, numPartitions, password, reindex)
     this
   }
 
@@ -394,23 +394,38 @@ object PGTool extends java.io.Serializable with LazyLogging {
     }
   }
 
-  def outputBulkCsv(spark: SparkSession, url: String, table: String, df: Dataset[Row], path: String, numPartitions: Int = 8, password: String = "") = {
-    val columns = df.schema.fields.map(x => s"${x.name}").mkString(",")
-    //transform arrays to string
-    val dfTmp = dataframeToPgCsv(spark, df, df.schema)
-    //write a csv folder
-    dfTmp.write.format("csv")
-      .option("delimiter", ",")
-      .option("header", false)
-      .option("nullValue", null)
-      .option("emptyValue", "\"\"")
-      .option("quote", "\"")
-      .option("escape", "\"")
-      .option("ignoreLeadingWhiteSpace", false)
-      .option("ignoreTrailingWhiteSpace", false)
-      .mode(org.apache.spark.sql.SaveMode.Overwrite)
-      .save(path)
-    outputBulkCsvLow(spark, url, table, columns, path, numPartitions, ",", ".*.csv", password)
+  def outputBulkCsv(spark: SparkSession
+                    , url: String
+                    , table: String
+                    , df: Dataset[Row]
+                    , path: String
+                    , numPartitions: Int = 8
+                    , password: String = ""
+                    , reindex: Boolean = false
+                   ) = {
+    try {
+      if (reindex)
+        indexDeactivate(url, table, password)
+      val columns = df.schema.fields.map(x => s"${x.name}").mkString(",")
+      //transform arrays to string
+      val dfTmp = dataframeToPgCsv(spark, df, df.schema)
+      //write a csv folder
+      dfTmp.write.format("csv")
+        .option("delimiter", ",")
+        .option("header", false)
+        .option("nullValue", null)
+        .option("emptyValue", "\"\"")
+        .option("quote", "\"")
+        .option("escape", "\"")
+        .option("ignoreLeadingWhiteSpace", false)
+        .option("ignoreTrailingWhiteSpace", false)
+        .mode(org.apache.spark.sql.SaveMode.Overwrite)
+        .save(path)
+      outputBulkCsvLow(spark, url, table, columns, path, numPartitions, ",", ".*.csv", password)
+    } finally {
+      if (reindex)
+        indexReactivate(url, table, password)
+    }
   }
 
   def outputBulkCsvLow(spark: SparkSession, url: String, table: String, columns: String, path: String, numPartitions: Int = 8, delimiter: String = ",", csvPattern: String = ".*.csv", password: String = "") = {
@@ -489,7 +504,61 @@ object PGTool extends java.io.Serializable with LazyLogging {
     }
   }
 
-  def inputQueryBulkDf(spark: SparkSession, url: String, query: String, path: String, isMultiline: Boolean = false, numPartitions: Int = 1, partitionColumn: String = "", splitFactor: Int = 1, password: String = ""): Dataset[Row] = {
+  def getSchema(url: String) = {
+    val pattern = "jdbc:postgresql://.+?&currentSchema=(\\w+)".r
+    val pattern(schema) = url
+    schema
+  }
+
+  def indexDeactivate(url: String, table: String, password: String = "") = {
+    val schema = getSchema(url)
+    val query =
+      s"""
+    UPDATE pg_index
+    SET indisready = false
+    WHERE indrelid IN (
+    SELECT pg_class.oid FROM pg_class
+    JOIN pg_catalog.pg_namespace n ON n.oid = pg_class.relnamespace
+    WHERE relname='$table' and nspname = '$schema' )
+    """
+    sqlExec(url, query, password)
+    logger.warn(s"Deactivating indexes from $schema.$table")
+  }
+
+  def indexReactivate(url: String, table: String, password: String = "") = {
+
+    val schema = getSchema(url)
+    val query =
+      s"""
+      UPDATE pg_index
+      SET indisready = true
+      WHERE indrelid IN (
+      SELECT pg_class.oid FROM pg_class
+      JOIN pg_catalog.pg_namespace n ON n.oid = pg_class.relnamespace
+      WHERE relname='$table' and nspname = '$schema' )
+    """
+    sqlExec(url, query, password)
+    logger.warn(s"Reactivating indexes from $schema.$table")
+
+    val query2 =
+      s"""
+      REINDEX TABLE "$schema"."$table"
+    """
+
+    logger.warn(s"Recreating indexes from $schema.$table")
+    sqlExec(url, query2, password)
+  }
+
+  def inputQueryBulkDf(spark: SparkSession
+                       , url: String
+                       , query: String
+                       , path: String
+                       , isMultiline: Boolean = false
+                       , numPartitions: Int = 1
+                       , partitionColumn: String = ""
+                       , splitFactor: Int = 1
+                       , password: String = ""
+                      ): Dataset[Row] = {
     val defaultFSConf = spark.sessionState.newHadoopConf().get("fs.defaultFS")
     val fsConf = if (path.startsWith("file:")) {
       "file:///"

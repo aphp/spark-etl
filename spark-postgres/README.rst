@@ -68,13 +68,13 @@ Usage Datasource
 
       // this applies an optimized SCD1 from the spark dataframe into postgres with 4 threads
       // insert the new rows and update the modified based on a hash column (called hash)
-      // based on the composite key bookId, clientId and date
+      // based on the composite key bookId, clientId
       import spark.implicits._
-      (1::2::3::Nil).toDF("id")
+      ((1,1,"bob")::(2,3,"jim")::Nil).toDF("bookId", "clienId", "content")
       .write.format("postgres")
       .option("type","scd1")
       .option("partitions",4)
-      .option("joinKey","bookId,clienId,date")
+      .option("joinKey","bookId,clienId")
       .option("table","thePgTable")     
       .option("host","localhost")
       .option("database","myDb")

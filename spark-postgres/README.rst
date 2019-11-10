@@ -65,6 +65,21 @@ Usage Datasource
       .option("schema","mySchema")
       .mode(org.apache.spark.sql.SaveMode.Overwrite)
       .load
+
+      // this applies an optimized SCD1 from the spark dataframe into postgres with 4 threads
+      // insert the new rows and update the modified based on a hash column (called hash)
+      // based on the composite key bookId, clientId and date
+      import spark.implicits._
+      (1::2::3::Nil).toDF("id")
+      .write.format("postgres")
+      .option("type","scd1")
+      .option("partitions",4)
+      .option("joinKey","bookId,clienId,date")
+      .option("table","thePgTable")     
+      .option("host","localhost")
+      .option("database","myDb")
+      .option("schema","mySchema")
+      .load
       
 Usage Scala
 +++++++++++

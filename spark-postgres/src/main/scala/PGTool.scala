@@ -322,7 +322,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
     }
     val queryCreate = schema.fields.map(f => {
       "%s %s".format(f.name, toPostgresDdl(f.dataType.typeName))
-    }).mkString(s"CREATE $unlogged TABLE $tableTarg (", ",", ");")
+    }).mkString(s"CREATE $unlogged TABLE IF NOT EXISTS $tableTarg (", ",", ");")
 
     val st: PreparedStatement = conn.prepareStatement(queryCreate)
     st.executeUpdate()

@@ -1,6 +1,7 @@
 package postgres
 
 import com.typesafe.scalalogging.LazyLogging
+import io.frama.parisni.spark.dataframe.DFTool
 import io.frama.parisni.spark.postgres.{PGTool, PostgresConf}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
@@ -58,6 +59,9 @@ class PostgresRelation(val parameters: Map[String, String]
     val reindex = conf.getIsReindex.get
     val numPartitions = conf.getNumPartition.get
     val loadType = conf.getType.getOrElse("full")
+    if (loadType == "scd1")
+      require(conf.getJoinKey.nonEmpty, "JoinKey cannot be empty when scd1")
+    val joinKey = conf.getJoinKey.get
 
     if (overwrite)
       _pg.tableDrop(table)
@@ -65,7 +69,7 @@ class PostgresRelation(val parameters: Map[String, String]
 
     loadType match {
       case "full" => _pg.outputBulk(table, data, numPartitions, reindex)
-      case "scd1" => throw new Exception("scd1 not yet implemented")
+      case "scd1" => _pg.outputScd1Hash(table, joinKey.toList, DFTool.dfAddHash(data), Some(numPartitions))
     }
     _pg.purgeTmp()
   }

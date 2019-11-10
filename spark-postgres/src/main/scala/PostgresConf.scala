@@ -18,6 +18,7 @@ class PostgresConf(config: Map[String, String]) extends Serializable with LazyLo
   var PG_MULTILINE: String = "multiline"
   var PG_NUM_SPLITS: String = "numSplits"
   var PG_PARTITION_COLUMN: String = "partitionColumn"
+  var PG_JOIN_KEY: String = "joinkey"
 
   require(config != null, "Config cannot be null")
   require(config.nonEmpty, "Config cannot be empty")
@@ -27,6 +28,9 @@ class PostgresConf(config: Map[String, String]) extends Serializable with LazyLo
   //  require(config.get(PG_TABLE).nonEmpty, "Table cannot be empty")
 
   def getQuery: Option[String] = config.get(PG_QUERY)
+
+  def getJoinKey: Option[Array[String]] =
+    if (config.get(PG_JOIN_KEY).isDefined) Some(config(PG_JOIN_KEY).split(",")) else None
 
   def getPartitionColumn: Option[String] = config.get(PG_PARTITION_COLUMN)
 

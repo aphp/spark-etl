@@ -3,10 +3,11 @@ SPARK-POSTGRES
 
 spark-postgres is a set of function to better bridge postgres and spark. It
 focuses on stability and speed in ETL workloads. The API provides both a
-regular spark-datasource (postgres), and several useful functions.
+regular **spark-datasource** (postgres), and several **useful functions**.
 
-spark-postgres is designed for large datasets. It outperforms Apache Sqoop by
+spark-postgres is designed for **large datasets**. It outperforms Apache Sqoop by
 factor 8 for both reading/writing to postgres.
+
 - use of pg COPY statements
 - parallel reads/writes
 - use of hdfs to store intermediary csv [optional]
@@ -14,7 +15,7 @@ factor 8 for both reading/writing to postgres.
 - SCD1 computations done on the spark side
 - use unlogged tables when needed
 
-spark-postgres is reliable and handles  array types and also multiline text
+spark-postgres is **reliable** and handles  array types and also multiline text
 columns.
 
 It can be used from **scala-spark** and **pySpark**

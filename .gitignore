@@ -47,6 +47,5 @@ build.log
 metastore_db/
 spark-postgres-tmp/
 derby.log
-spark-hive
 .cache-main
 .cache-tests

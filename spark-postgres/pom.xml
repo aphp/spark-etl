@@ -38,6 +38,11 @@
     </distributionManagement>
     <dependencies>
       <dependency>
+         <groupId>com.opentable.components</groupId>
+         <artifactId>otj-pg-embedded</artifactId>
+         <version>0.13.3</version>
+      </dependency>
+      <dependency>
         <groupId>io.frama.parisni</groupId>
         <artifactId>spark-dataframe</artifactId>
         <version>0.0.2</version>
@@ -61,6 +66,12 @@
       <dependency>
         <groupId>org.apache.spark</groupId>
         <artifactId>spark-sql_${scala.tools.version}</artifactId>
+        <version>${spark.version}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.spark</groupId>
+        <artifactId>spark-hive_${scala.tools.version}</artifactId>
         <version>${spark.version}</version>
         <scope>provided</scope>
       </dependency>
@@ -193,6 +204,24 @@
               </filter>
             </filters>
           </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.scalatest</groupId>
+          <artifactId>scalatest-maven-plugin</artifactId>
+          <version>1.0</version>
+          <configuration>
+            <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
+            <junitxml>.</junitxml>
+            <filereports>WDF TestSuite.txt</filereports>
+          </configuration>
+          <executions>
+            <execution>
+              <id>test</id>
+              <goals>
+                <goal>test</goal>
+              </goals>
+            </execution>
+          </executions>
         </plugin>
       </plugins>
     </build>

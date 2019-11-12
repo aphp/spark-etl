@@ -51,7 +51,7 @@ Datasource Usage
       .option("database","myDb")
       .option("schema","mySchema")
       .mode(org.apache.spark.sql.SaveMode.Overwrite)
-      .load
+      .save
 
       // this applies an optimized SCD1 from the spark dataframe into postgres with 4 threads
       // insert the new rows and update the modified based on a hash column (called hash)
@@ -66,7 +66,7 @@ Datasource Usage
       .option("host","localhost")
       .option("database","myDb")
       .option("schema","mySchema")
-      .load
+      .save
       
 Complete API Scala
 +++++++++++++++++++

@@ -1,12 +1,12 @@
 package io.frama.parisni.spark.postgres
 
 import com.opentable.db.postgres.junit.{EmbeddedPostgresRules, SingleInstancePostgresRule}
+import org.apache.spark.sql.QueryTest
 import org.junit.{Rule, Test}
-import org.scalatest.junit.AssertionsForJUnit
 
 import scala.annotation.meta.getter
 
-class ExampleSuite extends AssertionsForJUnit with SparkSessionTestWrapper {
+class ExampleSuite extends QueryTest with SparkSessionTestWrapper {
 
   // looks like crazy but compatibility issue with junit rule (public)
   @(Rule@getter)
@@ -28,9 +28,8 @@ class ExampleSuite extends AssertionsForJUnit with SparkSessionTestWrapper {
 
   @Test def verifySparkPostgres(): Unit = {
 
-    val schema = pg.getEmbeddedPostgres.getPostgresDatabase.getConnection.getSchema
-    println(s"schema: $schema")
-    spark.sql("select 1 as t")
+    val input = spark.sql("select 1 as t")
+    input
       .write.format("postgres")
       .option("host", "localhost")
       .option("port", pg.getEmbeddedPostgres.getPort)
@@ -40,13 +39,15 @@ class ExampleSuite extends AssertionsForJUnit with SparkSessionTestWrapper {
       .mode(org.apache.spark.sql.SaveMode.Overwrite)
       .save
 
-      spark.read.format("postgres")
+    val output = spark.read.format("postgres")
       .option("host", "localhost")
       .option("port", pg.getEmbeddedPostgres.getPort)
       .option("database", "postgres")
       .option("user", "postgres")
       .option("query", "select * from test_table")
-      .load.show
+      .load
+
+    checkAnswer(input, output)
   }
 
 }

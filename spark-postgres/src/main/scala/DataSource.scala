@@ -61,7 +61,7 @@ class PostgresRelation(val parameters: Map[String, String]
     val loadType = conf.getType.getOrElse("full")
     if (loadType == "scd1")
       require(conf.getJoinKey.nonEmpty, "JoinKey cannot be empty when scd1")
-    val joinKey = conf.getJoinKey.get
+    val joinKey = conf.getJoinKey
 
     if (overwrite)
       _pg.tableDrop(table)
@@ -69,7 +69,7 @@ class PostgresRelation(val parameters: Map[String, String]
 
     loadType match {
       case "full" => _pg.outputBulk(table, data, numPartitions, reindex)
-      case "scd1" => _pg.outputScd1Hash(table, joinKey.toList, DFTool.dfAddHash(data), Some(numPartitions))
+      case "scd1" => _pg.outputScd1Hash(table, joinKey.get.toList, DFTool.dfAddHash(data), Some(numPartitions))
     }
     _pg.purgeTmp()
   }

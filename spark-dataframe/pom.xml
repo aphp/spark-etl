@@ -37,42 +37,68 @@
       </repository>
     </distributionManagement>
     <dependencies>
+
       <dependency>
         <groupId>com.typesafe.scala-logging</groupId>
-        <artifactId>scala-logging_2.11</artifactId>
+	<artifactId>scala-logging_${scala.tools.version}</artifactId>
         <version>${scala-logging.version}</version>
-        <scope>provided</scope>
       </dependency>
+
       <dependency>
         <groupId>org.scala-lang</groupId>
         <artifactId>scala-library</artifactId>
         <version>${scala.version}</version>
       </dependency>
-      <dependency>
-        <groupId>org.apache.spark</groupId>
-        <artifactId>spark-core_${scala.tools.version}</artifactId>
-        <version>${spark.version}</version>
-        <scope>provided</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.spark</groupId>
-        <artifactId>spark-sql_${scala.tools.version}</artifactId>
-        <version>${spark.version}</version>
-        <scope>provided</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.spark</groupId>
-        <artifactId>spark-hive_${scala.tools.version}</artifactId>
-        <version>${spark.version}</version>
-        <scope>provided</scope>
-      </dependency>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-core_${scala.tools.version}</artifactId>
+            <version>${spark.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-core_${scala.tools.version}</artifactId>
+            <version>${spark.version}</version>
+            <scope>test</scope>
+            <classifier>tests</classifier>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-sql_${scala.tools.version}</artifactId>
+	    <version>${spark.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-sql_${scala.tools.version}</artifactId>
+	    <version>${spark.version}</version>
+            <scope>test</scope>
+            <classifier>tests</classifier>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-catalyst_2.12</artifactId>
+            <version>2.4.3</version>
+            <scope>test</scope>
+            <classifier>tests</classifier>
+        </dependency>
       <!-- Test -->
-      <dependency>
-        <groupId>com.holdenkarau</groupId>
-        <artifactId>spark-testing-base_2.11</artifactId>
-        <version>${spark-testing.version}</version>
-        <scope>provided</scope>
-      </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.scalatest/scalatest -->
+        <!-- https://mvnrepository.com/artifact/org.scalatest/scalatest -->
+        <dependency>
+            <groupId>org.scalatest</groupId>
+            <artifactId>scalatest_2.12</artifactId>
+            <version>3.0.8</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <build>
       <sourceDirectory>src/main/scala</sourceDirectory>
@@ -163,7 +189,7 @@
                     <!-- begin removed for livy-->
                     <exclude>org.scala-lang:scala-library</exclude>
                     <exclude>org.scala-lang:scala-reflect</exclude>
-                    <exclude>org.scala-lang.modules:scala-parser-combinators_2.11</exclude>
+                    <exclude>org.scala-lang.modules:scala-parser-combinators_2.12</exclude>
                     <exclude>org.postgresql:postgresql</exclude>
                     <!-- end   removed for livy-->
                     <exclude>log4j:log4j</exclude>
@@ -259,7 +285,7 @@
                 <compilerPlugins>
                   <compilerPlugin>
                     <groupId>com.typesafe.genjavadoc</groupId>
-                    <artifactId>genjavadoc-plugin_2.11.12</artifactId>
+                    <artifactId>genjavadoc-plugin_2.12.12</artifactId>
                     <version>0.13</version>
                   </compilerPlugin>
                 </compilerPlugins>

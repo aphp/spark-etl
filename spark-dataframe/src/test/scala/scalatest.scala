@@ -1,39 +1,36 @@
 
 package io.frama.parisni.spark.dataframe
 
-import com.holdenkarau.spark.testing._
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
-import org.scalatest.FunSuite
+import org.apache.spark.sql.{QueryTest, SparkSession}
 
-class AppTest extends FunSuite with SharedSparkContext with DataFrameSuiteBase {
-
-  override implicit def reuseContextIfPossible: Boolean = true
+class AppTest extends QueryTest with SparkSessionTestWrapper {
 
   val dfTool = DFTool
   test("test reorder") {
 
-    val inputDF = sqlContext.sql("select 1 as c2, 2 as c1")
+    val inputDF = spark.sql("select 1 as c2, 2 as c1")
     val schema = StructType(StructField("c1", IntegerType) :: StructField("c2", IntegerType) :: Nil)
-    val resultDF = sqlContext.sql("select 2 as c1, 1 as c2")
+    val resultDF = spark.sql("select 2 as c1, 1 as c2")
 
-    assertDataFrameEquals(resultDF, DFTool.reorderColumns(inputDF, schema))
+    checkAnswer(resultDF, DFTool.reorderColumns(inputDF, schema))
 
   }
 
   test("test cast") {
 
-    val inputDF = sqlContext.sql("select '2' as c1, '1' as c2")
+    val inputDF = spark.sql("select '2' as c1, '1' as c2")
     val schema = StructType(StructField("c1", IntegerType, false) :: StructField("c2", IntegerType, false) :: Nil)
-    val resultDF = sqlContext.sql("select 2 as c1, 1 as c2")
+    val resultDF = spark.sql("select 2 as c1, 1 as c2")
     val testDF = DFTool.castColumns(inputDF, schema)
-    assertDataFrameEquals(resultDF, testDF)
+    checkAnswer(resultDF, testDF)
 
   }
 
   test("test columns missing") {
 
-    val inputDF = sqlContext.sql("select 1 as c1, 2 as c2")
+    val inputDF = spark.sql("select 1 as c1, 2 as c2")
     val schema = StructType(StructField("c1", IntegerType) :: StructField("c2", IntegerType) :: Nil)
 
     DFTool.existColumns(inputDF, schema)
@@ -64,10 +61,10 @@ class AppTest extends FunSuite with SharedSparkContext with DataFrameSuiteBase {
     val mb = new MetadataBuilder()
     val m = mb.putNull("default").build
     val optionalSchema = StructType(StructField("c3", IntegerType, true, m) :: Nil)
-    val inputDF = sqlContext.sql("select '2' as c1, '1' as c2")
-    val resultDF = sqlContext.sql("select '2' as c1, '1' as c2, cast(null as int) as c3")
+    val inputDF = spark.sql("select '2' as c1, '1' as c2")
+    val resultDF = spark.sql("select '2' as c1, '1' as c2, cast(null as int) as c3")
 
-    assertDataFrameEquals(DFTool.addMissingColumns(inputDF, optionalSchema), resultDF)
+    checkAnswer(DFTool.addMissingColumns(inputDF, optionalSchema), resultDF)
 
   }
 
@@ -75,12 +72,12 @@ class AppTest extends FunSuite with SharedSparkContext with DataFrameSuiteBase {
     val mb = new MetadataBuilder()
     val m = mb.putNull("default").build
     val optionalSchema = StructType(StructField("c3", IntegerType, true, m) :: Nil)
-    val inputDF = sqlContext.sql("select '2' as c1, '1' as c2")
-    val resultDF = sqlContext.sql("select '2' as bob, '1' as jim")
+    val inputDF = spark.sql("select '2' as c1, '1' as c2")
+    val resultDF = spark.sql("select '2' as bob, '1' as jim")
 
     val columns = Map("c1" -> "bob", "c2" -> "jim")
 
-    assertDataFrameEquals(DFTool.dfRenameColumn(inputDF, columns), resultDF)
+    checkAnswer(DFTool.dfRenameColumn(inputDF, columns), resultDF)
 
   }
 
@@ -90,7 +87,7 @@ class AppTest extends FunSuite with SharedSparkContext with DataFrameSuiteBase {
     val result = spark.sql("select 1 as bob")
     val testDF = DFTool.applySchema(test, struct)
     val resultDF = DFTool.applySchema(result, struct)
-    assertDataFrameEquals(testDF, resultDF)
+    checkAnswer(testDF, resultDF)
   }
 
   test("test pivot") {
@@ -110,6 +107,20 @@ class AppTest extends FunSuite with SharedSparkContext with DataFrameSuiteBase {
     val result = spark.sql("select 1 as `bob.jim`")
     val testDF = DFTool.applySchemaSoft(test, struct)
     val resultDF = DFTool.applySchemaSoft(result, struct)
-    assertDataFrameEquals(testDF, resultDF)
+    checkAnswer(testDF, resultDF)
   }
+
+}
+
+trait SparkSessionTestWrapper {
+
+  lazy val spark: SparkSession = {
+    SparkSession
+      .builder()
+      .master("local")
+      .appName("spark session")
+      .config("spark.sql.shuffle.partitions", "1")
+      .getOrCreate()
+  }
+
 }

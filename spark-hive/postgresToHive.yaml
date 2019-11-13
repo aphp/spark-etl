@@ -1,0 +1,13 @@
+jobName:      hive To postgres
+hostPg:         host
+portPg:         5432
+databasePg:     edsr
+userPg:         etl
+tables:
+    - tablePg: test_scd_pg
+      tableHive: test_scd_hive
+      schemaPg: public
+      schemaHive: edsdev
+      key: id
+      numThread: 8
+      isActive: false

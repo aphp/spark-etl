@@ -128,7 +128,7 @@
                     <!-- begin removed for livy-->
                     <exclude>org.scala-lang:scala-library</exclude>
                     <exclude>org.scala-lang:scala-reflect</exclude>
-                    <exclude>org.scala-lang.modules:scala-parser-combinators_2.12</exclude>
+		    <exclude>org.scala-lang.modules:scala-parser-combinators_${scala.tools.version}</exclude>
                     <exclude>org.postgresql:postgresql</exclude>
                     <!-- end   removed for livy-->
                     <exclude>log4j:log4j</exclude>

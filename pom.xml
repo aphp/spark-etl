@@ -69,7 +69,7 @@ https://dzone.com/articles/deploy-maven-central -->
 
         <dependency>
             <groupId>org.apache.spark</groupId>
-            <artifactId>spark-catalyst_2.12</artifactId>
+	    <artifactId>spark-catalyst_${scala.tools.version}</artifactId>
             <version>2.4.3</version>
             <scope>test</scope>
             <classifier>tests</classifier>
@@ -85,7 +85,7 @@ https://dzone.com/articles/deploy-maven-central -->
         <!-- https://mvnrepository.com/artifact/org.scalatest/scalatest -->
         <dependency>
             <groupId>org.scalatest</groupId>
-            <artifactId>scalatest_2.12</artifactId>
+	    <artifactId>scalatest_${scala.tools.version}</artifactId>
             <version>3.0.8</version>
             <scope>test</scope>
         </dependency>
@@ -96,8 +96,8 @@ https://dzone.com/articles/deploy-maven-central -->
       <encoding>UTF-8</encoding>
       <spark-csv.version>0.0.1-SNAPSHOT</spark-csv.version>
       <spark-dataframe.version>0.0.4</spark-dataframe.version>
-      <scala.tools.version>2.12</scala.tools.version>
-      <scala.version>2.12.8</scala.version>
+      <scala.tools.version>2.11</scala.tools.version>
+      <scala.version>2.11.11</scala.version>
       <spark.version>2.4.3</spark.version>
       <logback.version>1.0.13</logback.version>
       <slf4j.version>1.7.25</slf4j.version>

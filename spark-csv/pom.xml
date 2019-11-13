@@ -42,41 +42,6 @@
         <artifactId>spark-dataframe</artifactId>
         <version>${spark-dataframe.version}</version>
       </dependency>
-      <dependency>
-        <groupId>com.typesafe.scala-logging</groupId>
-        <artifactId>scala-logging_2.11</artifactId>
-        <version>${scala-logging.version}</version>
-        <scope>provided</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.scala-lang</groupId>
-        <artifactId>scala-library</artifactId>
-        <version>${scala.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.spark</groupId>
-        <artifactId>spark-core_${scala.tools.version}</artifactId>
-        <version>${spark.version}</version>
-        <scope>provided</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.spark</groupId>
-        <artifactId>spark-sql_${scala.tools.version}</artifactId>
-        <version>${spark.version}</version>
-        <scope>provided</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.spark</groupId>
-        <artifactId>spark-hive_${scala.tools.version}</artifactId>
-        <version>${spark.version}</version>
-        <scope>provided</scope>
-      </dependency>
-      <dependency>
-        <groupId>com.holdenkarau</groupId>
-        <artifactId>spark-testing-base_2.11</artifactId>
-        <version>${spark-testing.version}</version>
-        <scope>provided</scope>
-      </dependency>
     </dependencies>
     <build>
       <sourceDirectory>src/main/scala</sourceDirectory>
@@ -151,7 +116,7 @@
                     <!-- begin removed for livy-->
                     <exclude>org.scala-lang:scala-library</exclude>
                     <exclude>org.scala-lang:scala-reflect</exclude>
-                    <exclude>org.scala-lang.modules:scala-parser-combinators_2.11</exclude>
+		    <exclude>org.scala-lang.modules:scala-parser-combinators_${scala.tools.version}</exclude>
                     <exclude>org.postgresql:postgresql</exclude>
                     <!-- end   removed for livy-->
                     <exclude>log4j:log4j</exclude>

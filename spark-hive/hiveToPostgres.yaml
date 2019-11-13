@@ -1,0 +1,16 @@
+jobName:      hive To postgres
+hostPg:         host
+portPg:         5432
+databasePg:     edsr
+userPg:         etl
+schemaPg:       public
+tables:
+    - tableHive: test_scd_hive
+      tablePg: test_scd_pg
+      key: [id, cd]
+      hash: hash
+      schemaHive: edsdev
+      numThread: 4
+      updateDatetime: toto
+      deleteDatetime: toto
+      isDelete: true

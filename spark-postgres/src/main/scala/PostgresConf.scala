@@ -19,15 +19,20 @@ class PostgresConf(config: Map[String, String]) extends Serializable with LazyLo
   var PG_NUM_SPLITS: String = "numSplits"
   var PG_PARTITION_COLUMN: String = "partitionColumn"
   var PG_JOIN_KEY: String = "joinkey"
+  var PG_PASSWORD: String = "password"
+  var PG_URL: String = "url"
 
   require(config != null, "Config cannot be null")
   require(config.nonEmpty, "Config cannot be empty")
 
   require(config.get(PG_TYPE).isEmpty || (config.get(PG_TYPE).isDefined
     && ("full" :: "scd1" :: Nil).contains(config.get(PG_TYPE).get)), "type shall be in full, scd1")
-  //  require(config.get(PG_TABLE).nonEmpty, "Table cannot be empty")
 
   def getQuery: Option[String] = config.get(PG_QUERY)
+
+  def getUrl: Option[String] = config.get(PG_URL)
+
+  def getPassword: Option[String] = config.get(PG_PASSWORD)
 
   def getJoinKey: Option[Array[String]] =
     if (config.get(PG_JOIN_KEY).isDefined) Some(config(PG_JOIN_KEY).split(",")) else None

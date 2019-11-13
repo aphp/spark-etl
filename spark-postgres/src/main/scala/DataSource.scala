@@ -93,24 +93,41 @@ class PostgresRelation(val parameters: Map[String, String]
 
   def getPool() = {
 
-    require(conf.getHost.nonEmpty, "Host cannot be empty")
-    require(conf.getDatabase.nonEmpty, "Database cannot be empty")
-    require(conf.getUser.nonEmpty, "User cannot be empty")
+    require(conf.getHost.nonEmpty || conf.getUrl.isDefined, "Host cannot be empty")
+    require(conf.getDatabase.nonEmpty || conf.getUrl.isDefined, "Database cannot be empty")
+    require(conf.getUser.nonEmpty || conf.getUrl.isDefined, "User cannot be empty")
 
-    val tempFolder = conf.getTemp.getOrElse("/tmp")
-    val port = conf.getPort.getOrElse("5432")
-    val schema = conf.getSchema.getOrElse("public")
-    val host = conf.getHost.get
-    val database = conf.getDatabase.get
-    val user = conf.getUser.get
-    val url = f"jdbc:postgresql://${host}:${port}/${database}?user=${user}&currentSchema=${schema}"
-    logger.warn(s"postgres with url: $url")
-    PGTool(sparkSession, url, tempFolder)
+    val url = getUrl(conf.getUrl, conf.getHost, conf.getPort, conf.getDatabase, conf.getUser, conf.getSchema)
+    pgTool(url, conf.getTemp, conf.getPassword)
+  }
+
+  def pgTool(url: String, tempFolder: Option[String], password: Option[String]) = {
+    val pg = PGTool(sparkSession, url, tempFolder.getOrElse("/tmp"))
+    if (password.isDefined)
+      pg.setPassword(password.get)
+    pg
+  }
+
+  def getUrl(url: Option[String]
+             , host: Option[String]
+             , port: Option[String]
+             , database: Option[String]
+             , user: Option[String]
+             , schema: Option[String]
+            ) = {
+    url match {
+      case Some(s) => s
+      case None => "jdbc:postgresql://%s:%s/%s?user=%s&currentSchema=%s"
+        .format(host.get, port.getOrElse(5432), database.get, user.get, schema.getOrElse("public"))
+    }
+
   }
 
   lazy val querySchema: StructType = {
     if (dataFrame.isDefined) dataFrame.get.schema
     else {
+      if(conf.getQuery.isEmpty)
+        throw new RuntimeException("Query shall be defined")
       val query = conf.getQuery.get
       _pg.getSchemaQuery(query)
     }

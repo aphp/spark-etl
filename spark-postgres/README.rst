@@ -38,6 +38,17 @@ Datasource Usage
       .option("partitionColumn","id")
       .load
 
+      // optionally use jdbc url
+      val data = spark.read.format("postgres")
+      .option("url","jdbc:postgres://localhost:5432/postgres?user=postgres&currentSchema=public")
+      .option("password","myUnsecuredPassword")     
+      .option("query","select * from myTable")     
+      .option("partitions",4)
+      .option("numSplits",5)
+      .option("multiline",true)
+      .option("partitionColumn","id")
+      .load
+
       // this copy the spark dataframe into postgres with 4 threads
       // also it disable the indexes and reindexes the table afteward
       import spark.implicits._

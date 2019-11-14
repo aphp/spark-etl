@@ -55,21 +55,27 @@ class PostgresRelation(val parameters: Map[String, String]
 
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
     require(conf.getTable.nonEmpty, "Table cannot be empty")
+    val loadType = conf.getType.getOrElse("full")
+    loadType match {
+      case "scd1" => require(conf.getJoinKey.nonEmpty, "JoinKey cannot be empty when scd1")
+      case "scd2" => require(conf.getEndColumn.nonEmpty && conf.getPrimaryKey.nonEmpty, "pk and endCol cannot be empty when scd2")
+      case _ =>
+    }
     val table = conf.getTable.get
     val reindex = conf.getIsReindex.get
-    val numPartitions = conf.getNumPartition.get
-    val loadType = conf.getType.getOrElse("full")
-    if (loadType == "scd1")
-      require(conf.getJoinKey.nonEmpty, "JoinKey cannot be empty when scd1")
+    val numPartitions = conf.getNumPartition
     val joinKey = conf.getJoinKey
+    val endCol = conf.getEndColumn
+    val pk = conf.getPrimaryKey
 
     if (overwrite)
       _pg.tableDrop(table)
     _pg.tableCreate(table, data.schema, false)
 
     loadType match {
-      case "full" => _pg.outputBulk(table, data, numPartitions, reindex)
-      case "scd1" => _pg.outputScd1Hash(table, joinKey.get.toList, DFTool.dfAddHash(data), Some(numPartitions))
+      case "full" => _pg.outputBulk(table, data, numPartitions.get, reindex)
+      case "scd1" => _pg.outputScd1Hash(table, joinKey.get.toList, DFTool.dfAddHash(data), numPartitions)
+      case "scd2" => _pg.outputScd2Hash(table, data, pk.get, joinKey.get.toList, endCol.get, numPartitions)
     }
     _pg.purgeTmp()
   }
@@ -126,7 +132,7 @@ class PostgresRelation(val parameters: Map[String, String]
   lazy val querySchema: StructType = {
     if (dataFrame.isDefined) dataFrame.get.schema
     else {
-      if(conf.getQuery.isEmpty)
+      if (conf.getQuery.isEmpty)
         throw new RuntimeException("Query shall be defined")
       val query = conf.getQuery.get
       _pg.getSchemaQuery(query)

@@ -4,19 +4,21 @@ import java.sql.{Connection, DriverManager, PreparedStatement, ResultSetMetaData
 import java.util.Properties
 
 import com.typesafe.scalalogging.LazyLogging
-import org.apache.spark.sql.{Dataset, Row}
+import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
+import org.apache.spark.sql.functions.{col, expr}
 import java.util.UUID.randomUUID
 
+import io.frama.parisni.spark.dataframe.DFTool
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.Partitioner
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types._
 import org.postgresql.copy.{CopyManager, PGCopyInputStream}
 import org.postgresql.core.BaseConnection
 
 class PGTool(spark: SparkSession, url: String, tmpPath: String) {
+
   private var password: String = ""
 
   def setPassword(pwd: String = ""): PGTool = {
@@ -29,7 +31,7 @@ class PGTool(spark: SparkSession, url: String, tmpPath: String) {
   }
 
   private def genPath(): String = {
-    tmpPath + "/spark-postgres-" + randomUUID.toString
+    tmpPath + "/" + randomUUID.toString
   }
 
   def purgeTmp(): Boolean = {
@@ -42,7 +44,7 @@ class PGTool(spark: SparkSession, url: String, tmpPath: String) {
     val conf = new Configuration()
     conf.set("fs.defaultFS", fsConf)
     val fs = FileSystem.get(conf)
-    fs.deleteOnExit (new Path(tmpPath)) // delete file when spark quits
+    fs.deleteOnExit(new Path(tmpPath)) // delete file when spark quits
   }
 
   /**
@@ -123,6 +125,11 @@ class PGTool(spark: SparkSession, url: String, tmpPath: String) {
   //    this
   //  }
 
+  def outputScd2Hash(table: String, df: DataFrame, pk: String, key: List[String], endDatetimeCol: String, partitions: Option[Int] = None, multiline: Option[Boolean] = None): Unit = {
+
+    PGTool.outputBulkDfScd2Hash(spark, url, table, df, pk, key, endDatetimeCol, partitions.getOrElse(4), multiline.getOrElse(false), genPath, password)
+  }
+
   def outputScd1Hash(table: String, key: List[String], df: Dataset[Row], numPartitions: Option[Int] = None, hash: Option[String] = None, insertDatetime: Option[String] = None, updateDatetime: Option[String] = None, deleteDatetime: Option[String] = None, isDelete: Boolean = false): PGTool = {
 
     PGTool.outputBulkDfScd1Hash(spark, url, table, key, df, numPartitions.getOrElse(4), hash.getOrElse("hash"), insertDatetime.getOrElse("insert_datetime"), updateDatetime.getOrElse("update_datetime"), deleteDatetime.getOrElse("delete_datetime"), genPath, isDelete, password)
@@ -146,6 +153,7 @@ class PGTool(spark: SparkSession, url: String, tmpPath: String) {
 }
 
 object PGTool extends java.io.Serializable with LazyLogging {
+
 
   def apply(spark: SparkSession, url: String, tmpPath: String): PGTool = new PGTool(spark, url, tmpPath + "/spark-postgres-" + randomUUID.toString).setPassword("")
 
@@ -663,7 +671,19 @@ object PGTool extends java.io.Serializable with LazyLogging {
   //    tableDrop(url, tableTmp, password)
   //  }
 
-  def outputBulkDfScd1Hash(spark: SparkSession, url: String, table: String, key: List[String], df: Dataset[Row], numPartitions: Int = 8, hash: String, insertDatetime: String, updateDatetime: String, deleteDatetime: String, path: String, isDelete: Boolean, password: String = ""): Unit = {
+  def outputBulkDfScd1Hash(spark: SparkSession
+                           , url: String
+                           , table: String
+                           , key: List[String]
+                           , df: Dataset[Row]
+                           , numPartitions: Int = 8
+                           , hash: String
+                           , insertDatetime: String
+                           , updateDatetime: String
+                           , deleteDatetime: String
+                           , path: String
+                           , isDelete: Boolean
+                           , password: String = ""): Unit = {
     // fetch both ID and HASH from the entire target table to spark
     // compare ID and HASH from target table and source table:
     //     create new rows
@@ -751,6 +771,71 @@ object PGTool extends java.io.Serializable with LazyLogging {
     conn.prepareStatement(upd).executeUpdate()
 
     conn.close()
+  }
+
+  def getTmpTable(str: String): String = {
+    val res = str + randomUUID.toString.replaceAll(".*-", "")
+    res
+  }
+
+  def applyScd2(table: String, insertTmp: String, updateTmp: String, pk: String, endDatetimeCol: String, insertSchema: StructType): String = {
+    val insertCol = insertSchema.fields.map(f => f.name).mkString("\"", "\",\"", "\"")
+    val query =
+      s"""
+         |WITH upd as (
+         |  UPDATE "$table" set "$endDatetimeCol" = now() WHERE "$pk" IN (SELECT "$pk" FROM "$updateTmp")
+         |)
+         |INSERT INTO "$table" ($insertCol, "$endDatetimeCol")
+         |SELECT $insertCol, null as "$endDatetimeCol"
+         |FROM "$insertTmp"
+         |""".stripMargin
+    logger.warn(query)
+    query
+  }
+
+  def outputBulkDfScd2Hash(spark: SparkSession
+                           , url: String
+                           , table: String
+                           , df: DataFrame
+                           , pk: String
+                           , key: List[String]
+                           , endDatetimeCol: String
+                           , partitions: Int
+                           , multiline: Boolean
+                           , path: String
+                           , password: String = ""
+                          ): Unit = {
+    val candidate = DFTool.dfAddHash(df)
+    val insertTmp = getTmpTable("ins_")
+    val updateTmp = getTmpTable("upd_")
+    try {
+      // 1. get the pk/key/hash
+      val queryFetch1 = """select "%s", %s, "%s" from %s where "%s" is null """.format(pk, key.mkString("\"", "\",\"", "\""), "hash", table, endDatetimeCol)
+      val fetch1 = inputQueryBulkDf(spark, url, queryFetch1, path, multiline, partitions, pk, 1, password)
+
+      // 2.1 produce insert and update
+      val joinCol = key.map(x => s"""f.`$x` = c.`$x`""").mkString(" AND ")
+      val insert = DFTool.dfAddHash(candidate).as("c").join(fetch1.as("f"), expr(joinCol + "AND c.hash = f.hash"), "left_anti")
+
+      // 2.2 produce insert and update
+      val update = fetch1.as("f").join(candidate.as("c"), expr(joinCol + "AND c.hash != f.hash"), "left_semi").select(col(pk))
+
+      // 3. load tmp tables
+      tableCreate(url, insertTmp, insert.schema, password)
+      outputBulkCsv(spark, url, insertTmp, insert, path + "ins", partitions, password)
+
+      tableCreate(url, updateTmp, update.schema, password)
+      outputBulkCsv(spark, url, updateTmp, update, path + "upd", partitions, password)
+
+
+      // 4. load postgres
+      sqlExec(url, applyScd2(table, insertTmp, updateTmp, pk, endDatetimeCol, insert.schema), password)
+
+    } finally {
+      // 5. drop the temporarytables
+      tableDrop(url, insertTmp, password)
+      tableDrop(url, updateTmp, password)
+    }
   }
 
   //  def scd1Insert(url: String, table: String, tableTarg: String, key: String, rddSchema: StructType, excludeColumns: List[String] = Nil, includeColumns: List[String] = Nil, password: String = ""): Unit = {

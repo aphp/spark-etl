@@ -9,7 +9,6 @@ import scala.annotation.meta.getter
 class ExampleSuite extends QueryTest with SparkSessionTestWrapper {
 
 
-
   @Test def verifySpark(): Unit = {
     spark.sql("select 1").show
   }
@@ -96,6 +95,8 @@ trait SparkSessionTestWrapper {
   var pg: SingleInstancePostgresRule = EmbeddedPostgresRules.singleInstance()
 
   def getPgUrl = pg.getEmbeddedPostgres.getJdbcUrl("postgres", "postgres") + "&current_schema=public"
+
+  def getPgTool() = PGTool(spark, getPgUrl, "/tmp")
 
   lazy val spark: SparkSession = {
     SparkSession

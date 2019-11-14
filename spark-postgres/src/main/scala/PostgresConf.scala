@@ -21,12 +21,14 @@ class PostgresConf(config: Map[String, String]) extends Serializable with LazyLo
   var PG_JOIN_KEY: String = "joinkey"
   var PG_PASSWORD: String = "password"
   var PG_URL: String = "url"
+  var PG_END_COLUMN: String = "endCol"
+  var PG_PK: String = "pk"
 
   require(config != null, "Config cannot be null")
   require(config.nonEmpty, "Config cannot be empty")
 
   require(config.get(PG_TYPE).isEmpty || (config.get(PG_TYPE).isDefined
-    && ("full" :: "scd1" :: Nil).contains(config.get(PG_TYPE).get)), "type shall be in full, scd1")
+    && ("full" :: "scd1" :: "scd2" :: Nil).contains(config.get(PG_TYPE).get)), "type shall be in full, scd1")
 
   def getQuery: Option[String] = config.get(PG_QUERY)
 
@@ -34,10 +36,15 @@ class PostgresConf(config: Map[String, String]) extends Serializable with LazyLo
 
   def getPassword: Option[String] = config.get(PG_PASSWORD)
 
+
+  def getPrimaryKey: Option[String] = config.get(PG_PK)
+
   def getJoinKey: Option[Array[String]] =
     if (config.get(PG_JOIN_KEY).isDefined) Some(config(PG_JOIN_KEY).split(",")) else None
 
   def getPartitionColumn: Option[String] = config.get(PG_PARTITION_COLUMN)
+
+  def getEndColumn: Option[String] = config.get(PG_END_COLUMN)
 
   def getIsMultiline: Option[Boolean] =
     if (config.get(PG_MULTILINE).isDefined) Some(config(PG_MULTILINE).toBoolean) else Some(false)

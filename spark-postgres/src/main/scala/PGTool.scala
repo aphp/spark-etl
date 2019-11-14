@@ -649,14 +649,33 @@ object PGTool extends java.io.Serializable with LazyLogging {
     spark.sql(sqlQuery)
   }
 
+
+  def tableEmpty(spark: SparkSession, url: String, table: String, password: String): Boolean = {
+    val query = s"""select 1 from "$table" limit 1 """
+    sqlExecWithResult(spark, url, query, password).count == 0
+  }
+
+  def loadEmptyTable(spark: SparkSession, url: String, table: String, candidate: Dataset[Row], path: String, partitions: Int, password: String): Boolean = {
+    if (tableEmpty(spark, url, table, password)) {
+      outputBulkCsv(spark, url, table, candidate, path, partitions, password, true)
+      logger.warn("Loading directly data")
+      return true
+    }
+    false
+  }
+
+
   def outputBulkDfScd1Hash(spark: SparkSession
                            , url: String
                            , table: String
                            , candidate: Dataset[Row]
                            , key: List[String]
-                           , partitions: Int = 8
+                           , partitions: Int = 4
                            , path: String
                            , password: String = ""): Unit = {
+    if (loadEmptyTable(spark, url, table, candidate, path, partitions, password))
+      return
+
     val insertTmp = getTmpTable("ins_")
     val updateTmp = getTmpTable("upd_")
     try {
@@ -765,6 +784,10 @@ object PGTool extends java.io.Serializable with LazyLogging {
                            , path: String
                            , password: String = ""
                           ): Unit = {
+
+    if (loadEmptyTable(spark, url, table, candidate, path, partitions, password))
+      return
+
     val insertTmp = getTmpTable("ins_")
     val updateTmp = getTmpTable("upd_")
     try {
@@ -796,70 +819,6 @@ object PGTool extends java.io.Serializable with LazyLogging {
     }
   }
 
-  //  def scd1Insert(url: String, table: String, tableTarg: String, key: String, rddSchema: StructType, excludeColumns: List[String] = Nil, includeColumns: List[String] = Nil, password: String = ""): Unit = {
-  //    val conn = connOpen(url, password)
-  //
-  //    val insSet = rddSchema.fields.filter(x => !excludeColumns.contains(x.name)).map(x => s"${x.name}").mkString(",")
-  //    val insSetTarg = rddSchema.fields.filter(x => !excludeColumns.contains(x.name)).map(x => s"tmp.${x.name}").mkString(",")
-  //
-  //    val ins = s"""
-  //    INSERT INTO $table ($insSet)
-  //    SELECT $insSetTarg
-  //    FROM $tableTarg as tmp
-  //    LEFT JOIN $table as targ USING ($key)
-  //    WHERE TRUE
-  //    AND targ.$key IS NULL
-  //    """
-  //    conn.prepareStatement(ins).executeUpdate()
-  //    conn.close()
-  //  }
-
-  //  def outputBulkDfScd2(spark: SparkSession, url: String, table: String, key: String, dateBegin: String, dateEnd: String, df: Dataset[Row], numPartitions: Int = 8, excludeColumns: List[String] = Nil, path: String, password: String = ""): Unit = {
-  //    val tableTmp = "table_" + randomUUID.toString.replaceAll(".*-", "")
-  //    tableDrop(url, tableTmp, password)
-  //    tableCopy(url, table, tableTmp, password)
-  //    outputBulkCsv(spark, url, tableTmp, df, path, numPartitions, password)
-  //    scd2(url, table, tableTmp, key, dateBegin, dateEnd, df.schema, excludeColumns, password)
-  //    tableDrop(url, tableTmp, password)
-  //  }
-
-  //  def scd2(url: String, table: String, tableTmp: String, key: String, dateBegin: String, dateEnd: String, rddSchema: StructType, excludeColumns: List[String] = Nil, password: String = ""): Unit = {
-  //    val conn = connOpen(url, password)
-  //    val insCols = rddSchema.fields.filter(x => x.name != dateBegin).filter(x => !excludeColumns.contains(x.name)).map(x => s"${x.name}").mkString(",") + "," + dateBegin
-  //    val insColsTmp = rddSchema.fields.filter(x => x.name != dateBegin).filter(x => !excludeColumns.contains(x.name)).map(x => s"tmp.${x.name}").mkString(",") + ", now()"
-  //
-  //    // update  where key AND  is distinct from
-  //    // insert  where key AND  is distinct from
-  //    val oldRows = s"""
-  //    WITH
-  //    upd AS (
-  //    UPDATE $table c
-  //    SET $dateEnd = now()
-  //    FROM $tableTmp tmp
-  //    WHERE TRUE
-  //    AND tmp.$key  = c.$key
-  //    AND c.$dateEnd IS null
-  //    AND tmp.concept_code IS DISTINCT FROM c.concept_code
-  //    RETURNING c.$key
-  //    )
-  //    INSERT INTO $table ($insCols)
-  //    SELECT $insColsTmp
-  //    FROM $tableTmp tmp
-  //    JOIN upd USING ($key)
-  //    """
-  //    conn.prepareStatement(oldRows).executeUpdate()
-  //
-  //    // insert  where key AND left join null
-  //    val newRows = s"""
-  //    INSERT INTO $table ($insCols)
-  //    SELECT $insColsTmp
-  //    FROM $tableTmp tmp
-  //    LEFT JOIN $table c USING ($key)
-  //    WHERE c.$key IS null;
-  //    """
-  //    conn.prepareStatement(newRows).executeUpdate()
-  //    conn.close()
-  //  }
 }
 
 class ExactPartitioner[V](partitions: Int) extends Partitioner {

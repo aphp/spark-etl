@@ -94,7 +94,7 @@ trait SparkSessionTestWrapper {
   @(Rule@getter)
   var pg: SingleInstancePostgresRule = EmbeddedPostgresRules.singleInstance()
 
-  def getPgUrl = pg.getEmbeddedPostgres.getJdbcUrl("postgres", "postgres") + "&current_schema=public"
+  def getPgUrl = pg.getEmbeddedPostgres.getJdbcUrl("postgres", "postgres") + "&currentSchema=public"
 
   def getPgTool() = PGTool(spark, getPgUrl, "/tmp")
 

@@ -55,16 +55,14 @@ object HiveToPostgres extends App with LazyLogging {
             dfHive = dfHive.drop(table.joinHiveColumn.get)
         }
 
-        if (table.typeLoad.getOrElse("scd1") == "scd1") {
-          var df = DFTool.dfAddHash(dfHive)
-          if (!table.isDelete && !table.updateDatetime.isDefined) // delete = false
-            pg.outputScd1Hash(table = table.tablePg, key = table.key, hash = table.hash, df = df, numPartitions = table.numThread)
-          else
-            pg.outputScd1Hash(table = table.tablePg, key = table.key, hash = table.hash, df = df, numPartitions = table.numThread, insertDatetime = table.insertDatetime, updateDatetime = table.updateDatetime, deleteDatetime = table.deleteDatetime, isDelete = table.isDelete)
-
-        } else {
-          pg.tableTruncate(table.tablePg)
-          pg.outputBulk(table.tablePg, DFTool.dfAddHash(dfHive), 8, reindex = true)
+        var df = DFTool.dfAddHash(dfHive)
+        table.typeLoad.getOrElse("scd1") match {
+          case "scd1" => pg.outputScd1Hash(table = table.tablePg, key = table.key, df = df, numPartitions = table.numThread)
+          case "full" => {
+            pg.tableTruncate(table.tablePg)
+            pg.outputBulk(table.tablePg, df, 8, reindex = true)
+          }
+          case _ => throw new UnsupportedOperationException
         }
         logger.warn(f"LOADED $table.tableHive")
       }

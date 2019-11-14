@@ -1,46 +1,11 @@
 import java.sql.Timestamp
 
+import io.frama.parisni.spark.dataframe.DFTool
 import io.frama.parisni.spark.postgres.SparkSessionTestWrapper
 import org.apache.spark.sql.{DataFrame, QueryTest}
-import org.junit.{Before, Test}
+import org.junit.Test
 
 class ScdTest extends QueryTest with SparkSessionTestWrapper {
-
-  @Before
-  def initDatabase(): Unit = {
-    import spark.implicits._
-    val df = ((1L, "bob", 1) :: (3L, "bob", 2) :: Nil).toDF("id", "cd", "hash")
-
-    df.write
-      .format("postgres")
-      .option("url", getPgUrl)
-      .option("table", "scd1table")
-      .save
-
-  }
-
-  @Test
-  def verifyScd1(): Unit = {
-
-    import spark.implicits._
-    val df = ((1L, "jim") :: (2L, "johm") :: Nil).toDF("id", "cd")
-    df.write.format("postgres")
-      .option("url", getPgUrl)
-      .option("type", "scd1")
-      .option("joinKey", "id")
-      .option("table", "scd1table")
-      .save
-
-    val result = ((1L, "jim") :: (2L, "johm") :: (3L, "bob") :: Nil).toDF("id", "cd")
-
-    checkAnswer(spark.read.format("postgres")
-      .option("url", getPgUrl)
-      .option("query", "select * from scd1table")
-      .load
-      .select("id", "cd")
-      , result
-    )
-  }
 
   @Test
   def verifyScd2(): Unit = {
@@ -99,13 +64,13 @@ class ScdTest extends QueryTest with SparkSessionTestWrapper {
     val df: DataFrame = ((1, "a", "b", "jim", new Timestamp(1L), -1) ::
       Nil).toDF("id", "key1", "key2", "cd", "end_date", "hash")
     getPgTool().tableCreate("test_scd2_low", df.schema)
-    getPgTool().outputScd2Hash(table, df.drop("hash", "end_date"), pk, joinKey, endDatetimeCol, partitions, multiline)
+    getPgTool().outputScd2Hash(table, DFTool.dfAddHash(df.drop("hash", "end_date")), pk, joinKey, endDatetimeCol, partitions, multiline)
 
     val df1: DataFrame = ((1, "a", "b", "bob", new Timestamp(1L), -1) ::
       Nil).toDF("id", "key1", "key2", "cd", "end_date", "hash")
-    getPgTool().outputScd2Hash(table, df1.drop("hash", "end_date"), pk, joinKey, endDatetimeCol, partitions, multiline)
+    getPgTool().outputScd2Hash(table,DFTool.dfAddHash( df1.drop("hash", "end_date")), pk, joinKey, endDatetimeCol, partitions, multiline)
     // this should make nothing
-    getPgTool().outputScd2Hash(table, df1.drop("hash", "end_date"), pk, joinKey, endDatetimeCol, partitions, multiline)
+    getPgTool().outputScd2Hash(table, DFTool.dfAddHash(df1.drop("hash", "end_date")), pk, joinKey, endDatetimeCol, partitions, multiline)
 
     val result = getPgTool().inputBulk("select * from test_scd2_low")
 

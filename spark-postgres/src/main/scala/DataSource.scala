@@ -75,7 +75,7 @@ class PostgresRelation(val parameters: Map[String, String]
     loadType match {
       case "full" => _pg.outputBulk(table, data, numPartitions.get, reindex)
       case "scd1" => _pg.outputScd1Hash(table, joinKey.get.toList, DFTool.dfAddHash(data), numPartitions)
-      case "scd2" => _pg.outputScd2Hash(table, data, pk.get, joinKey.get.toList, endCol.get, numPartitions)
+      case "scd2" => _pg.outputScd2Hash(table, DFTool.dfAddHash(data), pk.get, joinKey.get.toList, endCol.get, numPartitions)
     }
     _pg.purgeTmp()
   }

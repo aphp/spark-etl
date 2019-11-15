@@ -82,7 +82,14 @@ class ExampleSuite extends QueryTest with SparkSessionTestWrapper {
         .mode(org.apache.spark.sql.SaveMode.Overwrite)
         .save
     )
+  }
 
+  @Test
+  def verifyPostgresCreateTable(): Unit = {
+    import spark.implicits._
+    val schema = ((1, "asdf", 1L, Array(1, 2, 3), Array("bob"), Array(1L, 2L)) :: Nil)
+      .toDF("int_col", "string_col", "long_col", "array_int_col", "array_string_col", "array_bigint_col").schema
+    getPgTool().tableCreate("test_array", schema, true)
   }
 }
 

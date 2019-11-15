@@ -317,7 +317,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
       ""
     }
     val queryCreate = schema.fields.map(f => {
-      "%s %s".format(f.name, toPostgresDdl(f.dataType.typeName))
+      "%s %s".format(f.name, toPostgresDdl(f.dataType.catalogString))
     }).mkString(s"CREATE $unlogged TABLE IF NOT EXISTS $tableTarg (", ",", ");")
 
     val st: PreparedStatement = conn.prepareStatement(queryCreate)
@@ -329,12 +329,15 @@ object PGTool extends java.io.Serializable with LazyLogging {
     s match {
       case "string" => "text"
       case "double" => "double precision"
-      case "long" => "bigint"
-      case "integer" => "integer"
-      case "timestamp" => "timestamp"
+      case "bigint" => "bigint"
+      case "int" => "integer"
       case "date" => "date"
+      case "timestamp" => "timestamp"
       case "boolean" => "boolean"
-      case _ => "text" //throw new Exception("data type not handled yet:%s".format(s))
+      case "array<int>" => "integer[]"
+      case "array<bigint>" => "bigint[]"
+      case "array<string>" => "text[]"
+      case _ => throw new Exception("data type not handled yet:%s".format(s))
     }
   }
 

@@ -91,6 +91,20 @@ class ExampleSuite extends QueryTest with SparkSessionTestWrapper {
       .toDF("int_col", "string_col", "long_col", "array_int_col", "array_string_col", "array_bigint_col").schema
     getPgTool().tableCreate("test_array", schema, true)
   }
+
+  @Test
+  def verifyPostgresCreateSpecialTable(): Unit = {
+    import spark.implicits._
+    val data = ((1, "asdf", 1L, Array(1, 2, 3), Array("bob"), Array(1L, 2L)) :: Nil)
+      .toDF("INT_COL", "STRING_COL", "LONG_COL", "ARRAY_INT_COL", "ARRAY_STRING_COL", "ARRAY_BIGINT_COL")
+    val schema = data.schema
+    getPgTool().tableCreate("TEST_ARRAY", schema, true)
+    data.write.format("postgres")
+      .option("url", getPgUrl)
+      .option("type", "full")
+      .option("table", "TEST_ARRAY")
+      .save
+  }
 }
 
 import org.apache.spark.sql.SparkSession

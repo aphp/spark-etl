@@ -142,7 +142,6 @@ class PGTool(spark: SparkSession, url: String, tmpPath: String) {
 
 object PGTool extends java.io.Serializable with LazyLogging {
 
-
   def apply(spark: SparkSession, url: String, tmpPath: String): PGTool = new PGTool(spark, url, tmpPath + "/spark-postgres-" + randomUUID.toString).setPassword("")
 
   private def dbPassword(hostname: String, port: String, database: String, username: String): String = {
@@ -183,11 +182,6 @@ object PGTool extends java.io.Serializable with LazyLogging {
     dbc
   }
 
-  private def getSchemaTable(spark: SparkSession, url: String, table: String): StructType = {
-    val query = s""" select * from $table """
-    getSchemaQuery(spark, url, query)
-  }
-
   private def getSchemaQuery(spark: SparkSession, url: String, query: String, password: String = ""): StructType = {
     val queryStr = s"""(SELECT * FROM ($query) as tmp1 LIMIT 0) as tmp"""
     spark.read.format("jdbc")
@@ -198,36 +192,16 @@ object PGTool extends java.io.Serializable with LazyLogging {
       .load.schema
   }
 
-  private def getCreateStmtFromSchema(struct: StructType, table: String, excludeColumns: List[String]): String = {
-    var columns = ""
-    var begin = true
-    for (col <- struct) {
-      if (!excludeColumns.contains(col.name)) {
-        if (!begin)
-          columns += ",\n"
-        var dataType = col.dataType.sql
-        if (dataType == "STRING")
-          dataType = "text"
-        columns += f"${col.name} ${dataType}"
-
-        if (begin)
-          begin = false
-      }
-    }
-
-    return f"create table $table (\n$columns)"
-  }
-
   def tableTruncate(url: String, table: String, password: String = ""): Unit = {
     val conn = connOpen(url, password)
-    val st: PreparedStatement = conn.prepareStatement(s"TRUNCATE TABLE $table")
+    val st: PreparedStatement = conn.prepareStatement(s"""TRUNCATE TABLE "$table" """)
     st.executeUpdate()
     conn.close()
   }
 
   def tableDrop(url: String, table: String, password: String = ""): Unit = {
     val conn = connOpen(url, password)
-    val st: PreparedStatement = conn.prepareStatement(s"DROP TABLE IF EXISTS $table")
+    val st: PreparedStatement = conn.prepareStatement(s"""DROP TABLE IF EXISTS "$table" """)
     st.executeUpdate()
     conn.close()
   }
@@ -274,7 +248,6 @@ object PGTool extends java.io.Serializable with LazyLogging {
       val schema = jdbcMetadataToStructType(rs.getMetaData)
 
       spark.createDataFrame(b, schema)
-      //b.toDF(columnsName.toArray: _*)
     } finally {
       conn.close()
     }
@@ -303,7 +276,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
     } else {
       ""
     }
-    val queryCreate = s"""CREATE $unlogged TABLE $tableTarg (LIKE $tableSrc  INCLUDING DEFAULTS)"""
+    val queryCreate = s"""CREATE $unlogged TABLE "$tableTarg" (LIKE "$tableSrc"  INCLUDING DEFAULTS)"""
     val st: PreparedStatement = conn.prepareStatement(queryCreate)
     st.executeUpdate()
     conn.close()
@@ -317,8 +290,8 @@ object PGTool extends java.io.Serializable with LazyLogging {
       ""
     }
     val queryCreate = schema.fields.map(f => {
-      "%s %s".format(f.name, toPostgresDdl(f.dataType.catalogString))
-    }).mkString(s"CREATE $unlogged TABLE IF NOT EXISTS $tableTarg (", ",", ");")
+      s""""%s" %s""".format(f.name, toPostgresDdl(f.dataType.catalogString))
+    }).mkString(s"""CREATE $unlogged TABLE IF NOT EXISTS "$tableTarg" (""", ",", ");")
 
     val st: PreparedStatement = conn.prepareStatement(queryCreate)
     st.executeUpdate()
@@ -343,14 +316,18 @@ object PGTool extends java.io.Serializable with LazyLogging {
 
   def tableMove(url: String, tableSrc: String, tableTarg: String, password: String = ""): Unit = {
     val conn = connOpen(url, password)
-    val queryCreate = s"""ALTER TABLE $tableSrc RENAME TO $tableTarg"""
+    val queryCreate = s"""ALTER TABLE "$tableSrc" RENAME TO "$tableTarg" """
     val st: PreparedStatement = conn.prepareStatement(queryCreate)
     st.executeUpdate()
     conn.close()
   }
 
   private def getMinMaxForColumn(spark: SparkSession, url: String, query: String, partitionColumn: String, password: String = ""): Tuple2[Long, Long] = {
-    val min_max_query = s"(SELECT coalesce(cast(min($partitionColumn) as bigint), 0) as min, coalesce(cast(max($partitionColumn) as bigint),0) as max FROM $query) AS tmp1"
+    val min_max_query =
+      s"""(SELECT
+         |coalesce(cast(min("$partitionColumn") as bigint), 0) as min,
+         |coalesce(cast(max("$partitionColumn") as bigint),0) as max
+         |FROM $query) AS tmp1""".stripMargin
     val row = spark.read.format("jdbc")
       .option("url", url)
       .option("driver", "org.postgresql.Driver")
@@ -413,7 +390,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
     try {
       if (reindex)
         indexDeactivate(url, table, password)
-      val columns = df.schema.fields.map(x => s"${x.name}").mkString(",")
+      val columns = df.schema.fields.map(x => s"${sanP(x.name)}").mkString(",")
       //transform arrays to string
       val dfTmp = dataframeToPgCsv(spark, df, df.schema)
       //write a csv folder
@@ -452,7 +429,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
           s => {
             val stream = (FileSystem.get(new Configuration())).open(new Path(s._2)).getWrappedStream
             val copyManager: CopyManager = new CopyManager(conn.asInstanceOf[BaseConnection]);
-            copyManager.copyIn(s"""COPY $table ($columns) FROM STDIN WITH CSV DELIMITER '$delimiter'  NULL '' ESCAPE '"' QUOTE '"' """, stream);
+            copyManager.copyIn(s"""COPY "$table" ($columns) FROM STDIN WITH CSV DELIMITER '$delimiter'  NULL '' ESCAPE '"' QUOTE '"' """, stream);
           }
         }
         conn.close()
@@ -480,7 +457,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
         val conn = connOpen(url, password)
         x.foreach {
           s => {
-            val queryPart = s"SELECT * FROM $queryStr WHERE $partitionColumn ${s._2}"
+            val queryPart = s"""SELECT * FROM $queryStr WHERE "$partitionColumn" ${s._2}"""
             inputQueryBulkCsv(fsConf, conn, queryPart, path)
           }
         }
@@ -622,19 +599,23 @@ object PGTool extends java.io.Serializable with LazyLogging {
     })
   }
 
+  def sanS(obj: String) = obj.mkString("`", "", "`")
+
+  def sanP(obj: String) = obj.mkString("\"", "", "\"")
+
   def dataframeFromPgCsv(spark: SparkSession, dfSimple: Dataset[Row], schemaQueryComplex: StructType): Dataset[Row] = {
     val tableTmp = "table_" + randomUUID.toString.replaceAll(".*-", "")
     dfSimple.registerTempTable(tableTmp)
     val sqlQuery = "SELECT " + schemaQueryComplex.map(a => {
       if (a.dataType.simpleString == "boolean") {
-        "CAST(" + a.name + " as boolean) as " + a.name
+        "CAST(" + sanS(a.name) + " as boolean) as " + sanS(a.name)
       } else if (a.dataType.simpleString.indexOf("array") == 0) {
-        "CAST(SPLIT(REGEXP_REPLACE(" + a.name + ", '^[{]|[}]$', ''), ',') AS " + a.dataType.simpleString + ") as " + a.name
+        "CAST(SPLIT(REGEXP_REPLACE(" + sanS(a.name) + ", '^[{]|[}]$', ''), ',') AS " + a.dataType.simpleString + ") as " + sanS(a.name)
       } else {
-        a.name
+        sanS(a.name)
       }
     })
-      .mkString(", ") + " FROM " + tableTmp
+      .mkString(", ") + " FROM " + sanS(tableTmp)
     spark.sql(sqlQuery)
   }
 
@@ -643,12 +624,12 @@ object PGTool extends java.io.Serializable with LazyLogging {
     dfSimple.registerTempTable(tableTmp)
     val sqlQuery = "SELECT " + schemaQueryComplex.map(a => {
       if (a.dataType.simpleString.indexOf("array") == 0) {
-        "REGEXP_REPLACE(REGEXP_REPLACE(CAST(" + a.name + " AS string), '^.', '{'), '.$', '}') AS " + a.name
+        "REGEXP_REPLACE(REGEXP_REPLACE(CAST(" + sanS(a.name) + " AS string), '^.', '{'), '.$', '}') AS " + sanS(a.name)
       } else {
-        a.name
+        sanS(a.name)
       }
     })
-      .mkString(", ") + " FROM " + tableTmp
+      .mkString(", ") + " FROM " + sanS(tableTmp)
     spark.sql(sqlQuery)
   }
 
@@ -683,7 +664,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
     val updateTmp = getTmpTable("upd_")
     try {
       // 1. get key/hash
-      val queryFetch1 = """select  %s, "%s" from %s""".format(key.mkString("\"", "\",\"", "\""), "hash", table)
+      val queryFetch1 = """select  %s, "%s" from %s""".format(key.mkString("\"", "\",\"", "\""), "hash", sanP(table))
       val fetch1 = inputQueryBulkDf(spark, url, queryFetch1, path, true, 1, password)
 
       // 2.1 produce insert and update
@@ -712,14 +693,14 @@ object PGTool extends java.io.Serializable with LazyLogging {
 
   def applyScd1(table: String, insertTmp: String, updateTmp: String, insertSchema: StructType, key: List[String]): String = {
     val insertCol = insertSchema.fields.map(f => f.name).mkString("\"", "\",\"", "\"")
-    val updateCol = insertSchema.fields.map(f => s""" ${f.name} = s."${f.name}" """).mkString(",")
+    val updateCol = insertSchema.fields.map(f => s""" "${f.name}" = s."${f.name}" """).mkString(",")
     val joinColumns = key.map(k => s""" t."$k" = s."$k" """).mkString("AND")
     val query =
       s"""
          |WITH upd as (
-         |  UPDATE $table as t
+         |  UPDATE "$table" as t
          |  SET $updateCol
-         |  FROM $updateTmp as s
+         |  FROM "$updateTmp" as s
          |  WHERE ($joinColumns)
          |)
          |INSERT INTO "$table" ($insertCol)
@@ -730,31 +711,6 @@ object PGTool extends java.io.Serializable with LazyLogging {
     query
   }
 
-  def scd1Update(url: String, table: String, tableTarg: String, key: List[String], rddSchema: StructType, excludeColumns: List[String] = Nil, includeColumns: List[String] = Nil, isCompare: Boolean = true, password: String = ""): Unit = {
-    val conn = connOpen(url, password)
-    val joinColumns = key.map(x => s"targ.${x} = tmp.${x}").mkString(" AND ")
-    val updSet = rddSchema.fields.filter(x => !key.contains(x.name)).filter(x => !excludeColumns.contains(x.name)).map(x => s"${x.name} = tmp.${x.name}").mkString(",")
-    var updIsDistinct = rddSchema.fields.filter(x => !key.contains(x.name)).filter(x => !excludeColumns.contains(x.name)).map(x => s"tmp.${x.name} IS DISTINCT FROM tmp.${x.name}").mkString(" OR ")
-    if (includeColumns.size != 0) { //Either exclude or include
-      updIsDistinct = includeColumns.map(x => s"tmp.${x} IS DISTINCT FROM tmp.${x}").mkString(" OR ")
-    }
-    if (!isCompare) { //update in any case
-      updIsDistinct = "1 = 1"
-    }
-
-    val upd =
-      s"""
-    UPDATE $table as targ
-    SET $updSet
-    FROM $tableTarg as tmp
-    WHERE TRUE
-    AND ($joinColumns)
-    AND ($updIsDistinct)
-    """
-    conn.prepareStatement(upd).executeUpdate()
-
-    conn.close()
-  }
 
   def getTmpTable(str: String): String = {
     val res = str + randomUUID.toString.replaceAll(".*-", "")

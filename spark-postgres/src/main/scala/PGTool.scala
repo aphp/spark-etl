@@ -625,9 +625,12 @@ object PGTool extends java.io.Serializable with LazyLogging {
     val sqlQuery = "SELECT " + schemaQueryComplex.map(a => {
       if (a.dataType.simpleString.indexOf("array") == 0) {
         "REGEXP_REPLACE(REGEXP_REPLACE(CAST(" + sanS(a.name) + " AS string), '^.', '{'), '.$', '}') AS " + sanS(a.name)
+      } else if (a.dataType.simpleString.indexOf("string") == 0) {
+        "REGEXP_REPLACE(" + sanS(a.name) + ", '\\u0000', '') AS " + sanS(a.name) // this character breaks postgresql parser
       } else {
         sanS(a.name)
       }
+
     })
       .mkString(", ") + " FROM " + sanS(tableTmp)
     spark.sql(sqlQuery)

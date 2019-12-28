@@ -626,7 +626,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
       if (a.dataType.simpleString.indexOf("array") == 0) {
         "REGEXP_REPLACE(REGEXP_REPLACE(CAST(" + sanS(a.name) + " AS string), '^.', '{'), '.$', '}') AS " + sanS(a.name)
       } else if (a.dataType.simpleString.indexOf("string") == 0) {
-        "REGEXP_REPLACE(" + sanS(a.name) + ", '\\u0000', '') AS " + sanS(a.name) // this character breaks postgresql parser
+        "REGEXP_REPLACE(REGEXP_REPLACE(" + sanS(a.name) + ", '\\u0000', ''),'\r\n|\r','\n') AS " + sanS(a.name) // this character breaks postgresql parser
       } else {
         sanS(a.name)
       }
@@ -644,8 +644,8 @@ object PGTool extends java.io.Serializable with LazyLogging {
 
   def loadEmptyTable(spark: SparkSession, url: String, table: String, candidate: Dataset[Row], path: String, partitions: Int, password: String): Boolean = {
     if (tableEmpty(spark, url, table, password)) {
-      outputBulkCsv(spark, url, table, candidate, path, partitions, password, true)
       logger.warn("Loading directly data")
+      outputBulkCsv(spark, url, table, candidate, path, partitions, password, false)
       return true
     }
     false
@@ -662,6 +662,8 @@ object PGTool extends java.io.Serializable with LazyLogging {
                            , password: String = ""): Unit = {
     if (loadEmptyTable(spark, url, table, candidate, path, partitions, password))
       return
+
+    logger.warn("The postgres table is not empty")
 
     val insertTmp = getTmpTable("ins_")
     val updateTmp = getTmpTable("upd_")

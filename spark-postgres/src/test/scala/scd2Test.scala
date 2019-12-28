@@ -68,7 +68,7 @@ class ScdTest extends QueryTest with SparkSessionTestWrapper {
 
     val df1: DataFrame = ((1, "a", "b", "bob", new Timestamp(1L), -1) ::
       Nil).toDF("id", "key1", "key2", "cd", "end_date", "hash")
-    getPgTool().outputScd2Hash(table,DFTool.dfAddHash( df1.drop("hash", "end_date")), pk, joinKey, endDatetimeCol, partitions, multiline)
+    getPgTool().outputScd2Hash(table, DFTool.dfAddHash(df1.drop("hash", "end_date")), pk, joinKey, endDatetimeCol, partitions, multiline)
     // this should make nothing
     getPgTool().outputScd2Hash(table, DFTool.dfAddHash(df1.drop("hash", "end_date")), pk, joinKey, endDatetimeCol, partitions, multiline)
 

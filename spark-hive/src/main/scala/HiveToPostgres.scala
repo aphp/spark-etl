@@ -38,10 +38,17 @@ object HiveToPostgres extends App with LazyLogging {
       if (table.isActive.getOrElse(true)) {
         logger.warn(f"LOADING $table.tableHive")
         val query = f"select * from ${table.schemaHive}.${table.tableHive}"
-        var dfHive = spark.sql(query)
+
+        var dfHive = table.format.getOrElse("hive") match {
+          case "hive" => spark.sql(query)
+          case "delta" => spark.read.format("delta").load(table.schemaHive + "/" + table.tableHive)
+        }
+
+        logger.warn("Candidate table with %s".format(dfHive.count))
 
         //IN CASE JOIN is defined
         if (table.joinTable.isDefined) {
+          logger.warn("Join table defined")
           // get the information from postgres
           val joinTable = pg.inputBulk("select %s, %s from %s".format(table.joinPostgresColumn.get, table.joinFetchColumns.get.mkString(", "), table.joinTable.get),
             isMultiline = Some(false), numPartitions = Some(1))
@@ -60,7 +67,7 @@ object HiveToPostgres extends App with LazyLogging {
           case "scd1" => pg.outputScd1Hash(table = table.tablePg, key = table.key, df = df, numPartitions = table.numThread)
           case "full" => {
             pg.tableTruncate(table.tablePg)
-            pg.outputBulk(table.tablePg, df, 8, reindex = true)
+            pg.outputBulk(table.tablePg, df, 8, reindex = table.reindex.getOrElse(false))
           }
           case _ => throw new UnsupportedOperationException
         }

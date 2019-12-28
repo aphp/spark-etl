@@ -21,7 +21,10 @@ object HiveToPostgresYaml extends DefaultYamlProtocol {
                     , joinHiveColumn: Option[String]
                     , joinKeepColumn: Option[Boolean]
                     , joinFetchColumns: Option[List[String]]
-                    , isActive: Option[Boolean]) {
+                    , isActive: Option[Boolean]
+                    , reindex: Option[Boolean]
+                    , format: Option[String]
+                  ) {
     require(numThread.isDefined && (numThread.get < 9 && numThread.get > 0), "Thread number should be between 1 and 8")
     require(typeLoad.isEmpty || (Array("full", "scd1").contains(typeLoad.get)), "When update a date field should be specified")
     require(joinTable.isEmpty && joinPostgresColumn.isEmpty && joinFetchColumns.isEmpty && joinHiveColumn.isEmpty && joinKeepColumn.isEmpty ||
@@ -38,7 +41,7 @@ object HiveToPostgresYaml extends DefaultYamlProtocol {
                       , tables: Option[List[Table]] = None)
 
 
-  implicit val colorFormat = yamlFormat17(Table)
+  implicit val colorFormat = yamlFormat19(Table)
   implicit val paletteFormat = yamlFormat7(Database)
 }
 

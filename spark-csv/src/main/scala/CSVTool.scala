@@ -1,29 +1,14 @@
 package io.frama.parisni.spark.csv
 
-import java.io.ByteArrayInputStream
-import java.io.File
-import java.io.FileOutputStream
-import java.util.Properties
-import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.functions._
-import org.apache.spark.sql.jdbc.{ JdbcDialect, JdbcDialects, JdbcType }
-import org.apache.spark.sql.types.{ StructType, IntegerType }
-import org.apache.spark.sql.SparkSession
-import java.io.{ BufferedInputStream, BufferedOutputStream, FileInputStream, FileOutputStream }
-import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.FileSystem
-import org.apache.hadoop.fs.Path
-import java.util.UUID.randomUUID
-import scala.reflect.io.Directory
-import org.apache.hadoop.fs.FileStatus
-import org.apache.spark.Partitioner
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.Dataset
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.types._
+import java.io.{File, FileOutputStream}
+
 import com.typesafe.scalalogging.LazyLogging
 import io.frama.parisni.spark.dataframe.DFTool
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.spark.sql.types.{StructType, _}
+import org.apache.spark.sql._
+
 import scala.collection.mutable.ListBuffer
 
 object CSVTool extends LazyLogging {
@@ -60,7 +45,7 @@ object CSVTool extends LazyLogging {
       .mode(mode)
       .save(path)
   }
-  
+
   def read(spark: SparkSession, path: String, delimiter: Option[String] = None, escape: Option[String], multiline: Option[Boolean] = None, dateFormat: Option[String], timestampFormat: Option[String] = None): Dataset[Row] = {
     val headers = getCsvHeaders(spark, path, delimiter)
     val schemaSimple = getStringStructFromArray(headers)
@@ -107,6 +92,36 @@ object CSVTool extends LazyLogging {
     }
     StructType(struct)
 
+  }
+
+  def writeCsvLocal(df: DataFrame, tempPath: String, localPath: String) = {
+    val hdfs = FileSystem.get(new Configuration())
+    val hdfsPath = new Path(tempPath)
+    val targetFile = new File(localPath)
+    try {
+      df.write.mode(SaveMode.Overwrite).csv(tempPath)
+      val it = hdfs.listFiles(hdfsPath, false)
+      val colFile = new FileOutputStream(targetFile, false)
+      colFile.write((df.columns.mkString(",") + "\n").getBytes)
+      colFile.close()
+      while (it.hasNext) {
+        val file = it.next().getPath.toString
+        if (file.endsWith(".csv")) {
+          val stream = hdfs.open(new Path(file.toString)).getWrappedStream
+          val outStream = new FileOutputStream(targetFile, true)
+
+          val bytes = new Array[Byte](1024) //1024 bytes - Buffer size
+          Iterator
+            .continually(stream.read(bytes))
+            .takeWhile(-1 !=)
+            .foreach(read => outStream.write(bytes, 0, read))
+          outStream.close()
+        }
+      }
+    }
+    finally {
+      hdfs.delete(hdfsPath, true)
+    }
   }
 
 }

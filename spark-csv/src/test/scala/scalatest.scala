@@ -67,6 +67,13 @@ class AppTest extends QueryTest with SparkSessionTestWrapper {
     assert(schema.prettyJson == res.prettyJson)
   }
 
+  test("write to local") {
+    import spark.implicits._
+    val df = ((1, 2, 3) :: (2, 3, 4) :: Nil).toDF("a", "b", "c").repartition(2)
+    CSVTool.writeCsvLocal(df, "/tmp/testdf", "/tmp/result.csv")
+    assert(spark.read.option("header", true).csv("/tmp/result.csv").count === 2)
+  }
+
 }
 
 trait SparkSessionTestWrapper {

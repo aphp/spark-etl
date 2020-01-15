@@ -98,19 +98,21 @@ object CSVTool extends LazyLogging {
     val hdfs = FileSystem.get(new Configuration())
     val hdfsPath = new Path(tempPath)
     val targetFile = new File(localPath)
+    val fileWDot = new File(targetFile.getPath.substring(0, targetFile.getPath.size - targetFile.getName.size) + "." + targetFile.getName)
+    logger.warn(s"writing to temp file ${fileWDot.getAbsolutePath}")
     try {
       df.write.mode(SaveMode.Overwrite).csv(tempPath)
       val it = hdfs.listFiles(hdfsPath, false)
-      val colFile = new FileOutputStream(targetFile, false)
+      val colFile = new FileOutputStream(fileWDot, false)
       colFile.write((df.columns.mkString(",") + "\n").getBytes)
       colFile.close()
       while (it.hasNext) {
         val file = it.next().getPath.toString
         if (file.endsWith(".csv")) {
           val stream = hdfs.open(new Path(file.toString)).getWrappedStream
-          val outStream = new FileOutputStream(targetFile, true)
+          val outStream = new FileOutputStream(fileWDot, true)
 
-          val bytes = new Array[Byte](1024) //1024 bytes - Buffer size
+          val bytes = new Array[Byte](10024) //1024 bytes - Buffer size
           Iterator
             .continually(stream.read(bytes))
             .takeWhile(-1 !=)
@@ -121,6 +123,9 @@ object CSVTool extends LazyLogging {
     }
     finally {
       hdfs.delete(hdfsPath, true)
+      logger.warn(s"deleting hdfs path ${hdfsPath}")
+      fileWDot.renameTo(targetFile)
+      logger.warn(s"renaming ${fileWDot.getAbsolutePath} to ${targetFile.getAbsolutePath}")
     }
   }
 

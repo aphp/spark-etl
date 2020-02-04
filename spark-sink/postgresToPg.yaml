@@ -1,0 +1,16 @@
+jobName:        Postgres To Postgres
+hostPg:         localhost
+portPg:         5432
+databasePg:     postgres
+userPg:         postgres
+timestampLastColumn:  date_update
+timestampColumns: [date_update, date_update2, date_update3]
+dateMax:  "2017-01-01 00:00:00"
+tables:
+  - tablePgSource: source
+    tablePgTarget: targetpg_frompg
+    schemaPg: public
+    typeLoad: full
+    key: [id, pk2]
+    numThread: 4
+    isActive: true

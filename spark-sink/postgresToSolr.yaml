@@ -1,0 +1,17 @@
+jobName:        Postgres To Solr
+hostPg:         localhost
+portPg:         5432
+databasePg:     postgres
+userPg:         postgres
+timestampLastColumn:  date_update
+timestampColumns: [date_update, date_update2, date_update3]
+dateMax:  "2018-01-01 00:00:00"
+tables:
+    - tablePg: source
+      tableSolr: targetsolr_frompg
+      schemaPg: public
+      zkHost: 127.0.0.1:55038/solr
+      typeLoad: scd1
+      key: [id, pk2]
+      numThread: 4
+      isActive: true

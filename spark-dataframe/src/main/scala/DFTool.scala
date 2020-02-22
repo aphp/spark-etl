@@ -1,6 +1,8 @@
 package io.frama.parisni.spark.dataframe
 
 import com.typesafe.scalalogging.LazyLogging
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.{Column, DataFrame, Row, SparkSession}
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions._
@@ -293,6 +295,20 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
       .groupBy(groupBy)
       .agg(map_from_entries(collect_list(struct(key, expr(aggCol)))).alias("group_map"))
       .select(groupBy.toString, levels.map(f => "group_map." + f): _*)
+  }
+
+  def fileExists(spark: SparkSession, filePath: String): Boolean = {
+    val defaultFSConf = spark.sessionState.newHadoopConf().get("fs.defaultFS")
+    val fsConf = if (filePath.startsWith("file:")) {
+      "file:///"
+    } else {
+      defaultFSConf
+    }
+    val conf = new Configuration()
+    conf.set("fs.defaultFS", fsConf)
+    val fs = FileSystem.get(conf)
+
+    fs.exists(new Path(filePath))
   }
 
 }

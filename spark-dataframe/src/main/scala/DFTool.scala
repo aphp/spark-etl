@@ -152,10 +152,31 @@ object DFTool extends LazyLogging {
       f => {
         logger.debug(f"Added ${f.name} column")
         if (!df.columns.contains(f.name))
-          result = result.withColumn(f.name, lit(f.metadata.getString("default")).cast(f.dataType))
+          result = result.withColumn(f.name, if(f.metadata.contains("default")){lit(f.metadata.getString("default")).cast(f.dataType)}else{lit(null)})
 
       })
     result
+  }
+
+  def unionDataFrame(sourceDf:DataFrame, targetDf:DataFrame):DataFrame ={
+    val missingLeft = getMissingColumns(sourceDf, targetDf)
+    val missingRight = getMissingColumns(targetDf,sourceDf)
+
+    val sourceDfPlus = addMissingColumns(sourceDf, missingLeft)
+    val targetDfPlus = addMissingColumns(targetDf, missingRight)
+
+    val right = reorderColumns(targetDfPlus, sourceDfPlus.schema)
+
+    sourceDfPlus.union(right)
+  }
+
+  def getMissingColumns(sourceDf:DataFrame, targetDf:DataFrame):StructType = {
+    StructType(
+      for{
+          targetFields <- targetDf.schema.fields
+          if(!sourceDf.schema.fields.map(_.name).contains(targetFields.name))
+        } yield{targetFields}
+    )
   }
 
   /**

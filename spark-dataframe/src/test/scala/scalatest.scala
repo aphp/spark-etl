@@ -112,6 +112,23 @@ class AppTest extends QueryTest with SparkSessionTestWrapper {
     checkAnswer(testDF, resultDF)
   }
 
+  test("test union heterogeneous tables") {
+    import spark.implicits._
+    val right = List(
+    (1,2,3)
+    ,(4,5,6)
+    ).toDF("a","b", "c")
+
+    val left = List(
+    (1,2,3)
+    ,(4,5,6)
+    ).toDF("a","b", "d")
+
+    DFTool.unionDataFrame(left, right)
+
+    
+  }
+
 }
 
 trait SparkSessionTestWrapper {

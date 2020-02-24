@@ -12,6 +12,18 @@ import org.apache.spark.sql.types._
 /** Factory for [[io.frama.parisni.spark.dataframe.DFTool]] instances. */
 object DFTool extends LazyLogging {
 
+  def trimAll(df: DataFrame): _root_.org.apache.spark.sql.DataFrame = {
+    df.schema.fields
+      .filter(f => "string".equals(f.dataType.typeName.toLowerCase))
+      .foldLeft(df) { (memoDf, colName) =>
+        memoDf.withColumn(colName.name, colName.dataType.typeName.toLowerCase() match {
+          case "string"  => regexp_replace(col(colName.name),"^\\s+|\\s+$","")
+          case  _ => col(colName.name)
+        })
+      }
+  }
+
+
   /**
    * Apply a schema on the given DataFrame. It reorders the
    * columns, cast them, validates the non-nullable columns.
@@ -152,15 +164,19 @@ object DFTool extends LazyLogging {
       f => {
         logger.debug(f"Added ${f.name} column")
         if (!df.columns.contains(f.name))
-          result = result.withColumn(f.name, if(f.metadata.contains("default")){lit(f.metadata.getString("default")).cast(f.dataType)}else{lit(null)})
+          result = result.withColumn(f.name, if (f.metadata.contains("default")) {
+            lit(f.metadata.getString("default")).cast(f.dataType)
+          } else {
+            lit(null)
+          })
 
       })
     result
   }
 
-  def unionDataFrame(sourceDf:DataFrame, targetDf:DataFrame):DataFrame ={
+  def unionDataFrame(sourceDf: DataFrame, targetDf: DataFrame): DataFrame = {
     val missingLeft = getMissingColumns(sourceDf, targetDf)
-    val missingRight = getMissingColumns(targetDf,sourceDf)
+    val missingRight = getMissingColumns(targetDf, sourceDf)
 
     val sourceDfPlus = addMissingColumns(sourceDf, missingLeft)
     val targetDfPlus = addMissingColumns(targetDf, missingRight)
@@ -170,12 +186,14 @@ object DFTool extends LazyLogging {
     sourceDfPlus.union(right)
   }
 
-  def getMissingColumns(sourceDf:DataFrame, targetDf:DataFrame):StructType = {
+  def getMissingColumns(sourceDf: DataFrame, targetDf: DataFrame): StructType = {
     StructType(
-      for{
-          targetFields <- targetDf.schema.fields
-          if(!sourceDf.schema.fields.map(_.name).contains(targetFields.name))
-        } yield{targetFields}
+      for {
+        targetFields <- targetDf.schema.fields
+        if (!sourceDf.schema.fields.map(_.name).contains(targetFields.name))
+      } yield {
+        targetFields
+      }
     )
   }
 

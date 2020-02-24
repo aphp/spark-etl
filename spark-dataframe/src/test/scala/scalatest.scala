@@ -6,7 +6,6 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{QueryTest, SparkSession}
 
 
-
 class AppTest extends QueryTest with SparkSessionTestWrapper {
 
   val dfTool = DFTool
@@ -115,18 +114,33 @@ class AppTest extends QueryTest with SparkSessionTestWrapper {
   test("test union heterogeneous tables") {
     import spark.implicits._
     val right = List(
-    (1,2,3)
-    ,(4,5,6)
-    ).toDF("a","b", "c")
+      (1, 2, 3)
+      , (4, 5, 6)
+    ).toDF("a", "b", "c")
 
     val left = List(
-    (1,2,3)
-    ,(4,5,6)
-    ).toDF("a","b", "d")
+      (1, 2, 3)
+      , (4, 5, 6)
+    ).toDF("a", "b", "d")
 
     DFTool.unionDataFrame(left, right)
 
-    
+  }
+
+  test("test trim all string") {
+
+    import spark.implicits._
+    val df = List(
+      (" b ", "c", 3)
+      , ("a\n", " c", 6)
+
+    ).toDF("a", "b", "d")
+    val expectedDf = List(
+      ("b", "c", 3)
+      , ("a", "c", 6)
+    ).toDF("a", "b", "d")
+
+    checkAnswer(DFTool.trimAll(df), expectedDf)
   }
 
 }

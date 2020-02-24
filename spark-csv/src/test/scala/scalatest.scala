@@ -1,5 +1,8 @@
 package io.frama.parisni.spark.csv
 
+import java.io.File
+import java.nio.file.Files
+
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{QueryTest, SparkSession}
 
@@ -72,6 +75,14 @@ class AppTest extends QueryTest with SparkSessionTestWrapper {
     val df = ((1, 2, 3) :: (2, 3, 4) :: Nil).toDF("a", "b", "c").repartition(2)
     CSVTool.writeCsvLocal(df, "/tmp/testdf", "/tmp/result.csv")
     assert(spark.read.option("header", true).csv("/tmp/result.csv").count === 2)
+  }
+
+  test("test write file to local") {
+    import spark.implicits._
+    val df = ((1, "boby") :: (2, "jim") :: Nil).toDF("file", "content").repartition(2)
+    val path = Files.createTempDirectory("result")
+    CSVTool.writeDfToLocalFiles(df, "file", "content", path.toAbsolutePath.toString)
+    assert(new File(path.toString).list().length === 2)
   }
 
 }

@@ -1,15 +1,20 @@
 package io.frama.parisni.spark.csv
 
 import java.io.{File, FileOutputStream}
+import java.nio.file.{Files, InvalidPathException, Paths}
 
 import com.typesafe.scalalogging.LazyLogging
 import io.frama.parisni.spark.dataframe.DFTool
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.spark.sql.types.{StructType, _}
 import org.apache.spark.sql._
+import org.apache.spark.sql.functions.col
+import org.apache.spark.sql.types.{StructType, _}
 
 import scala.collection.mutable.ListBuffer
+
+// important the case class outside the scope
+case class exportDf(file: String, content: String)
 
 object CSVTool extends LazyLogging {
 
@@ -94,21 +99,61 @@ object CSVTool extends LazyLogging {
 
   }
 
-  def writeCsvLocal(df: DataFrame, tempPath: String, localPath: String) = {
+  /**
+   * Exports local files
+   *
+   * @param df            a dataframe with
+   * @param fileColumn    shall be a string
+   * @param contentColumn shall be a string
+   * @param folder
+   */
+  def writeDfToLocalFiles(df: DataFrame, fileColumn: String, contentColumn: String, folder: String) = {
+
+    // validate folder exists
+    if (!Files.exists(Paths.get(folder)))
+      throw new InvalidPathException(folder, folder)
+
+    import df.sparkSession.implicits._
+    val ds = df
+      .select(col(fileColumn).cast(StringType) as "file", col(contentColumn).cast(StringType) as "content")
+      .as[exportDf]
+
+    ds.collect().foreach(
+      p => {
+        val fileName = folder + "/" + p.file + ".txt";
+        val writerAnn = new java.io.PrintWriter(fileName, "UTF-8");
+        if (p.content != null)
+          writerAnn.write(p.content);
+        writerAnn.close();
+      }
+    )
+    logger.info(s"Exported ${ds.count} files")
+
+  }
+
+  def writeCsvLocal(df: DataFrame, tempPath: String, localPath: String, options: Map[String, String] = Map(), format: String = "csv") = {
     val hdfs = FileSystem.get(new Configuration())
     val hdfsPath = new Path(tempPath)
     val targetFile = new File(localPath)
     val fileWDot = new File(targetFile.getPath.substring(0, targetFile.getPath.size - targetFile.getName.size) + "." + targetFile.getName)
     logger.warn(s"writing to temp file ${fileWDot.getAbsolutePath}")
+    val mime = format match {
+      case "csv" => ".csv"
+      case "text" => ".txt"
+      case _ => throw new Exception("only text and csv")
+    }
     try {
-      df.write.mode(SaveMode.Overwrite).csv(tempPath)
+      df.write.mode(SaveMode.Overwrite)
+        .format(format)
+        .options(options)
+        .save(tempPath)
       val it = hdfs.listFiles(hdfsPath, false)
       val colFile = new FileOutputStream(fileWDot, false)
       colFile.write((df.columns.mkString(",") + "\n").getBytes)
       colFile.close()
       while (it.hasNext) {
         val file = it.next().getPath.toString
-        if (file.endsWith(".csv")) {
+        if (file.endsWith(mime)) {
           val stream = hdfs.open(new Path(file.toString)).getWrappedStream
           val outStream = new FileOutputStream(fileWDot, true)
 

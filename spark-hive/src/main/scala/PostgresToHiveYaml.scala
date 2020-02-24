@@ -9,6 +9,10 @@ object PostgresToHiveYaml extends DefaultYamlProtocol {
       , portPg: Int
       , databasePg: String
       , userPg: String
+      , timestampTable:Option[String]
+      , databaseHive:Option[String]
+      , timestampLastColumn:Option[String]
+      , timestampColumns:Option[List[String]]
       , tables: Option[List[Table]])
       
   case class Table(tablePg: String
@@ -30,7 +34,7 @@ object PostgresToHiveYaml extends DefaultYamlProtocol {
   }
 
   implicit val colorFormat = yamlFormat12(Table)
-  implicit val paletteFormat = yamlFormat6(Database)
+  implicit val paletteFormat = yamlFormat10(Database)
 
 }
 

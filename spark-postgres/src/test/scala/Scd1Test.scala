@@ -79,8 +79,87 @@ class Scd1Test extends QueryTest with SparkSessionTestWrapper {
       result.select("key1", "key2", "cd")
       , goal
     )
+  }
+
+
+  @Test
+  def verifyScd1WithFilter(): Unit = {
+    import spark.implicits._
+
+    ((1L, "a", "bob", new Timestamp(1), 1) ::
+      (3L, "b", "bob", null, 2) ::
+      Nil).toDF("id", "key", "cd", "end_date", "hash")
+      .write
+      .format("postgres")
+      .option("url", getPgUrl)
+      .option("table", "scd1table")
+      .save
+
+    val df = (
+      (1L, "a", "jim") ::
+        (2L, "b", "johm") ::
+        Nil).toDF("id", "key", "cd")
+
+    df.write.format("postgres")
+      .option("url", getPgUrl)
+      .option("type", "scd1")
+      .option("filter", "key is not null")
+      .option("joinKey", "key")
+      .option("table", "scd1table")
+      .save
+
+    val result = (
+      (1L, "a", "jim") ::
+        (2L, "b", "johm") ::
+        Nil).toDF("id", "key", "cd")
+
+    checkAnswer(spark.read.format("postgres")
+      .option("url", getPgUrl)
+      .option("query", "select * from scd1table")
+      .load
+      .select("id", "key", "cd")
+      , result)
 
   }
 
+  @Test
+  def verifyScd1WithFilterAndDelete(): Unit = {
+    import spark.implicits._
+
+    ((1L, "a", "bob", true, 1) ::
+      (3L, "b", "bob", true, 2) ::
+      Nil).toDF("id", "key", "cd", "is_active", "hash")
+      .write
+      .format("postgres")
+      .option("url", getPgUrl)
+      .option("table", "scd1table")
+      .save
+
+    val df = (
+      (1L, "a", "jim") ::
+        Nil).toDF("id", "key", "cd")
+
+    df.write.format("postgres")
+      .option("url", getPgUrl)
+      .option("type", "scd1")
+      .option("filter", "key is not null")
+      .option("deleteSet", "is_active = false")
+      .option("joinKey", "key")
+      .option("table", "scd1table")
+      .save
+
+    val result = (
+      (1L, "a", "jim", true) ::
+        (3L, "b", "bob", false) ::
+        Nil).toDF("id", "key", "cd", "is_active")
+
+    checkAnswer(spark.read.format("postgres")
+      .option("url", getPgUrl)
+      .option("query", "select * from scd1table")
+      .load
+      .select("id", "key", "cd", "is_active")
+      , result)
+
+  }
 }
 

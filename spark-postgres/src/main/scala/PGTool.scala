@@ -123,9 +123,9 @@ class PGTool(spark: SparkSession, url: String, tmpPath: String) {
     PGTool.outputBulkDfScd2Hash(spark, url, table, df, pk, key, endDatetimeCol, partitions.getOrElse(4), genPath, password)
   }
 
-  def outputScd1Hash(table: String, key: List[String], df: Dataset[Row], numPartitions: Option[Int] = None): PGTool = {
+  def outputScd1Hash(table: String, key: List[String], df: Dataset[Row], numPartitions: Option[Int] = None, filter: Option[String] = None, deleteSet: Option[String] = None): PGTool = {
 
-    PGTool.outputBulkDfScd1Hash(spark, url, table, df, key, numPartitions.getOrElse(4), genPath, password)
+    PGTool.outputBulkDfScd1Hash(spark, url, table, df, key, numPartitions.getOrElse(4), genPath, filter, deleteSet, password)
     this
   }
 
@@ -659,7 +659,10 @@ object PGTool extends java.io.Serializable with LazyLogging {
                            , key: List[String]
                            , partitions: Int = 4
                            , path: String
-                           , password: String = ""): Unit = {
+                           , scdFilter: Option[String] = None
+                           , deleteSet: Option[String] = None
+                           , password: String = ""
+                          ): Unit = {
     if (loadEmptyTable(spark, url, table, candidate, path, partitions, password))
       return
 
@@ -667,16 +670,19 @@ object PGTool extends java.io.Serializable with LazyLogging {
 
     val insertTmp = getTmpTable("ins_")
     val updateTmp = getTmpTable("upd_")
+    val deleteTmp = getTmpTable("del_")
+    val isDelete = deleteSet.isDefined
+
     try {
       // 1. get key/hash
-      val queryFetch1 = """select  %s, "%s" from %s""".format(key.mkString("\"", "\",\"", "\""), "hash", sanP(table))
+      val queryFetch1 = """select  %s, "%s" from %s where %s""".format(key.mkString("\"", "\",\"", "\""), "hash", sanP(table), scdFilter.getOrElse(" TRUE"))
       val fetch1 = inputQueryBulkDf(spark, url, queryFetch1, path, true, 1, password)
 
-      // 2.1 produce insert and update
+      // 2.1 produce insert
       val joinCol = key.map(x => s"""f.`$x` = c.`$x`""").mkString(" AND ")
       val insert = candidate.as("c").join(fetch1.as("f"), expr(joinCol), "left_anti")
 
-      // 2.2 produce insert and update
+      // 2.2 produce insert
       val update = candidate.as("c").join(fetch1.as("f"), expr(joinCol + "AND c.hash != f.hash"), "left_semi")
 
       // 3. load tmp tables
@@ -689,11 +695,34 @@ object PGTool extends java.io.Serializable with LazyLogging {
       // 4. load postgres
       sqlExec(url, applyScd1(table, insertTmp, updateTmp, insert.schema, key), password)
 
+      // 5 produce delete
+      if (isDelete) {
+        val delete = fetch1.as("f").join(candidate.as("c"), expr(joinCol), "left_anti").select(key.mkString("`", "`,`", "`"))
+        tableCreate(url, deleteTmp, delete.schema, password)
+        outputBulkCsv(spark, url, deleteTmp, delete, path + "del", partitions, password)
+        sqlExec(url, applyScd1Delete(table, deleteTmp, key, deleteSet.get), password)
+      }
+
     } finally {
       // 5. drop the temporarytables
       tableDrop(url, insertTmp, password)
       tableDrop(url, updateTmp, password)
+      if (isDelete)
+        tableDrop(url, deleteTmp, password)
     }
+  }
+
+  def applyScd1Delete(table: String, deleteTmp: String, key: List[String], deleteSet: String): String = {
+    val joinColumns = key.map(k => s""" t."$k" = s."$k" """).mkString("AND")
+    val query =
+      s"""
+         |UPDATE $table as t
+         |SET $deleteSet
+         |FROM $deleteTmp as s
+         |WHERE ($joinColumns)
+         |""".stripMargin
+    query
+
   }
 
   def applyScd1(table: String, insertTmp: String, updateTmp: String, insertSchema: StructType, key: List[String]): String = {

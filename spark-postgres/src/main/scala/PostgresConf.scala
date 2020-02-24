@@ -23,6 +23,8 @@ class PostgresConf(config: Map[String, String]) extends Serializable with LazyLo
   var PG_URL: String = "url"
   var PG_END_COLUMN: String = "endCol"
   var PG_PK: String = "pk"
+  var PG_FILTER: String = "filter"
+  var PG_DELETE_SET: String = "deleteSet"
 
   require(config != null, "Config cannot be null")
   require(config.nonEmpty, "Config cannot be empty")
@@ -73,6 +75,10 @@ class PostgresConf(config: Map[String, String]) extends Serializable with LazyLo
 
   def getIsReindex: Option[Boolean] =
     if (config.get(PG_REINDEX).isDefined) Some(config(PG_REINDEX).toBoolean) else Some(false)
+
+  def getFilter: Option[String] = config.get(PG_FILTER)
+
+  def getDeleteSet: Option[String] = config.get(PG_DELETE_SET)
 
 }
 

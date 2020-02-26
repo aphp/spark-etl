@@ -131,14 +131,15 @@ class AppTest extends QueryTest with SparkSessionTestWrapper {
 
     import spark.implicits._
     val df = List(
-      (" b ", "c", 3)
+      (" b ", " ", 3)
       , ("a\n", " c", 6)
 
     ).toDF("a", "b", "d")
     val expectedDf = List(
-      ("b", "c", 3)
+      ("b", null, 3)
       , ("a", "c", 6)
-    ).toDF("a", "b", "d")
+    ).toDF("a",
+      "b", "d")
 
     checkAnswer(DFTool.trimAll(df), expectedDf)
   }

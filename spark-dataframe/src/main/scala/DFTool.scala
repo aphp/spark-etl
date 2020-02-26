@@ -17,8 +17,8 @@ object DFTool extends LazyLogging {
       .filter(f => "string".equals(f.dataType.typeName.toLowerCase))
       .foldLeft(df) { (memoDf, colName) =>
         memoDf.withColumn(colName.name, colName.dataType.typeName.toLowerCase() match {
-          case "string"  => regexp_replace(col(colName.name),"^\\s+|\\s+$","")
-          case  _ => col(colName.name)
+          case "string" => expr(s"nullif(regexp_replace(${colName.name}, '^\\\\s+|\\\\s+$$', ''), '')")
+          case _ => col(colName.name)
         })
       }
   }

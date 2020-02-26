@@ -697,7 +697,8 @@ object PGTool extends java.io.Serializable with LazyLogging {
 
       // 5 produce delete
       if (isDelete) {
-        val delete = fetch1.as("f").join(candidate.as("c"), expr(joinCol), "left_anti").select(key.mkString("`", "`,`", "`"))
+        val delete = fetch1.as("f").join(candidate.as("c"), expr(joinCol), "left_anti")
+          .selectExpr(key.mkString("`", "`,`", "`").split(","): _*)
         tableCreate(url, deleteTmp, delete.schema, password)
         outputBulkCsv(spark, url, deleteTmp, delete, path + "del", partitions, password)
         sqlExec(url, applyScd1Delete(table, deleteTmp, key, deleteSet.get), password)

@@ -35,6 +35,7 @@ Datasource Usage
       .option("host","localhost")
       .option("database","myDb")
       .option("schema","mySchema")
+      .option("user","myUser")
       .option("partitionColumn","id")
       .load
 
@@ -60,6 +61,7 @@ Datasource Usage
       .option("table","thePgTable")     
       .option("host","localhost")
       .option("database","myDb")
+      .option("user","myUser")
       .option("schema","mySchema")
       .mode(org.apache.spark.sql.SaveMode.Overwrite)
       .save
@@ -75,7 +77,28 @@ Datasource Usage
       .option("joinKey","bookId,clienId")
       .option("table","thePgTable")     
       .option("host","localhost")
+      .option("user","myUser")
       .option("database","myDb")
+      .option("schema","mySchema")
+      .save
+
+      // this applies an optimized SCD1 from the spark dataframe into postgres with 4 threads
+      // insert the new rows and update the modified based on a hash column (called hash)
+      // based on the composite key bookId, clientId.
+      // Also, it only fetches from postgres the rows specified by the filter
+      // and apply a deletion on rows not present in the spark side, by running the update statement within deleteSet
+      import spark.implicits._
+      ((1,1,"bob")::(2,3,"jim")::Nil).toDF("bookId", "clienId", "content")
+      .write.format("postgres")
+      .option("type","scd1")
+      .option("partitions",4)
+      .option("joinKey","bookId,clienId")
+      .option("table","thePgTable")     
+      .option("host","localhost")
+      .option("user","myUser")
+      .option("database","myDb")
+      .option("filter","col = 'value' AND col2 = 1")
+      .option("deleteSet","is_active = false, delete_date = now()")
       .option("schema","mySchema")
       .save
       

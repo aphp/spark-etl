@@ -1,6 +1,13 @@
-import React from 'react';
+import React from "react";
+import DataGrid from './DataGrid.js';
 import logo from './logo.svg';
 import './App.css';
+
+const rows = [
+  { id: 0, title: "Task 1", complete: 20 },
+  { id: 1, title: "Task 2", complete: 40 },
+  { id: 2, title: "Task 3", complete: 60 }
+];
 
 function App() {
   return (
@@ -19,6 +26,7 @@ function App() {
           Learn React
         </a>
       </header>
+      <DataGrid rows={rows}/>
     </div>
   );
 }

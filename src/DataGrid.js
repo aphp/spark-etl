@@ -5,6 +5,7 @@ import { Toolbar, Data } from "react-data-grid-addons";
 const defaultColumnProperties = {
   sortable: true,
   filterable: true,
+  editable: true
 };
 
 const selectors = Data.Selectors;
@@ -34,14 +35,14 @@ const sortRows = (initialRows, sortColumn, sortDirection) => rows => {
   return sortDirection === "NONE" ? initialRows : [...rows].sort(comparer);
 };
 
-const columns = [
-  { key: "id", name: "ID", editable: true },
-  { key: "title", name: "Title", editable: true },
-  { key: "complete", name: "Complete", editable: true }
-].map(c => ({ ...c, ...defaultColumnProperties }));
 
-
-function DataGrid({ rows }) {
+function DataGrid({ rows }) {  
+  let columns = [];
+    if (rows && rows.length > 0) {
+    columns = Object.keys(rows[0]).map(
+      key => ({'key': key.replace(' ', '_'), 'name': key, ...defaultColumnProperties})
+    );
+  }
   const [filters, setFilters] = useState({});
   const [sortedRows, setRows] = useState(rows);
   const filteredRows = getRows(sortedRows, filters);

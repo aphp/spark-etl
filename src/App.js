@@ -39,7 +39,7 @@ class App extends React.Component {
       return <div>Loading data...</div>;
     } else {
       return (
-        <div><DataGrid rows={table}/></div>
+        <div><DataGrid rows={table} title='Table'/></div>
       );
     }
   }

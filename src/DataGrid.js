@@ -1,64 +1,34 @@
-import React, { useState } from "react";
-import ReactDataGrid from "react-data-grid";
-import { Toolbar, Data } from "react-data-grid-addons";
+import React from "react";
 
-const defaultColumnProperties = {
-  sortable: true,
-  filterable: true,
-  editable: true
-};
+import MaterialTable from "material-table";
 
-const selectors = Data.Selectors;
 
-const handleFilterChange = filter => filters => {
-  const newFilters = { ...filters };
-  if (filter.filterTerm) {
-    newFilters[filter.column.key] = filter;
-  } else {
-    delete newFilters[filter.column.key];
-  }
-  return newFilters;
-};
 
-function getRows(rows, filters) {
-  return selectors.getRows({ rows, filters });
-}
+function DataGrid({ rows, title }) { 
 
-const sortRows = (initialRows, sortColumn, sortDirection) => rows => {
-  const comparer = (a, b) => {
-    if (sortDirection === "ASC") {
-      return a[sortColumn] > b[sortColumn] ? 1 : -1;
-    } else if (sortDirection === "DESC") {
-      return a[sortColumn] < b[sortColumn] ? 1 : -1;
+  const columns = [];
+  const displayedRows = []
+  if (rows && rows.length > 0) {
+    const colNames = Object.keys(rows[0]);
+    for (let i = 0; i < colNames.length; i++ ) {
+      columns.push({'field': colNames[i], 'title': colNames[i]})
     }
-  };
-  return sortDirection === "NONE" ? initialRows : [...rows].sort(comparer);
-};
 
-
-function DataGrid({ rows }) {  
-  let columns = [];
-    if (rows && rows.length > 0) {
-    columns = Object.keys(rows[0]).map(
-      key => ({'key': key.replace(' ', '_'), 'name': key, ...defaultColumnProperties})
-    );
+    for (let i = 0; i < rows.length; i++ ) {
+      displayedRows.push({'key': 'row' + i, 'content': rows[i]})
+    }
   }
-  const [filters, setFilters] = useState({});
-  const [sortedRows, setRows] = useState(rows);
-  const filteredRows = getRows(sortedRows, filters);
   return (
-    <ReactDataGrid
-      columns={columns}
-      rowGetter={i => filteredRows[i]}
-      rowsCount={filteredRows.length}
-      minHeight={500}
-      toolbar={<Toolbar enableFilter={true} />}
-      onAddFilter={filter => setFilters(handleFilterChange(filter))}
-      onClearFilters={() => setFilters({})}
-      onGridSort={(sortColumn, sortDirection) =>
-        setRows(sortRows(rows, sortColumn, sortDirection))
-      }      
-    />
+    <div style={{ maxWidth: "100%" }}>
+      <MaterialTable
+        options={{
+          paging: false
+        }}      
+        columns={columns}
+        data={rows}
+        title={title}
+      />
+    </div>
   );
 }
 

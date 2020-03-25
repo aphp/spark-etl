@@ -2,16 +2,23 @@ import React from "react";
 
 import MaterialTable from "material-table";
 
-function getColumns(rows) {
+function getColumns(rows, skip) {
   if (!rows) {
     return [];
   }
 
   const columns = [];
   const colNames = Object.keys(rows[0]);
+  
   for (let i = 0; i < colNames.length; i++ ) {
-    columns.push({'field': colNames[i], 'title': colNames[i]})
+    const name = colNames[i];
+    if (skip && skip.includes(name)) {
+      continue;
+    }
+
+    columns.push({'field': name, 'title': name})
   }
+
   return columns;
 }
 
@@ -26,14 +33,16 @@ function DataGrid({ rows, attributes, title }) {
   }
   
   const indexedAttributes = {};
-  for (const attr of attributes) {
+  for (let attr of attributes) {
     const key = attr['lib_table'];
     if (!indexedAttributes.hasOwnProperty(key)) {
       indexedAttributes[key] = []
     }
     indexedAttributes[key].push(attr);
   }
-  const attributeCols = getColumns(attributes);
+  
+  // Do not display lib_table data for attributes (redundant)
+  const attributeCols = getColumns(attributes, ['lib_table']);
 
   return (
     <div style={{ maxWidth: "100%" }}>

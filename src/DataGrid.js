@@ -25,12 +25,6 @@ function getColumns(rows, skip) {
 
 function DataGrid({ rows, attributes, title }) { 
   const columns = getColumns(rows);
-  if (rows && rows.length > 0) {
-    const colNames = Object.keys(rows[0]);
-    for (let i = 0; i < colNames.length; i++ ) {
-      columns.push({'field': colNames[i], 'title': colNames[i]})
-    }
-  }
   
   const indexedAttributes = {};
   for (let attr of attributes) {

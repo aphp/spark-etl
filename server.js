@@ -1,8 +1,8 @@
 const express = require('express');
-// const bodyParser = require('body-parser')
 const path = require('path');
 const fs = require('fs');
 const csv = require('csv-parser');
+const stripBom = require('strip-bom-stream');
 
 const app = express();
 app.use(express.static(path.join(__dirname, 'build')));
@@ -22,7 +22,7 @@ app.get('/', function (req, res) {
 
 function readCsv(filename, addLine) {
   fs.createReadStream(filename)
-  .pipe(csv())
+  .pipe(stripBom()).pipe(csv())
   .on('data', (data) => {
     addLine(data);
   })
@@ -44,4 +44,6 @@ readCsv(process.argv[3], function (line) {
   attributeData.push(line);
 }); 
 
-app.listen(process.env.PORT || 8080); 
+const port = process.env.PORT || 8080;
+console.log('server running on port: ' + port);
+app.listen(port); 

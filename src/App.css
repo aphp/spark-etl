@@ -37,3 +37,8 @@
     transform: rotate(360deg);
   }
 }
+
+/* See https://github.com/mbrn/material-table/issues/814 for an other (cleaner?) solution */
+.MuiTableRow-root:hover { 
+  background: #dedede !important 
+}

@@ -8,7 +8,6 @@ class App extends React.Component {
     this.state = {
       table: null,
       attributes: null,
-      isLoaded: false,
       error: null
     };
   }
@@ -19,27 +18,39 @@ class App extends React.Component {
       .then(
         (result) => {
           this.setState({
-            isLoaded: true,
             table: result
           });
         },
         (error) => {
           this.setState({
-            isLoaded: true,
             error
           });
         }
-      )
+      );
+      fetch("/attributes")
+      .then(res => res.json())
+      .then(
+        (result) => {
+          this.setState({
+            attributes: result
+          });
+        },
+        (error) => {
+          this.setState({
+            error
+          });
+        }
+      )      
   }
   render() {  
-    const { error, isLoaded, table } = this.state;
+    const { error, attributes, table } = this.state;
     if (error) {
       return <div>Error: {error.message}</div>;
-    } else if (!isLoaded) {
+    } else if (!table || !attributes) {
       return <div>Loading data...</div>;
     } else {
       return (
-        <div><DataGrid rows={table} title='Table'/></div>
+        <div><DataGrid rows={table} attributes={attributes} title='Table'/></div>
       );
     }
   }

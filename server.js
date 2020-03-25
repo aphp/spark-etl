@@ -8,7 +8,7 @@ const app = express();
 app.use(express.static(path.join(__dirname, 'build')));
 
 let tableData = [];
-app.get('/table', function (req, res) {
+app.get('/tables', function (req, res) {
  return res.json(tableData);
 });
 let attributeData = [];

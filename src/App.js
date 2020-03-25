@@ -13,7 +13,7 @@ class App extends React.Component {
   }
 
   componentDidMount() {
-    fetch("/table")
+    fetch("/tables")
       .then(res => res.json())
       .then(
         (result) => {

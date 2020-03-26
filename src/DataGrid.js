@@ -1,12 +1,7 @@
 import React from "react";
-
 import MaterialTable from "material-table";
 
 function getColumns(rows, skip) {
-  if (!rows) {
-    return [];
-  }
-
   const columns = [];
   const colNames = Object.keys(rows[0]);
   
@@ -24,9 +19,9 @@ function getColumns(rows, skip) {
 
 
 function DataGrid({ rows, title }) { 
-  const columns = getColumns(rows, ['columns']);
+  const columns = getColumns(rows, ['columns', 'tableData']);
   const attributeCols = getColumns(rows[0].columns);
-
+  
   return (
     <div style={{ maxWidth: "100%" }}>
       <MaterialTable

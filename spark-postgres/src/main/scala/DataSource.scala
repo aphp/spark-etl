@@ -69,13 +69,14 @@ class PostgresRelation(val parameters: Map[String, String]
     val pk = conf.getPrimaryKey
     val filter = conf.getFilter
     val deleteSet = conf.getDeleteSet
-
+    logger.warn("is_overwrite" + overwrite)
     if (overwrite)
       _pg.tableDrop(table)
     _pg.tableCreate(table, data.schema, false)
 
     loadType match {
       case "full" => _pg.outputBulk(table, data, numPartitions.get, reindex)
+      case "megafull" => _pg.outputBulk(table, data, numPartitions.get, reindex)
       case "scd1" => _pg.outputScd1Hash(table, joinKey.get.toList, DFTool.dfAddHash(data), numPartitions, filter, deleteSet)
       case "scd2" => _pg.outputScd2Hash(table, DFTool.dfAddHash(data), pk.get, joinKey.get.toList, endCol.get, numPartitions)
     }

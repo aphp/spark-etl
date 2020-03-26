@@ -302,6 +302,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
     s match {
       case "string" => "text"
       case "double" => "double precision"
+      case "decimal(38,18)" => "double precision"
       case "bigint" => "bigint"
       case "int" => "integer"
       case "date" => "date"
@@ -681,16 +682,20 @@ object PGTool extends java.io.Serializable with LazyLogging {
       // 2.1 produce insert
       val joinCol = key.map(x => s"""f.`$x` = c.`$x`""").mkString(" AND ")
       val insert = candidate.as("c").join(fetch1.as("f"), expr(joinCol), "left_anti")
+      logger.info(s"Row to insert: ${insert.count}")
 
       // 2.2 produce insert
       val update = candidate.as("c").join(fetch1.as("f"), expr(joinCol + "AND c.hash != f.hash"), "left_semi")
+      logger.info(s"Row to update: ${update.count}")
 
       // 3. load tmp tables
       tableCreate(url, insertTmp, insert.schema, password)
       outputBulkCsv(spark, url, insertTmp, insert, path + "ins", partitions, password)
+      insert.unpersist()
 
       tableCreate(url, updateTmp, update.schema, password)
       outputBulkCsv(spark, url, updateTmp, update, path + "upd", partitions, password)
+      update.unpersist()
 
       // 4. load postgres
       sqlExec(url, applyScd1(table, insertTmp, updateTmp, insert.schema, key), password)

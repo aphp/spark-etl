@@ -30,7 +30,7 @@ class PostgresConf(config: Map[String, String]) extends Serializable with LazyLo
   require(config.nonEmpty, "Config cannot be empty")
 
   require(config.get(PG_TYPE).isEmpty || (config.get(PG_TYPE).isDefined
-    && ("full" :: "scd1" :: "scd2" :: Nil).contains(config.get(PG_TYPE).get)), "type shall be in full, scd1")
+    && ("full" :: "megafull" :: "scd1" :: "scd2" :: Nil).contains(config.get(PG_TYPE).get)), "type shall be in full, scd1")
 
   def getQuery: Option[String] = config.get(PG_QUERY)
 

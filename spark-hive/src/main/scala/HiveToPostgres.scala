@@ -5,7 +5,7 @@ import io.frama.parisni.spark.dataframe.DFTool
 import io.frama.parisni.spark.hive.HiveToPostgresYaml._
 import io.frama.parisni.spark.postgres.PGTool
 import net.jcazevedo.moultingyaml._
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{SaveMode, SparkSession}
 import org.apache.spark.sql.functions.col
 
 import scala.io.Source
@@ -41,6 +41,8 @@ object HiveToPostgres extends App with LazyLogging {
 
         var dfHive = table.format.getOrElse("hive") match {
           case "hive" => spark.sql(query)
+          case "parquet" => spark.read.format("parquet").load(table.schemaHive + "/" + table.tableHive)
+          case "orc" => spark.read.format("orc").load(table.schemaHive + "/" + table.tableHive)
           case "delta" => spark.read.format("delta").load(table.schemaHive + "/" + table.tableHive)
         }
 
@@ -64,10 +66,22 @@ object HiveToPostgres extends App with LazyLogging {
 
         var df = DFTool.dfAddHash(dfHive)
         table.typeLoad.getOrElse("scd1") match {
-          case "scd1" => pg.outputScd1Hash(table = table.tablePg, key = table.key, df = df, numPartitions = table.numThread)
+          case "scd1" => pg.outputScd1Hash(table = table.tablePg, key = table.key, df = df, numPartitions = table.numThread,filter = table.filter, deleteSet = table.deleteSet)
+          case "megafull" => {
+            df.write.format("postgres")
+              .mode(SaveMode.Overwrite)
+              .option("url", url)
+              .option("type", "full")
+              .option("table", table.tablePg)
+              .option("partition", 4)
+              .save
+          }
           case "full" => {
-            pg.tableTruncate(table.tablePg)
-            pg.outputBulk(table.tablePg, df, 8, reindex = table.reindex.getOrElse(false))
+            logger.warn("type load" + table.typeLoad)
+             pg.tableTruncate(table.tablePg)
+
+             pg.outputBulk(table.tablePg, df, 8, reindex = table.reindex.getOrElse(false))
+
           }
           case _ => throw new UnsupportedOperationException
         }

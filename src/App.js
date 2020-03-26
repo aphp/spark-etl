@@ -6,8 +6,7 @@ class App extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      table: null,
-      attributes: null,
+      tables: null,
       error: null
     };
   }
@@ -18,7 +17,7 @@ class App extends React.Component {
       .then(
         (result) => {
           this.setState({
-            table: result
+            tables: result
           });
         },
         (error) => {
@@ -27,30 +26,16 @@ class App extends React.Component {
           });
         }
       );
-      fetch("/attributes")
-      .then(res => res.json())
-      .then(
-        (result) => {
-          this.setState({
-            attributes: result
-          });
-        },
-        (error) => {
-          this.setState({
-            error
-          });
-        }
-      )      
   }
   render() {  
-    const { error, attributes, table } = this.state;
+    const { error, tables } = this.state;
     if (error) {
       return <div>Error: {error.message}</div>;
-    } else if (!table || !attributes) {
+    } else if (!tables) {
       return <div>Loading data...</div>;
     } else {
       return (
-        <div><DataGrid rows={table} attributes={attributes} title='Table'/></div>
+        <div><DataGrid rows={tables} title='Table'/></div>
       );
     }
   }

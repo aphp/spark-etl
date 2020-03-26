@@ -3,46 +3,53 @@ const path = require('path');
 const fs = require('fs');
 const csv = require('csv-parser');
 const stripBom = require('strip-bom-stream');
+const pgStructure = require('pg-structure').default;
+
+function splitComment(comment) {
+  const res = {comment_omop: '', comment_aphp: ''};
+  if (!comment) {
+    return res;
+  }
+  const splitComment = comment.split('- APHP Annotation :');
+  res.comment_omop = splitComment[0].replace('OMOP Comment : ', '');
+  if (splitComment.length == 2) {
+    res.comment_aphp = splitComment[1];
+  }
+  return res;
+}
+
+let tablesData = [];
+async function loadDbSchema() {
+  const db = await pgStructure({ database: 'postgres', user: 'postgres', password: 'password' }, {  });
+
+  tablesData = db.tables.map(t => {
+    return {
+      name: t.name,
+      ...splitComment(t.comment),
+      columns: t.columns.map(c => {
+        return {
+          name: c.name,
+          type: c.type.shortName,
+          notNull: c.notNull,
+          ...splitComment(c.comment)
+        }
+      }),
+    }
+  });
+}
+loadDbSchema();
+
 
 const app = express();
 app.use(express.static(path.join(__dirname, 'build')));
 
-let tableData = [];
 app.get('/tables', function (req, res) {
- return res.json(tableData);
+ return res.json(tablesData);
 });
-let attributeData = [];
-app.get('/attributes', function (req, res) {
-  return res.json(attributeData);
- });
  
 app.get('/', function (req, res) {
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
-
-function readCsv(filename, addLine) {
-  fs.createReadStream(filename)
-  .pipe(stripBom()).pipe(csv())
-  .on('data', (data) => {
-    addLine(data);
-  })
-  .on('end', () => {
-    console.log('successfully read: ' + filename);
-  });
-}
-
-if (process.argv.length < 4) {
-  console.log('Usage: node ' + process.argv[1] + ' table.csv attributes.csv');
-  process.exit(1);
-}
-
-readCsv(process.argv[2], function (line) {
-  tableData.push(line);
-});
-
-readCsv(process.argv[3], function (line) {
-  attributeData.push(line);
-}); 
 
 const port = process.env.PORT || 8080;
 console.log('server running on port: ' + port);

@@ -23,20 +23,9 @@ function getColumns(rows, skip) {
 }
 
 
-function DataGrid({ rows, attributes, title }) { 
-  const columns = getColumns(rows);
-  
-  const indexedAttributes = {};
-  for (let attr of attributes) {
-    const key = attr['lib_table'];
-    if (!indexedAttributes.hasOwnProperty(key)) {
-      indexedAttributes[key] = []
-    }
-    indexedAttributes[key].push(attr);
-  }
-  
-  // Do not display lib_table data for attributes (redundant)
-  const attributeCols = getColumns(attributes, ['lib_table']);
+function DataGrid({ rows, title }) { 
+  const columns = getColumns(rows, ['columns']);
+  const attributeCols = getColumns(rows[0].columns);
 
   return (
     <div style={{ maxWidth: "100%" }}>
@@ -53,15 +42,14 @@ function DataGrid({ rows, attributes, title }) {
           {
             tooltip: 'Attributs',
             render: rowData => {
-              const tableName = rowData['lib_table'];
               return (
                 <MaterialTable
                   options={{
                     paging: false
                   }} 
                   columns={attributeCols}
-                  data={indexedAttributes[tableName]}
-                  title={tableName + ': attributs'}
+                  data={rowData.columns}
+                  title={rowData.name + ': attributs'}
                 />
               )
             },

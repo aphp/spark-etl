@@ -1,7 +1,6 @@
 import React from "react";
 import DataGrid from './DataGrid.js';
 import SearchInput from './SearchInput.js';
-
 import './App.css';
 import PropTypes from 'prop-types';
 import { makeStyles } from '@material-ui/core/styles';
@@ -11,6 +10,7 @@ import Tabs from '@material-ui/core/Tabs';
 import Tab from '@material-ui/core/Tab';
 import Typography from '@material-ui/core/Typography';
 import Box from '@material-ui/core/Box';
+import Diagram from './diagram/Diagram.js';
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -46,6 +46,9 @@ const useStyles = makeStyles(theme => ({
   root: {
     flexGrow: 1,
     backgroundColor: theme.palette.background.paper,
+  },
+  selectedTable: {
+    float: 'right'
   }
 }));
 
@@ -63,11 +66,11 @@ function hasSearchText(col, attributeCols, filter) {
   return false;
 }
 
-function applySearchFilter(tables, filter) {
-  const { rows, columns, attributeCols } = tables;
+function applySearchFilter(schema, filter) {
+  const { tables, columns, attributeCols } = schema;
 
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
+  for (let i = 0; i < tables.length; i++) {
+    const row = tables[i];
 
     row._hasColumnDisplay = false;
     for (let j = 0; j < row.columns.length; j++) {
@@ -101,32 +104,11 @@ function getColumns(rows, skip) {
   return columns;
 }
 
-function buildKeyRows(rows) {
-  const keyRows = [];
-  
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    row._key = 'row-' + i;
-    const keyColumns = [];
-  
-    for (let j = 0; j < row.columns.length; j++) {
-      const col = row.columns[j];
-      col._key = row._key + '-col-' + j;
-      keyColumns.push(col);
-    }
-  
-    row.columns = keyColumns;
-    keyRows.push(row);
-  }
-  
-  return keyRows;
-}
-
-
 class TabbedApp extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
+      selectedTable: null,
       tables: null,
       error: null,
       currentTabIndex: 0,
@@ -135,18 +117,18 @@ class TabbedApp extends React.Component {
   }
 
   componentDidMount() {
-    fetch("/tables")
+    fetch("/schema")
       .then(res => res.json())
       .then(
-        (result) => {
-          const columns = getColumns(result, ['columns']);
-          const attributeCols = getColumns(result[0].columns);
-          const rows = buildKeyRows(result);
-          const tables = { rows, columns, attributeCols };
-          applySearchFilter(tables, '');
+        (results) => {
+          const columns = getColumns(results.tables, ['columns', 'id']);
+          const attributeCols = getColumns(results.tables[0].columns, ['id']);
+          const schema = { tables: results.tables, columns, attributeCols };
+          applySearchFilter(schema, '');
         
           this.setState({
-            tables: tables
+            schema: schema,
+            links: results.links
           });
         },
         (error) => {
@@ -157,10 +139,10 @@ class TabbedApp extends React.Component {
       );
   }
   render() {  
-    const { error, tables, currentTabIndex, searchText } = this.state;
+    const { error, schema, links, currentTabIndex, searchText, selectedTable } = this.state;
     if (error) {
       return <div>Error: {error.message}</div>;
-    } else if (!tables) {
+    } else if (!schema) {
       return <div>Loading data...</div>;
     } else {
     
@@ -168,10 +150,22 @@ class TabbedApp extends React.Component {
         this.setState({currentTabIndex: newTabIndex});
       };      
       
-      const updateSearchText = (e) => {
+      const updateSearchText = e => {
         const searchText = e.target.value;
         this.setState({ searchText: searchText });
-        applySearchFilter(tables, searchText);
+        applySearchFilter(schema, searchText);
+      }
+
+      const onSelectedDiagramTable = e => {
+        if (!e.isSelected) {
+          return;
+        }
+        for (const table of schema.tables) {
+          if (table.id === e.entity.id) {
+            this.setState({selectedTable: table});
+            break;
+          }
+        }
       }
 
       const classes = this.props.classes;
@@ -187,10 +181,11 @@ class TabbedApp extends React.Component {
           </Toolbar>
           </AppBar>
           <TabPanel value={currentTabIndex} index={0}>
-            <DataGrid tables={tables} filter={searchText}/>
+            <DataGrid schema={schema} filter={searchText}/>
           </TabPanel>
           <TabPanel value={currentTabIndex} index={1}>
-            Diagram
+            <Diagram tables={schema.tables} links={links} onSelected={onSelectedDiagramTable}></Diagram>
+            { selectedTable && <DataGrid className={classes.selectedTable} schema={{tables: [selectedTable], columns: schema.columns, attributeCols: schema.attributeCols}} filter={searchText}/>}
           </TabPanel>      
         </div>
       );

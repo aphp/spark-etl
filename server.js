@@ -18,24 +18,84 @@ function splitComment(comment) {
   return res;
 }
 
-let tablesData = [];
+function nameSorter(a, b) {
+  if (a.name < b.name) return -1;
+  if (a.name > b.name) return 1;
+  return 0;
+}
+
+const tablesData = [];
+const links = [];
 async function loadDbSchema() {
   const db = await pgStructure({ database: 'postgres', user: 'postgres', password: 'password' }, {  });
+  const tablesRef = {}
 
-  tablesData = db.tables.map(t => {
-    return {
+  let id = 0;
+  for (let i = 0; i < db.tables.length; i++) {
+    const t = db.tables[i];
+
+    const rowKey = 'row-' + i;
+    
+    const columns = [];
+    for (let j = 0; j < t.columns.length; j++) {
+      const colKey = rowKey + '-col-' + j;
+      const c = t.columns[j];
+      columns.push({
+        id: id.toString(),
+        _key: colKey,
+        name: c.name,
+        type: c.type.shortName,
+        ...splitComment(c.comment)
+      });
+      columns.sort(nameSorter);
+      id += 1;
+    }
+    
+    const table = {
+      id: id.toString(),
+      _key: rowKey,
       name: t.name,
       ...splitComment(t.comment),
-      columns: t.columns.map(c => {
-        return {
-          name: c.name,
-          type: c.type.shortName,
-          notNull: c.notNull,
-          ...splitComment(c.comment)
-        }
-      }),
+      columns
     }
-  });
+    tablesData.push(table);
+    tablesRef[t.name] = table.id;
+    id += 1;
+  }
+  tablesData.sort(nameSorter);
+
+  function addTarget(l, relation) {
+    const sourceTableId = tablesRef[relation.sourceTable.name];
+    const targetTableId = tablesRef[relation.targetTable.name];
+    // Do not add a link if it already exists in the other way
+    if (l.hasOwnProperty(targetTableId) && l[targetTableId].has(sourceTableId)) {
+      return;
+    }
+
+    if (!l.hasOwnProperty(sourceTableId)) {
+      l[sourceTableId] = new Set();
+    }
+    l[sourceTableId].add(targetTableId);
+  }
+
+  const linkSet = {}
+  for (const table of db.tables) {
+    for (relation of table.o2mRelations) {
+      addTarget(linkSet, relation);
+    }
+    // This is already taken into account with o2m and m2o relationships
+    // for (relation of table.m2mRelations) {
+    //   addTarget(linkSet, relation);
+    // }
+    for (relation of table.m2oRelations) {
+      addTarget(linkSet, relation);
+    }
+  }
+  for (const source in linkSet) {
+    for (const target of linkSet[source]) {
+      links.push({source, target});
+    }
+  }
 }
 loadDbSchema();
 
@@ -43,8 +103,8 @@ loadDbSchema();
 const app = express();
 app.use(express.static(path.join(__dirname, 'build')));
 
-app.get('/tables', function (req, res) {
- return res.json(tablesData);
+app.get('/schema', function (req, res) {
+ return res.json({tables: tablesData, links});
 });
  
 app.get('/', function (req, res) {

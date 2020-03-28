@@ -40,8 +40,8 @@ function DataRow({row, useName, cells, className}) {
   );
 }
 
-function AttributeTable({row, columns, attributeCols}) {
-  if (!row._hasColumnDisplay) {
+function AttributeTable({table, columns, attributeCols}) {
+  if (!table._hasColumnDisplay) {
     return null;
   }
 
@@ -50,11 +50,11 @@ function AttributeTable({row, columns, attributeCols}) {
       <TableCell colSpan={columns.length}>
         <Table aria-label="table">
           <TableHead>
-            <DataRow key={row._key + '-attributes-head'} row={row} useName={false} cells={attributeCols}></DataRow>
+            <DataRow key={table._key + '-attributes-head'} row={table} useName={false} cells={attributeCols}></DataRow>
           </TableHead>
           <TableBody>
-            {row.columns.map(tableColumn => (
-              <DataRow row={tableColumn} useName={true} cells={attributeCols} key={row._key + '-attributes-' + tableColumn.name}></DataRow>
+            {table.columns.map(tableColumn => (
+              <DataRow row={tableColumn} useName={true} cells={attributeCols} key={table._key + '-attributes-' + tableColumn.name}></DataRow>
             ))}
           </TableBody>
         </Table>
@@ -62,23 +62,23 @@ function AttributeTable({row, columns, attributeCols}) {
     </TableRow>); 
 }
 
-function TableData({row, columns, attributeCols}) {
+function TableData({table, columns, attributeCols}) {
   const classes = useStyles();
 
-  if (!row._display) {
+  if (!table._display) {
     return null;
   }
 
   return (
     <React.Fragment>
-      <DataRow className={classes.tableHead}  key={row._key + '-content'} row={row} useName={true} cells={columns}></DataRow>      
-      <AttributeTable row={row} columns={columns} attributeCols={attributeCols}></AttributeTable>
+      <DataRow className={classes.tableHead}  key={table._key + '-content'} row={table} useName={true} cells={columns}></DataRow>      
+      <AttributeTable table={table} columns={columns} attributeCols={attributeCols}></AttributeTable>
     </React.Fragment>       
   )
 }
 
-function DataGrid({ tables }) { 
-  const { rows, columns, attributeCols } = tables;
+function DataGrid({ schema }) { 
+  const { tables, columns, attributeCols } = schema;
 
   return (
     <TableContainer component={Paper}>
@@ -91,8 +91,8 @@ function DataGrid({ tables }) {
           </TableRow>
         </TableHead>
         <TableBody>
-          {rows.map(row => (
-            <TableData key={'tabledata-' + row._key} row={row} columns={columns} attributeCols={attributeCols}></TableData>
+          {tables.map(table => (
+            <TableData key={'tabledata-' + table._key} table={table} columns={columns} attributeCols={attributeCols}></TableData>
           ))}
         </TableBody>
       </Table>

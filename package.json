@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@emotion/core": "^10.0.28",
+    "@emotion/styled": "^10.0.27",
     "@material-ui/core": "^4.9.7",
     "@material-ui/icons": "^4.9.1",
     "@projectstorm/react-diagrams": "^6.0.2",
@@ -10,13 +12,19 @@
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.5.0",
     "@testing-library/user-event": "^7.2.1",
+    "closest": "0.0.1",
     "csv-parser": "^2.3.2",
+    "dagre": "^0.8.5",
     "express": "^4.17.1",
     "material-table": "^1.57.2",
+    "mathjs": "^6.6.1",
+    "pathfinding": "^0.4.18",
+    "paths-js": "^0.4.10",
     "pg-structure": "^5.10.7",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-scripts": "3.4.1",
+    "resize-observer-polyfill": "^1.5.1",
     "strip-bom-stream": "^4.0.0",
     "typescript": "^3.8.3"
   },
@@ -41,15 +49,5 @@
       "last 1 safari version"
     ]
   },
-  "proxy": "http://localhost:8080",
-  "devDependencies": {
-    "@emotion/core": "^10.0.28",
-    "@emotion/styled": "^10.0.27",
-    "closest": "0.0.1",
-    "dagre": "^0.8.5",
-    "mathjs": "^6.6.1",
-    "pathfinding": "^0.4.18",
-    "paths-js": "^0.4.10",
-    "resize-observer-polyfill": "^1.5.1"
-  }
+  "proxy": "http://localhost:8080"
 }

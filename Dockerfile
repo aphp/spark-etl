@@ -1,9 +1,13 @@
-FROM node:12
+FROM debian:buster-slim
 
+RUN apt update && apt -y install postgresql nodejs npm && npm i npm@latest -g
+
+# COPY make-schema.sh /docker-entrypoint-initdb.d
+# COPY schema.sql /mnt
+COPY . /app/
 WORKDIR /app
-COPY . ./
-
 RUN npm ci --only=production && npm run build
+RUN chmod u+x /app/scripts/*.sh
 EXPOSE 8080
 
-CMD ["node", "server.js", "/mnt/tables.csv", "/mnt/attributes.csv"]
+CMD ["/app/scripts/run.sh"]

@@ -2,16 +2,26 @@
 
 This project displays the definition of tables and attributs for APHP.
 
+## Environment variables
+
+The server will connect to a postgresql database and extract its schema with comments from the following variables. Variables are:
+- `POSTGRES_DB`: the database
+- `POSTGRES_USER`: the DB user
+- `POSTGRES_PASSWORD`: the DB password
+- `POSTGRES_HOST`: the DB host
+- `POSTGRES_PORT`: the DB port
+
 ## Run in development
 
-- Run the server: `node server.js tables.csv attributes.csv` on port `8080`. `tables.csv` and `attributes.csv` are given by APHP as data schema definition
+- Run the server: `node server.js` on port `8080`. 
 - Run the frontend: `npm start`
 
 Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
 The page will reload if you make edits.<br />
 You will also see any lint errors in the console.
 
-`npm test` launches the test runner in the interactive watch mode.
+`npm test` launches the test runner in the interactive watch mode. <br/>
+Note: no test at the moment....
 
 ## Run in production 
 
@@ -20,11 +30,12 @@ It correctly bundles React in production mode and optimizes the build for the be
 
 The build is minified and the filenames include the hashes.<br />
 
-Then run `node server.js tables.csv attributes.csv`, the server will serve the bundle and listen on port `8080`.<br />
-`tables.csv` and `attributes.csv` are given by APHP as data schema definition.
+Then run `node server.js` with the good environment variables, the server will serve the bundle and listen on port `8080`.<br />
+A postgres schema with comments was given by APHP as data schema definition.
 
 ### Docker
 
-Because the server needs 2 csv files: tables definition and attributes definition, we need to mount a volume with thoe files on disk.
-- Build the docker image: docker build -t dataiku/datadef .
-- Run the image (change the exposed port if needed): `docker run -p 8080:8080 -v ${local-tables-csv}:/mnt/tables.csv -v ${local-attributes-csv}:/mnt/attributes.csv -d dataiku/datadef` where `${local-tables-csv}` and `${local-attributes-csv}` are path to the local csv files. 
+A docker image can import a database schema locally or connect to an existing postgresql database.
+- Build the docker image: `docker build -t dataiku/datadef .`
+- Run the image (change the exposed port if needed): `docker run -v ${LOCAL_SCHEMA_SQL}:/mnt/schema.sql -p 8080:8080 -d dataiku/datadef` and replace `${LOCAL_SCHEMA_SQL}` by the full path of a schema file 
+- Run the image to connect to a remote database: `docker run -p 8080:8080 -e POSTGRES_DB=postgres -e POSTGRES_USER=postgres -e POSTGRES_HOST=172.17.0.1 -e POSTGRES_PASSWORD=password -d dataiku/datadef`

@@ -27,7 +27,12 @@ function nameSorter(a, b) {
 const tablesData = [];
 const links = [];
 async function loadDbSchema() {
-  const db = await pgStructure({ database: 'postgres', user: 'postgres', password: 'password' }, {  });
+  const database = process.env.POSTGRES_DB || 'docker';
+  const user = process.env.POSTGRES_USER || 'docker';
+  const password = process.env.POSTGRES_PASSWORD || 'docker';
+  const host = process.env.POSTGRES_HOST || 'localhost';
+  const port = process.env.POSTGRES_PORT || 5432
+  const db = await pgStructure({ database, user, password, host, port }, {  });
   const tablesRef = {}
 
   let id = 0;

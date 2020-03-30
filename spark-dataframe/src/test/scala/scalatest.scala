@@ -144,6 +144,31 @@ class AppTest extends QueryTest with SparkSessionTestWrapper {
     checkAnswer(DFTool.trimAll(df), expectedDf)
   }
 
+  test("test normalize cols") {
+
+    import spark.implicits._
+    val df = List(
+      (" b ", " ", 3)
+      , ("a\n", " c", 6)
+
+    ).toDF("Bob", "Ji m", "(hi)")
+    val expectedDf = Array("bob",
+      "ji_m", "_hi_")
+
+    assert(DFTool.normalizeColumnNames(df).columns === expectedDf)
+  }
+
+  test("test normalize dates") {
+
+    import spark.implicits._
+    val df = List(
+      ("2020-01-02", " ", 3)
+      , ("a\n", " c", 6)
+
+    ).toDF("dt", "Ji m", "(hi)")
+    df.withColumn("dt", DFTool.toDate(col("dt"), "yyyy-MM-dd")).show
+  }
+
 }
 
 trait SparkSessionTestWrapper {

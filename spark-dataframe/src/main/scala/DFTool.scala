@@ -350,4 +350,14 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
     fs.exists(new Path(filePath))
   }
 
+  def normalizeColumnNames(df: DataFrame): DataFrame = {
+    val cols = df.columns
+    cols.foldLeft(df)((df, c) => {
+      df.withColumnRenamed(c, c.toLowerCase().replaceAll("[^\\w]+", "_"))
+    })
+  }
+
+  def toDate(c: Column, format: String): Column = {
+    expr("TO_timestamp(CAST(UNIX_TIMESTAMP(`" + c.toString() + "`, '" + format + "') AS TIMESTAMP))")
+  }
 }

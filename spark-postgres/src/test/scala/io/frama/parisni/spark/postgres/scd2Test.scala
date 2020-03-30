@@ -1,7 +1,8 @@
+package io.frama.parisni.spark.postgres
+
 import java.sql.Timestamp
 
 import io.frama.parisni.spark.dataframe.DFTool
-import io.frama.parisni.spark.postgres.SparkSessionTestWrapper
 import org.apache.spark.sql.{DataFrame, QueryTest}
 import org.junit.Test
 
@@ -16,7 +17,7 @@ class ScdTest extends QueryTest with SparkSessionTestWrapper {
         (3L, "b", "bob", null, 2) ::
         Nil).toDF("id", "key", "cd", "end_date", "hash")
       .write
-      .format("postgres")
+      .format("io.frama.parisni.spark.postgres")
       .option("url", getPgUrl)
       .option("table", "scd2table")
       .save
@@ -26,7 +27,7 @@ class ScdTest extends QueryTest with SparkSessionTestWrapper {
         (2L, "b", "johm") ::
         Nil).toDF("id", "key", "cd")
 
-    df.write.format("postgres")
+    df.write.format("io.frama.parisni.spark.postgres")
       .option("url", getPgUrl)
       .option("type", "scd2")
       .option("joinKey", "key")
@@ -42,7 +43,7 @@ class ScdTest extends QueryTest with SparkSessionTestWrapper {
         (3L, "b", "bob") ::
         Nil).toDF("id", "key", "cd")
 
-    checkAnswer(spark.read.format("postgres")
+    checkAnswer(spark.read.format("io.frama.parisni.spark.postgres")
       .option("url", getPgUrl)
       .option("query", "select * from scd2table")
       .load

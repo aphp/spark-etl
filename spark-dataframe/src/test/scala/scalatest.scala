@@ -151,9 +151,9 @@ class AppTest extends QueryTest with SparkSessionTestWrapper {
       (" b ", " ", 3)
       , ("a\n", " c", 6)
 
-    ).toDF("Bob", "Ji m", "(hi)")
+    ).toDF("Bob", "Ji mé", "(hi)")
     val expectedDf = Array("bob",
-      "ji_m", "_hi_")
+      "ji_me", "_hi_")
 
     assert(DFTool.normalizeColumnNames(df).columns === expectedDf)
   }

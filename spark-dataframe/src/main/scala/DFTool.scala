@@ -1,5 +1,8 @@
 package io.frama.parisni.spark.dataframe
 
+import java.text.Normalizer
+import java.util.regex.Pattern
+
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
@@ -351,9 +354,15 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
   }
 
   def normalizeColumnNames(df: DataFrame): DataFrame = {
+    def removeAccent(str: String) = {
+      val strTemp = Normalizer.normalize(str, Normalizer.Form.NFD);
+      val pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
+      pattern.matcher(strTemp).replaceAll("");
+    }
+
     val cols = df.columns
     cols.foldLeft(df)((df, c) => {
-      df.withColumnRenamed(c, c.toLowerCase().replaceAll("[^\\w]+", "_"))
+      df.withColumnRenamed(c, removeAccent(c.toLowerCase()).replaceAll("[^\\w]+", "_"))
     })
   }
 

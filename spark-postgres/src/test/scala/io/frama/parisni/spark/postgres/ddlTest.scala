@@ -26,6 +26,30 @@ class ExampleSuite extends QueryTest with SparkSessionTestWrapper {
 
     val input = spark.sql("select 1 as t")
     input
+      .write.format("io.frama.parisni.spark.postgres")
+      .option("host", "localhost")
+      .option("port", pg.getEmbeddedPostgres.getPort)
+      .option("database", "postgres")
+      .option("user", "postgres")
+      .option("table", "test_table")
+      .mode(org.apache.spark.sql.SaveMode.Overwrite)
+      .save
+
+    val output = spark.read.format("io.frama.parisni.spark.postgres")
+      .option("host", "localhost")
+      .option("port", pg.getEmbeddedPostgres.getPort)
+      .option("database", "postgres")
+      .option("user", "postgres")
+      .option("query", "select * from test_table")
+      .load
+
+    checkAnswer(input, output)
+  }
+
+  @Test def verifySparkPostgresOldDatasource(): Unit = {
+
+    val input = spark.sql("select 1 as t")
+    input
       .write.format("postgres")
       .option("host", "localhost")
       .option("port", pg.getEmbeddedPostgres.getPort)
@@ -51,7 +75,7 @@ class ExampleSuite extends QueryTest with SparkSessionTestWrapper {
 
     val input = spark.sql("select 2 as t")
     input
-      .write.format("postgres")
+      .write.format("io.frama.parisni.spark.postgres")
       .option("url", getPgUrl)
       .option("table", "test_table")
       .mode(org.apache.spark.sql.SaveMode.Overwrite)
@@ -72,7 +96,7 @@ class ExampleSuite extends QueryTest with SparkSessionTestWrapper {
   def verifyPostgresConnectionFailWhenBadPassword() {
     assertThrows[Exception](
       spark.sql("select 2 as t")
-        .write.format("postgres")
+        .write.format("io.frama.parisni.spark.postgres")
         .option("host", "localhost")
         .option("port", pg.getEmbeddedPostgres.getPort)
         .option("database", "postgres")
@@ -99,7 +123,7 @@ class ExampleSuite extends QueryTest with SparkSessionTestWrapper {
       .toDF("INT_COL", "STRING_COL", "LONG_COL", "ARRAY_INT_COL", "ARRAY_STRING_COL", "ARRAY_BIGINT_COL")
     val schema = data.schema
     getPgTool().tableCreate("TEST_ARRAY", schema, true)
-    data.write.format("postgres")
+    data.write.format("io.frama.parisni.spark.postgres")
       .option("url", getPgUrl)
       .option("type", "full")
       .option("table", "TEST_ARRAY")

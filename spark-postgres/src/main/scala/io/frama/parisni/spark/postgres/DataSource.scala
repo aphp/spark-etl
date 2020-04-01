@@ -1,8 +1,7 @@
-package postgres
+package io.frama.parisni.spark.postgres
 
 import com.typesafe.scalalogging.LazyLogging
 import io.frama.parisni.spark.dataframe.DFTool
-import io.frama.parisni.spark.postgres.{PGTool, PostgresConf}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.sources._

@@ -1,7 +1,8 @@
+package io.frama.parisni.spark.postgres
+
 import java.sql.Timestamp
 
 import io.frama.parisni.spark.dataframe.DFTool
-import io.frama.parisni.spark.postgres.SparkSessionTestWrapper
 import org.apache.spark.sql.{DataFrame, QueryTest}
 import org.junit.Test
 
@@ -16,7 +17,7 @@ class Scd1Test extends QueryTest with SparkSessionTestWrapper {
         (3L, "b", "bob", null, 2) ::
         Nil).toDF("id", "key", "cd", "end_date", "hash")
       .write
-      .format("postgres")
+      .format("io.frama.parisni.spark.postgres")
       .option("url", getPgUrl)
       .option("table", "scd1table")
       .save
@@ -26,7 +27,7 @@ class Scd1Test extends QueryTest with SparkSessionTestWrapper {
         (2L, "b", "johm") ::
         Nil).toDF("id", "key", "cd")
 
-    df.write.format("postgres")
+    df.write.format("io.frama.parisni.spark.postgres")
       .option("url", getPgUrl)
       .option("type", "scd1")
       .option("joinKey", "key")
@@ -38,7 +39,7 @@ class Scd1Test extends QueryTest with SparkSessionTestWrapper {
         (2L, "b", "johm") ::
         Nil).toDF("id", "key", "cd")
 
-    checkAnswer(spark.read.format("postgres")
+    checkAnswer(spark.read.format("io.frama.parisni.spark.postgres")
       .option("url", getPgUrl)
       .option("query", "select * from scd1table")
       .load
@@ -50,6 +51,7 @@ class Scd1Test extends QueryTest with SparkSessionTestWrapper {
   @Test
   def verifyScd1LowLevel(): Unit = {
     import spark.implicits._
+
     val table: String = "test_scd1_low"
     val joinKey: List[String] = "key1" :: "key2" :: Nil
     val endDatetimeCol: String = "end_date"
@@ -89,7 +91,7 @@ class Scd1Test extends QueryTest with SparkSessionTestWrapper {
       (3L, "b", "bob", null, 2) ::
       Nil).toDF("id", "key", "cd", "end_date", "hash")
       .write
-      .format("postgres")
+      .format("io.frama.parisni.spark.postgres")
       .option("url", getPgUrl)
       .option("table", "scd1table")
       .save
@@ -99,7 +101,7 @@ class Scd1Test extends QueryTest with SparkSessionTestWrapper {
         (2L, "b", "johm") ::
         Nil).toDF("id", "key", "cd")
 
-    df.write.format("postgres")
+    df.write.format("io.frama.parisni.spark.postgres")
       .option("url", getPgUrl)
       .option("type", "scd1")
       .option("filter", "key is not null")
@@ -112,7 +114,7 @@ class Scd1Test extends QueryTest with SparkSessionTestWrapper {
         (2L, "b", "johm") ::
         Nil).toDF("id", "key", "cd")
 
-    checkAnswer(spark.read.format("postgres")
+    checkAnswer(spark.read.format("io.frama.parisni.spark.postgres")
       .option("url", getPgUrl)
       .option("query", "select * from scd1table")
       .load
@@ -129,7 +131,7 @@ class Scd1Test extends QueryTest with SparkSessionTestWrapper {
       (3L, "b", "bob", true, 2) ::
       Nil).toDF("id", "key", "cd", "is_active", "hash")
       .write
-      .format("postgres")
+      .format("io.frama.parisni.spark.postgres")
       .option("url", getPgUrl)
       .option("table", "scd1table")
       .save
@@ -138,7 +140,7 @@ class Scd1Test extends QueryTest with SparkSessionTestWrapper {
       (1L, "a", "jim") ::
         Nil).toDF("id", "key", "cd")
 
-    df.write.format("postgres")
+    df.write.format("io.frama.parisni.spark.postgres")
       .option("url", getPgUrl)
       .option("type", "scd1")
       .option("filter", "key is not null")
@@ -152,7 +154,7 @@ class Scd1Test extends QueryTest with SparkSessionTestWrapper {
         (3L, "b", "bob", false) ::
         Nil).toDF("id", "key", "cd", "is_active")
 
-    checkAnswer(spark.read.format("postgres")
+    checkAnswer(spark.read.format("io.frama.parisni.spark.postgres")
       .option("url", getPgUrl)
       .option("query", "select * from scd1table")
       .load

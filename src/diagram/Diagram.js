@@ -9,6 +9,7 @@ import * as React from 'react';
 import { StyledButton, WorkspaceWidget } from './WorkspaceWidget';
 import { CanvasWidget } from '@projectstorm/react-canvas-core';
 import { StyledCanvasWidget } from './StyledCanvasWidget';
+import ZoomAction from './ZoomActions';
 
 const defaultNodeColor = 'rgb(0,192,255)';
 function createNode(name) {
@@ -34,7 +35,7 @@ function connectNodes(ports, nodeFrom, nodeTo) {
 
 class EngineWidget extends React.Component {
 	constructor(props) {
-		super(props);
+    super(props);
 		this.engine = new DagreEngine({
 			graph: {
 				rankdir: 'RL',
@@ -47,7 +48,7 @@ class EngineWidget extends React.Component {
 	}
 
 	autoDistribute = () => {
-		this.engine.redistribute(this.props.model);
+		this.engine.redistribute(this.props.engine.model);
 
 		this.reroute();
 		this.props.engine.repaintCanvas();
@@ -56,7 +57,7 @@ class EngineWidget extends React.Component {
 	componentDidMount() {
 		setTimeout(() => {
       this.autoDistribute();
-      this.props.engine.zoomToFit()
+      this.zoomToFit()
 		}, 500);
 	}
 
@@ -65,22 +66,65 @@ class EngineWidget extends React.Component {
 			.getLinkFactories()
 			.getFactory(PathFindingLinkFactory.NAME)
 			.calculateRoutingMatrix();
-	}
+  }
+
+  zoomToFit() {
+    const engine = this.props.engine;
+    const initialZoomLevel = 100;
+    const boundingRect = this.getNodesBoundingRect();
+    const width = boundingRect.maxX - boundingRect.minX;
+    const height = boundingRect.maxY - boundingRect.minY;
+
+    const xFactor = engine.canvas.clientWidth / width;
+    const yFactor = engine.canvas.clientHeight / height;
+    const zoomFactor = xFactor < yFactor ? xFactor : yFactor;
+
+    engine.model.setZoomLevel(initialZoomLevel * zoomFactor);
+    engine.model.setOffset(engine.canvas.clientWidth / 2, 0);
+
+    engine.repaintCanvas();
+  }
+  
+  getNodesBoundingRect() {
+    let minX = Number.POSITIVE_INFINITY;
+    let minY = Number.POSITIVE_INFINITY;
+    let maxY = Number.NEGATIVE_INFINITY;
+    let maxX = Number.NEGATIVE_INFINITY;
+    for (const node of Object.values(this.props.engine.model.activeNodeLayer.models)) {
+      if (node.position.x < minX) {
+        minX = node.position.x;
+      }
+      if (node.position.x + node.width > maxX) {
+        maxX = node.position.x + node.width;
+      }
+      if (node.position.y < minY) {
+        minY = node.position.y;
+      }
+      if (node.position.y + node.width > maxY) {
+        maxY = node.position.y + node.width;
+      }
+    }
+    return {minX, minY, maxX, maxY};
+  }
 
 	render() {
 		return (
       <WorkspaceWidget buttons={
         <div>
           <StyledButton onClick={this.autoDistribute}>Re-distribute</StyledButton>
-          <StyledButton onClick={() => this.props.engine.zoomToFit()}>Zoom to fit</StyledButton>
+          <StyledButton onClick={() => this.zoomToFit()}>Zoom to fit</StyledButton>
           <StyledButton onClick={() => {
-            this.props.model.setZoomLevel(this.props.model.getZoomLevel() + 2);
-           	this.props.engine.repaintCanvas();}}>
+            // Create a fake event to trigger zoom in
+            const evt = {type: 'wheel', deltaY: 1};
+            this.props.engine.getActionEventBus().fireAction({event: evt});
+           	}}>
                Zoom in
           </StyledButton>
           <StyledButton onClick={() => {
-            this.props.model.setZoomLevel(this.props.model.getZoomLevel() - 2);
-           	this.props.engine.repaintCanvas();}}>
+            // Create a fake event to trigger zoom out
+            const evt = {type: 'wheel', deltaY: -1};
+            this.props.engine.getActionEventBus().fireAction({event: evt});
+            }}>
                Zoom out
           </StyledButton>          
         </div>}>
@@ -96,7 +140,6 @@ class Diagram extends React.Component {
 	constructor(props) {
     super(props);
     this.state = {
-      model: null,
       engine: null,
       nodesIndex: {},
       selected: null
@@ -131,9 +174,14 @@ class Diagram extends React.Component {
     }
 
     // model.setLocked(true);
-    let engine = createEngine({registerDefaultDeleteItemsAction: false});
+    let engine = createEngine({
+      registerDefaultDeleteItemsAction: false,
+      registerDefaultZoomCanvasAction: false
+    });
+    engine.getActionEventBus().registerAction(new ZoomAction());
+
     engine.setModel(model);
-    this.setState({model, engine, nodesIndex});
+    this.setState({engine, nodesIndex});
   }
   
   render() {
@@ -151,7 +199,7 @@ class Diagram extends React.Component {
       }
     }
 
-    return <EngineWidget model={this.state.model} engine={this.state.engine} />;
+    return <EngineWidget engine={this.state.engine} />;
   }
 }
 

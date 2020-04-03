@@ -66,8 +66,8 @@ object HiveToPostgres extends App with LazyLogging {
 
         var df = DFTool.dfAddHash(dfHive)
         table.typeLoad.getOrElse("scd1") match {
-          case "scd1" => pg.outputScd1Hash(table = table.tablePg, key = table.key, df = df, numPartitions = table.numThread,filter = table.filter, deleteSet = table.deleteSet)
-          case "scd2" => pg.outputScd2Hash(table = table.tablePg, key = table.key, pk = table.pk.get, df=df, endDatetimeCol = table.updateDatetime.get, partitions = Some(4), multiline = Some(true))
+          case "scd1" => pg.outputScd1Hash(table = table.tablePg, key = table.key, df = df, numPartitions = table.numThread, filter = table.filter, deleteSet = table.deleteSet)
+          case "scd2" => pg.outputScd2Hash(table = table.tablePg, key = table.key, pk = table.pk.get, df = df, endDatetimeCol = table.updateDatetime.get, partitions = Some(4), multiline = Some(true))
           case "megafull" => {
             df.write.format("postgres")
               .mode(SaveMode.Overwrite)
@@ -79,9 +79,10 @@ object HiveToPostgres extends App with LazyLogging {
           }
           case "full" => {
             logger.warn("type load" + table.typeLoad)
-             pg.tableTruncate(table.tablePg)
+            pg.killLocks(table.tablePg)
+            pg.tableTruncate(table.tablePg)
 
-             pg.outputBulk(table.tablePg, df, 8, reindex = table.reindex.getOrElse(false))
+            pg.outputBulk(table.tablePg, df, 8, reindex = table.reindex.getOrElse(false))
 
           }
           case _ => throw new UnsupportedOperationException

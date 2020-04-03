@@ -25,6 +25,8 @@ class PostgresConf(config: Map[String, String]) extends Serializable with LazyLo
   var PG_PK: String = "pk"
   var PG_FILTER: String = "filter"
   var PG_DELETE_SET: String = "deleteSet"
+  val PG_KILL_LOCKS: String = "kill-locks"
+  val PG_SWAP_LOAD: String = "swap-load"
 
   require(config != null, "Config cannot be null")
   require(config.nonEmpty, "Config cannot be empty")
@@ -79,6 +81,12 @@ class PostgresConf(config: Map[String, String]) extends Serializable with LazyLo
   def getFilter: Option[String] = config.get(PG_FILTER)
 
   def getDeleteSet: Option[String] = config.get(PG_DELETE_SET)
+
+  def getKillLocks: Option[Boolean] =
+    if (config.get(PG_KILL_LOCKS).isDefined) Some(config(PG_KILL_LOCKS).toBoolean) else Some(false)
+
+  def getSwapLoad: Option[Boolean] =
+    if (config.get(PG_SWAP_LOAD).isDefined) Some(config(PG_SWAP_LOAD).toBoolean) else Some(false)
 
 }
 

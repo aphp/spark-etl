@@ -1,5 +1,7 @@
 package io.frama.parisni.spark.postgres
 
+import java.util.UUID._
+
 import com.typesafe.scalalogging.LazyLogging
 import io.frama.parisni.spark.dataframe.DFTool
 import org.apache.spark.rdd.RDD
@@ -60,7 +62,7 @@ class PostgresRelation(val parameters: Map[String, String]
       case "scd2" => require(conf.getEndColumn.nonEmpty && conf.getPrimaryKey.nonEmpty, "pk and endCol cannot be empty when scd2")
       case _ =>
     }
-    val table = conf.getTable.get
+
     val reindex = conf.getIsReindex.get
     val numPartitions = conf.getNumPartition
     val joinKey = conf.getJoinKey
@@ -68,18 +70,46 @@ class PostgresRelation(val parameters: Map[String, String]
     val pk = conf.getPrimaryKey
     val filter = conf.getFilter
     val deleteSet = conf.getDeleteSet
+    val killLocks = conf.getKillLocks.get
+    val swapLoad = conf.getSwapLoad.get
+
     logger.warn("is_overwrite" + overwrite)
-    if (overwrite)
+
+    // Overwrite bulk-loading strategy:
+    // Bulk-load a temporary table and when done
+    // drop existing and rename newly loaded
+    val table = conf.getTable.get
+    val tmpTable = "table_" + randomUUID.toString.replaceAll(".*-", "")
+    val tableToLoad = if (overwrite && swapLoad) tmpTable else table
+    
+    if (overwrite && !swapLoad) {
+      // tmpTable loaded, kill locks before drop old and renaming
+      if (killLocks)
+        _pg.killLocks(table)
       _pg.tableDrop(table)
-    _pg.tableCreate(table, data.schema, false)
+    }
+
+    _pg.tableCreate(tableToLoad, data.schema, false)
+
+    // If loading the real table, kill locks first if conf says so
+    if ((! overwrite) && killLocks)
+      _pg.killLocks(tableToLoad)
 
     loadType match {
-      case "full" => _pg.outputBulk(table, data, numPartitions.get, reindex)
-      case "megafull" => _pg.outputBulk(table, data, numPartitions.get, reindex)
-      case "scd1" => _pg.outputScd1Hash(table, joinKey.get.toList, DFTool.dfAddHash(data), numPartitions, filter, deleteSet)
-      case "scd2" => _pg.outputScd2Hash(table, DFTool.dfAddHash(data), pk.get, joinKey.get.toList, endCol.get, numPartitions)
+      case "full" => _pg.outputBulk(tableToLoad, data, numPartitions.get, reindex)
+      case "megafull" => _pg.outputBulk(tableToLoad, data, numPartitions.get, reindex)
+      case "scd1" => _pg.outputScd1Hash(tableToLoad, joinKey.get.toList, DFTool.dfAddHash(data), numPartitions, filter, deleteSet)
+      case "scd2" => _pg.outputScd2Hash(tableToLoad, DFTool.dfAddHash(data), pk.get, joinKey.get.toList, endCol.get, numPartitions)
     }
     _pg.purgeTmp()
+
+    if (overwrite && swapLoad) {
+      // tmpTable loaded, kill locks before drop old and renaming
+      if (killLocks)
+        _pg.killLocks(table)
+      _pg.tableDrop(table)
+      _pg.tableRename(tableToLoad, table)
+    }
   }
 
   // https://michalsenkyr.github.io/2017/02/spark-sql_datasource

@@ -3,6 +3,7 @@ package io.frama.parisni.spark.postgres
 import com.opentable.db.postgres.junit.{EmbeddedPostgresRules, SingleInstancePostgresRule}
 import org.apache.spark.sql.QueryTest
 import org.junit.{Rule, Test}
+import org.postgresql.util.PSQLException
 
 import scala.annotation.meta.getter
 
@@ -128,6 +129,40 @@ class ExampleSuite extends QueryTest with SparkSessionTestWrapper {
       .option("type", "full")
       .option("table", "TEST_ARRAY")
       .save
+  }
+
+  @Test
+  def verifyKillLocks(): Unit = {
+    val db = pg.getEmbeddedPostgres.getPostgresDatabase
+    val conn = db.getConnection()
+    conn.createStatement().execute("create table lockable()")
+    conn.setAutoCommit(false)
+    try {
+      conn.createStatement().execute("BEGIN TRANSACTION")
+      conn.createStatement().execute("LOCK lockable IN ACCESS EXCLUSIVE MODE")
+      assert(getPgTool().killLocks("lockable") == 1)
+      conn.commit()
+      fail()
+    } catch {
+      case e: PSQLException => succeed
+    }
+  }
+
+  @Test
+  def verifyRename(): Unit = {
+    val db = pg.getEmbeddedPostgres.getPostgresDatabase
+    val conn = db.getConnection()
+    conn.createStatement().execute("create table to_rename()")
+    getPgTool().tableRename("to_rename", "renamed")
+
+    var rs = conn.createStatement().executeQuery("SELECT EXISTS(SELECT FROM information_schema.tables WHERE table_name = 'to_rename')")
+    rs.next()
+    assert(! rs.getBoolean(1))
+
+    rs = conn.createStatement().executeQuery("SELECT EXISTS(SELECT FROM information_schema.tables WHERE table_name = 'renamed')")
+    rs.next()
+    assert(rs.getBoolean(1))
+    conn.close()
   }
 }
 

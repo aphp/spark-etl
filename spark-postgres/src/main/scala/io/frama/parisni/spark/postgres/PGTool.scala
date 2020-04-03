@@ -79,6 +79,15 @@ class PGTool(spark: SparkSession, url: String, tmpPath: String) {
     this
   }
 
+  def tableRename(from: String, to: String): PGTool = {
+    PGTool.tableRename(url, from, to, password)
+    this
+  }
+
+  def killLocks(table: String): Int = {
+    PGTool.killLocks(url, table, password)
+  }
+
   def sqlExec(query: String): PGTool = {
     PGTool.sqlExec(url, query, password)
     this
@@ -204,6 +213,36 @@ object PGTool extends java.io.Serializable with LazyLogging {
     val st: PreparedStatement = conn.prepareStatement(s"""DROP TABLE IF EXISTS "$table" """)
     st.executeUpdate()
     conn.close()
+  }
+
+  def tableRename(url: String, from: String, to: String, password: String = ""): Unit = {
+    val conn = connOpen(url, password)
+    val st: PreparedStatement = conn.prepareStatement(s"""ALTER TABLE "$from" RENAME TO "$to" """)
+    st.executeUpdate()
+    conn.close()
+  }
+
+  def killLocks(url: String, table: String, password: String): Int = {
+    var killed = 0
+    val conn = connOpen(url, password)
+    try {
+      val st = conn.prepareStatement(
+        "select pid from pg_locks l join pg_class t on l.relation = t.oid and t.relkind = 'r' where t.relname = ?")
+      st.setString(1, table)
+      val rs = st.executeQuery()
+      val st2 = conn.prepareStatement("select pg_cancel_backend(?) AND pg_terminate_backend(?)")
+
+      while(rs.next()) {
+        val pid = rs.getInt("pid")
+        st2.setInt(1, pid)
+        st2.setInt(2, pid)
+        st2.executeQuery()
+        killed += 1
+      }
+    } finally {
+      conn.close()
+    }
+    killed
   }
 
   def sqlExec(url: String, query: String, password: String = ""): Unit = {

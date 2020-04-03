@@ -7,7 +7,6 @@ import org.junit.Test
 
 class Scd1Test extends QueryTest with SparkSessionTestWrapper {
 
-
   @Test
   def verifyScd1(): Unit = {
     import spark.implicits._

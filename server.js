@@ -1,8 +1,5 @@
 const express = require('express');
 const path = require('path');
-const fs = require('fs');
-const csv = require('csv-parser');
-const stripBom = require('strip-bom-stream');
 const pgStructure = require('pg-structure').default;
 
 function splitComment(comment) {

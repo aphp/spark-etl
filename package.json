@@ -13,7 +13,6 @@
     "@testing-library/react": "^9.5.0",
     "@testing-library/user-event": "^7.2.1",
     "closest": "0.0.1",
-    "csv-parser": "^2.3.2",
     "dagre": "^0.8.5",
     "express": "^4.17.1",
     "material-table": "^1.57.2",
@@ -25,7 +24,6 @@
     "react-dom": "^16.13.1",
     "react-scripts": "3.4.1",
     "resize-observer-polyfill": "^1.5.1",
-    "strip-bom-stream": "^4.0.0",
     "typescript": "^3.8.3"
   },
   "scripts": {

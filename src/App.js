@@ -11,6 +11,8 @@ import Tab from '@material-ui/core/Tab';
 import Typography from '@material-ui/core/Typography';
 import Box from '@material-ui/core/Box';
 import Diagram from './diagram/Diagram.js';
+import Select from './Select.js'
+
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -193,9 +195,91 @@ class TabbedApp extends React.Component {
   }
 }
 
+class SelectDatabases extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      databases: [],
+      schemas: [],
+      error: null,
+    };
+    this.onSelectDatabase = this.onSelectDatabase.bind(this);
+    this.onSelectSchema = this.onSelectSchema.bind(this);
+    this.onSelectedDiagramTable = this.onSelectedDiagramTable.bind(this);
+  }
+
+  componentDidMount() {
+    fetch("/databases")
+      .then(res => res.json())
+      .then(
+        (results) => {
+          this.setState({
+            databases: results,
+            schemas: [],
+            tables: [],
+            selectedDatabase: null
+          });
+        },
+        (error) => {
+          this.setState({
+            error
+          });
+        }
+      );
+  }
+
+  onSelectDatabase(values) {
+    fetch("/schemas?ids_database=" + values.id)
+    .then(res => res.json())
+    .then(
+      (results) => {
+        this.setState({
+          schemas: results,
+          selectedDatabase: values.id
+        });
+      },
+      (error) => {
+        this.setState({
+          error,
+          schemas: []
+        });
+      }
+    );    
+  }
+
+  onSelectSchema (values) {
+    fetch("/tables?ids_schema=" + values.id)
+    .then(res => res.json())
+    .then(
+      (results) => {
+        this.setState({
+          tables: results,
+        });
+      },
+      (error) => {
+        this.setState({
+          error,
+          schemas: []
+        });
+      }
+    );      
+  }
+
+  render() {
+    const { error, databases, schemas, selectedDatabase } = this.state;
+
+    return (
+      <div>
+        <Select label="databases" options={databases} error={error} onChange={this.onSelectDatabase}></Select>
+        <Select key={selectedDatabase} label="schemas" options={schemas} error={error} onChange={this.onSelectSchema}></Select>
+      </div>
+    );
+  }
+}
+
 function App() { 
     const classes = useStyles();
-    return (<TabbedApp classes={classes}></TabbedApp>);
+    return (<SelectDatabases></SelectDatabases>);
 } 
 
 export default App;

@@ -19,12 +19,16 @@
           <groupId>io.frama.parisni</groupId>
           <artifactId>spark-dataframe</artifactId>
           <version>${spark-dataframe.version}</version>
+          <scope>system</scope>
+          <systemPath>${basedir}/src/main/resources/spark-dataframe-0.0.4.jar</systemPath>
       </dependency>
 
       <dependency>
           <groupId>io.frama.parisni</groupId>
           <artifactId>spark-csv</artifactId>
           <version>${spark-csv.version}</version>
+          <scope>system</scope>
+          <systemPath>${basedir}/src/main/resources/spark-csv-0.0.1.jar</systemPath>
       </dependency>
 
       <dependency>

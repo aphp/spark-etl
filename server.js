@@ -154,6 +154,32 @@ app.get('/schemas', function (req, res) {
 });
 
 
+function createLinks(references, tableNameIndex) {
+  const linkSet = {};
+  for (const ref of references) {
+    const sourceTableId = tableNameIndex[ref.table_source].id;
+    const targetTableId = tableNameIndex[ref.table_target].id;
+    // Do not add a link if it already exists in the other way
+    if (linkSet.hasOwnProperty(targetTableId) && linkSet[targetTableId].has(sourceTableId)) {
+      continue;
+    }
+
+    if (!linkSet.hasOwnProperty(sourceTableId)) {
+      linkSet[sourceTableId] = new Set();
+    }
+    linkSet[sourceTableId].add(targetTableId);        
+  }
+
+  const links = [];
+  for (const source in linkSet) {
+    for (const target of linkSet[source]) {
+      links.push({source, target});
+    }
+  }
+
+  return links;
+}
+
 app.get('/tables', (req, res) => {
   Promise.all([
     pool.query({
@@ -220,17 +246,9 @@ app.get('/tables', (req, res) => {
         tableIndex[column.ids_table].columns.push(column);
       }
 
-      const links = [];
-      for (const ref of references) {
-        links.push({
-          source: tableNameIndex[ref.table_source].id, 
-          target: tableNameIndex[ref.table_target].id,
-          reference: ref}
-        );
-      }
       res.json({
         tables,
-        links,
+        links: createLinks(references, tableNameIndex),
       });
     })
     .catch(err => {

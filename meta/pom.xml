@@ -35,6 +35,8 @@
           <groupId>io.frama.parisni</groupId>
           <artifactId>spark-postgres</artifactId>
           <version>${spark-postgres.version}</version>
+          <scope>system</scope>
+          <systemPath>${basedir}/src/main/resources/spark-postgres-0.0.1.jar</systemPath>
       </dependency>
 
       <dependency>

@@ -236,13 +236,15 @@ class SelectDatabases extends React.Component {
         this.setState({
           schemas: results,
           selectedDatabase: values.id,
-          selectedSchema: null
+          selectedSchema: null,
+          selectedTable: null
         });
       },
       (error) => {
         this.setState({
           error,
           selectedSchema: null,
+          selectedTable: null,
           schemas: []
         });
       }
@@ -256,35 +258,59 @@ class SelectDatabases extends React.Component {
       (results) => {
         for (const table of results.tables) {
           table._display = true;
+          table._hasColumnDisplay = true;
           table._key = 'table-' + table.id;
+          for (const column of table.columns) {
+            column._display = true;
+            column._key = table._key + '-col-' + column.id;
+          }
         }
-        console.log('results', results.tables);
+
         this.setState({
           selectedSchema: {...results, id: values.id},
+          selectedTable: null,
         });
       },
       (error) => {
         this.setState({
           error,
           selectedSchema: null,
+          selectedTable: null,
           schemas: []
         });
       }
     );      
   }
 
-  onSelectedDiagramTable() {
-
+  onSelectedDiagramTable(e) {
+    if (!e.isSelected) {
+      return;
+    }
+    for (const table of this.state.selectedSchema.tables) {
+      if (table.id === e.entity.id) {
+        this.setState({
+          selectedTable: {
+            tables: [table],
+            columns: getColumns([table], ['columns', 'id']),
+            attributeCols: getColumns(table.columns, ['id', 'ids_table'])
+          }
+        });
+        break;
+      }
+    }
   }
   
   render() {
-    const { error, databases, schemas, selectedDatabase, selectedSchema } = this.state;
+    const { error, databases, schemas, selectedDatabase, selectedSchema, selectedTable } = this.state;
+    const classes = this.props.classes;
+    const searchText = '';
 
     return (
       <div>
         <Select label="databases" options={databases} error={error} onChange={this.onSelectDatabase}></Select>
         <Select key={selectedDatabase} label="schemas" options={schemas} error={error} onChange={this.onSelectSchema}></Select>
         {selectedSchema && <Diagram key={selectedSchema.id} tables={selectedSchema.tables} links={selectedSchema.links} onSelected={this.onSelectedDiagramTable}></Diagram>}
+        {selectedTable && <DataGrid className={classes.selectedTable} schema={selectedTable} filter={searchText}/>}
       </div>
     );
   }
@@ -292,7 +318,7 @@ class SelectDatabases extends React.Component {
 
 function App() { 
     const classes = useStyles();
-    return (<SelectDatabases></SelectDatabases>);
+    return (<SelectDatabases classes={classes}></SelectDatabases>);
 } 
 
 export default App;

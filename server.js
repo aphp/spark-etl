@@ -155,23 +155,64 @@ app.get('/schemas', function (req, res) {
 
 
 app.get('/tables', (req, res) => {
-  pool.query({
-    text: 'SELECT ids_table AS id, \
-           COALESCE(lib_table_m, lib_table) AS name, \
-           COALESCE(comment_fonctionnel_m, comment_fonctionnel) AS comment_fonctionnel, \
-           COALESCE(comment_technique_m, comment_technique) AS comment_technique, \
-           COALESCE(typ_table_m, typ_table) AS typ_table \
-           FROM meta_table \
-           WHERE ids_schema = $1 \
-           AND COALESCE(is_active_m, is_active) \
-           ORDER BY name ASC',
+  Promise.all([
+    pool.query({
+      text: 'SELECT ids_table AS id, \
+            COALESCE(lib_table_m, lib_table) AS name, \
+            COALESCE(comment_fonctionnel_m, comment_fonctionnel) AS comment_fonctionnel, \
+            COALESCE(comment_technique_m, comment_technique) AS comment_technique, \
+            COALESCE(typ_table_m, typ_table) AS typ_table \
+            FROM meta_table \
+            WHERE ids_schema = $1 \
+            AND COALESCE(is_active_m, is_active) \
+            ORDER BY name ASC',
       values: [req.query.ids_schema]
-  }, (error, results) => {
-    if (error) {
-      throw error
-    }
-    res.json(results.rows);
-  });
+    }),
+    pool.query({
+      text: 'SELECT mc.ids_column AS id, \
+            COALESCE(mc.lib_column_m, mc.lib_column) AS name, \
+            mc.ids_table AS ids_table, \
+            COALESCE(mc.comment_fonctionnel_m, mc.comment_fonctionnel) AS comment_fonctionnel, \
+            COALESCE(mc.comment_technique_m, mc.comment_technique) AS comment_technique, \
+            COALESCE(mc.typ_column_m, mc.typ_column) AS typ_column, \
+            COALESCE(mc.is_mandatory_m, mc.is_mandatory) AS is_mandatory, \
+            COALESCE(mc.is_pk_m, mc.is_pk) AS is_pk, \
+            COALESCE(mc.is_fk_m, mc.is_fk) AS is_fk \
+            FROM meta_column mc, meta_table mt \
+            WHERE mt.ids_table = mc.ids_table \
+            AND mt.ids_schema = $1 \
+            AND COALESCE(mc.is_active_m, mc.is_active) \
+            AND COALESCE(mt.is_active_m, mt.is_active) \
+            ORDER BY mc.ids_table, name ASC',
+      values: [req.query.ids_schema]
+    }),    
+    pool.query({
+      text: 'SELECT ids_reference AS id, \
+            COALESCE(lib_reference_m, lib_reference) AS name, \
+            COALESCE(lib_table_source_m, lib_table_source) AS table_source, \
+            COALESCE(lib_table_target_m, lib_table_target) AS table_target, \
+            COALESCE(typ_table_m, typ_table) AS typ_table \
+            FROM meta_reference mr, meta_column mc, meta_table mt \
+            WHERE mt.ids_table = mc.ids_table \
+            AND mc.ids_column = mr.ids_source \
+            AND ids_schema = $1 \
+            AND COALESCE(mr.is_active_m, mr.is_active) \
+            AND COALESCE(mc.is_active_m, mc.is_active) \
+            AND COALESCE(mt.is_active_m, mt.is_active) \
+            ORDER BY mc.ids_table, name ASC',
+        values: [req.query.ids_schema]
+    })
+  ])
+    .then(results => {
+      res.json({
+        tables: results[0].rows,
+        columns: results[1].rows,
+        references: results[2].rows
+      });
+    })
+    .catch(err => {
+      throw err;
+    });
 });
  
 app.get('/', function (req, res) {

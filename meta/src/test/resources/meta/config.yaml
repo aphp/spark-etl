@@ -1,0 +1,19 @@
+jobName:    Eds Stats Calc
+hostPg:     0.0.0.0
+portPg:     5432
+databasePg: edsr
+schemaPg:   meta
+userPg:     nparis
+schemas:
+  - dbName: pg-prod
+    dbType: postgresql
+    host: 0.0.0.0
+    db: edsr
+    user: nparis
+    isActive: true
+  - dbName: spark-prod
+    dbType: spark
+    host: 0.0.0.0
+    db: hive
+    user: etl
+    isActive: false

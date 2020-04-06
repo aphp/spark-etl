@@ -80,7 +80,7 @@ class EngineWidget extends React.Component {
     const zoomFactor = xFactor < yFactor ? xFactor : yFactor;
 
     engine.model.setZoomLevel(initialZoomLevel * zoomFactor);
-    engine.model.setOffset(engine.canvas.clientWidth / 2, 0);
+    engine.model.setOffset(engine.canvas.clientWidth / 3, 0);
 
     engine.repaintCanvas();
   }
@@ -100,10 +100,11 @@ class EngineWidget extends React.Component {
       if (node.position.y < minY) {
         minY = node.position.y;
       }
-      if (node.position.y + node.width > maxY) {
-        maxY = node.position.y + node.width;
+      if (node.position.y + node.height > maxY) {
+        maxY = node.position.y + node.height;
       }
     }
+
     return {minX, minY, maxX, maxY};
   }
 
@@ -141,22 +142,27 @@ class Diagram extends React.Component {
     super(props);
     this.state = {
       engine: null,
-      nodesIndex: {},
       selected: null
     }
   }
   
 	componentDidMount() {
     let model = new DiagramModel();
-    
+
     const nodesIndex = {};
     for (const table of this.props.tables) {
-      const node = createNode(table.name);
+      const node = createNode(table.name + ` [${table.id}]`);
       node.id = table.id;
       node.registerListener({
         selectionChanged: this.props.onSelected
       })
+      if (!table._display) {
+        node.options.color = '#cccccc';
+      } else {
+        node.options.color = defaultNodeColor;
+      }
       nodesIndex[table.id] = node;
+
       for (const col of table.columns) {
         const port = new DefaultPortModel(true, table.name + '.' + col.name, col.name);
         port.setLocked(true);
@@ -173,6 +179,7 @@ class Diagram extends React.Component {
       model.addLink(link);
     }
 
+
     // model.setLocked(true);
     let engine = createEngine({
       registerDefaultDeleteItemsAction: false,
@@ -181,22 +188,12 @@ class Diagram extends React.Component {
     engine.getActionEventBus().registerAction(new ZoomAction());
 
     engine.setModel(model);
-    this.setState({engine, nodesIndex});
+    this.setState({engine});
   }
   
   render() {
     if (!this.state.engine) {
-      return <div></div>;
-    }
-
-    const nodesIndex = this.state.nodesIndex;
-    
-    for (const table of this.props.tables) {
-      if (!table._display) {
-        nodesIndex[table.id].options.color = '#cccccc';
-      } else {
-        nodesIndex[table.id].options.color = defaultNodeColor;
-      }
+      return null;
     }
 
     return <EngineWidget engine={this.state.engine} />;

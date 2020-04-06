@@ -204,10 +204,33 @@ app.get('/tables', (req, res) => {
     })
   ])
     .then(results => {
+      const tables = results[0].rows;
+      const columns = results[1].rows;
+      const references = results[2].rows;
+
+      const tableIndex = {};
+      const tableNameIndex = {};
+      for (const table of tables) {
+        tableIndex[table.id] = table;
+        tableNameIndex[table.name] = table;
+        table.columns = [];
+      }
+
+      for (const column of columns) {
+        tableIndex[column.ids_table].columns.push(column);
+      }
+
+      const links = [];
+      for (const ref of references) {
+        links.push({
+          source: tableNameIndex[ref.table_source].id, 
+          target: tableNameIndex[ref.table_target].id,
+          reference: ref}
+        );
+      }
       res.json({
-        tables: results[0].rows,
-        columns: results[1].rows,
-        references: results[2].rows
+        tables,
+        links,
       });
     })
     .catch(err => {

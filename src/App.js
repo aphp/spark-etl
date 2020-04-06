@@ -216,7 +216,7 @@ class SelectDatabases extends React.Component {
           this.setState({
             databases: results,
             schemas: [],
-            tables: [],
+            selectedSchema: null,
             selectedDatabase: null
           });
         },
@@ -235,12 +235,14 @@ class SelectDatabases extends React.Component {
       (results) => {
         this.setState({
           schemas: results,
-          selectedDatabase: values.id
+          selectedDatabase: values.id,
+          selectedSchema: null
         });
       },
       (error) => {
         this.setState({
           error,
+          selectedSchema: null,
           schemas: []
         });
       }
@@ -252,26 +254,37 @@ class SelectDatabases extends React.Component {
     .then(res => res.json())
     .then(
       (results) => {
+        for (const table of results.tables) {
+          table._display = true;
+          table._key = 'table-' + table.id;
+        }
+        console.log('results', results.tables);
         this.setState({
-          tables: results,
+          selectedSchema: {...results, id: values.id},
         });
       },
       (error) => {
         this.setState({
           error,
+          selectedSchema: null,
           schemas: []
         });
       }
     );      
   }
 
+  onSelectedDiagramTable() {
+
+  }
+  
   render() {
-    const { error, databases, schemas, selectedDatabase } = this.state;
+    const { error, databases, schemas, selectedDatabase, selectedSchema } = this.state;
 
     return (
       <div>
         <Select label="databases" options={databases} error={error} onChange={this.onSelectDatabase}></Select>
         <Select key={selectedDatabase} label="schemas" options={schemas} error={error} onChange={this.onSelectSchema}></Select>
+        {selectedSchema && <Diagram key={selectedSchema.id} tables={selectedSchema.tables} links={selectedSchema.links} onSelected={this.onSelectedDiagramTable}></Diagram>}
       </div>
     );
   }

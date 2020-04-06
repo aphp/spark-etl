@@ -44,6 +44,23 @@
           <artifactId>moultingyaml_${scala.tools.version}</artifactId>
           <version>0.4.1</version>
       </dependency>
+
+      <!-- Test dependencies -->
+      <dependency>
+          <groupId>com.opentable.components</groupId>
+          <artifactId>otj-pg-embedded</artifactId>
+          <version>0.13.3</version>
+          <scope>provided</scope>
+      </dependency>
+      <dependency>
+          <groupId>com.opentable.components</groupId>
+          <artifactId>otj-pg-embedded</artifactId>
+          <version>0.13.3</version>
+          <scope>test</scope>
+          <classifier>tests</classifier>
+      </dependency>
+
+
   </dependencies>
 
     <build>

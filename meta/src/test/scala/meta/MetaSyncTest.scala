@@ -1,6 +1,5 @@
 package meta
 
-import fr.aphp.wind.eds.omop.orbis.SparkSessionTestWrapper
 import org.apache.spark.sql.QueryTest
 
 class MetaSyncTest extends QueryTest
@@ -13,8 +12,6 @@ class MetaSyncTest extends QueryTest
     val yaml = getClass.getResource("/meta/config.yaml").getPath
     println(yaml)
 
-   // MetaSync.run(spark, yaml)
+    // MetaSync.run(spark, yaml)
   }
 }
-
-

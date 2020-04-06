@@ -1,6 +1,5 @@
 package meta
 
-import fr.aphp.wind.eds.omop.orbis.SparkSessionTestWrapper
 import meta.ConfigMetaYaml.Database
 import net.jcazevedo.moultingyaml._
 import org.apache.spark.sql.QueryTest
@@ -26,5 +25,4 @@ class ConfigTest extends QueryTest
     println(palette.toYaml.prettyPrint)
   }
 }
-
 

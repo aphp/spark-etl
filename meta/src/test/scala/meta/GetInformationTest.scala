@@ -1,11 +1,36 @@
 package meta
 
-import fr.aphp.wind.eds.omop.orbis.SparkSessionTestWrapper
-import org.apache.spark.sql.QueryTest
+import org.apache.spark.sql.functions.{col, lit, regexp_extract, when}
+import org.apache.spark.sql.{DataFrame, QueryTest}
 
 class GetInformationTest extends QueryTest
   with SparkSessionTestWrapper
   with FeatureExtract {
+
+  test("is 'is_index' in 'meta_column' table") {
+    val pgTableCsvPath: String = getClass.getResource("/meta/postgres-table.csv").getPath
+
+    var pgTable: DataFrame = spark.read.format("csv").option("header", "true").load(pgTableCsvPath)
+    pgTable = pgTable
+      .withColumn("null_ratio_column", lit(0))
+      .withColumn("count_distinct_column",lit(0))
+      .withColumn("comment_fonctionnel_column",lit(""))
+    pgTable.printSchema()
+
+    //Replay the transformation dataflow
+    pgTable = extractPrimaryKey(pgTable)
+    pgTable = extractForeignKey(pgTable)
+    pgTable = generateColumn(pgTable)
+
+    pgTable.filter("is_index=='f'").show(3)
+    pgTable.filter("is_index=='t'").show(3)
+
+    assert(pgTable.columns.contains("is_index"))
+  }
+
+
+}
+
 
 /*
   test("test get postgres view") {
@@ -36,6 +61,4 @@ class GetInformationTest extends QueryTest
   }
 
  */
-}
-
 

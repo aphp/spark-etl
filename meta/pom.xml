@@ -32,6 +32,12 @@
       </dependency>
 
       <dependency>
+          <groupId>io.frama.parisni</groupId>
+          <artifactId>spark-postgres</artifactId>
+          <version>${spark-postgres.version}</version>
+      </dependency>
+
+      <dependency>
           <groupId>net.jcazevedo</groupId>
           <artifactId>moultingyaml_${scala.tools.version}</artifactId>
           <version>0.4.1</version>

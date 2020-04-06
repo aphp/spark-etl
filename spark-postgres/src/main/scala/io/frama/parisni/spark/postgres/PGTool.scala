@@ -54,8 +54,15 @@ class PGTool(spark: SparkSession, url: String, tmpPath: String) {
    *
    *
    */
-  def tableCopy(tableSrc: String, tableTarg: String, isUnlogged: Boolean = true): PGTool = {
-    PGTool.tableCopy(url, tableSrc, tableTarg, password, isUnlogged)
+  def tableCopy(tableSrc: String
+                , tableTarg: String
+                , isUnlogged: Boolean = true
+                , copyConstraints: Boolean = false
+                , copyIndexes: Boolean = false
+                , copyStorage: Boolean = false
+                , copyComments: Boolean = false
+               ): PGTool = {
+    PGTool.tableCopy(url, tableSrc, tableTarg, password, isUnlogged, copyConstraints, copyIndexes, copyStorage, copyComments)
     this
   }
 
@@ -308,14 +315,29 @@ object PGTool extends java.io.Serializable with LazyLogging {
     })
   }
 
-  def tableCopy(url: String, tableSrc: String, tableTarg: String, password: String = "", isUnlogged: Boolean = true): Unit = {
+  def tableCopy(url: String
+                , tableSrc: String
+                , tableTarg: String
+                , password: String = ""
+                , isUnlogged: Boolean = true
+                , copyConstraints: Boolean = false
+                , copyIndexes: Boolean = false
+                , copyStorage: Boolean = false
+                , copyComments: Boolean = false
+               ): Unit = {
     val conn = connOpen(url, password)
-    val unlogged = if (isUnlogged) {
-      "UNLOGGED"
-    } else {
-      ""
+    val unlogged = if (isUnlogged) "UNLOGGED" else ""
+    // TODO -- Add permissions, reloptions, triggers
+    val copyIncludeParams = {
+      Seq("INCLUDING DEFAULTS") ++
+        (if (copyConstraints) Seq("INCLUDING CONSTRAINTS") else Nil) ++
+        (if (copyIndexes) Seq("INCLUDING INDEXES") else Nil) ++
+        (if (copyStorage) Seq("INCLUDING STORAGE") else Nil) ++
+        (if (copyComments) Seq("INCLUDING COMMENTS") else Nil)
     }
-    val queryCreate = s"""CREATE $unlogged TABLE "$tableTarg" (LIKE "$tableSrc"  INCLUDING DEFAULTS)"""
+
+
+    val queryCreate = s"""CREATE $unlogged TABLE "$tableTarg" (LIKE "$tableSrc" ${copyIncludeParams.mkString(" ")})"""
     val st: PreparedStatement = conn.prepareStatement(queryCreate)
     st.executeUpdate()
     conn.close()

@@ -5,13 +5,24 @@ import org.apache.spark.sql.DataFrame
 
 class MetaLoader(host: String, database: String, schema: String, user: String) extends FeatureExtract with LazyLogging {
 
+  /**
+   * Return a Dataframe as the left jointure between an input dataframe and the result of an SQL query
+   *
+   * @param   df
+   *          input dataframe
+   *
+   * @param options
+   *        a Map containing the SQL query and the jointure keys
+   *
+   * @return The jointure as a Dataframe
+   */
   def getLookup(df: DataFrame, options: Map[String, String]): DataFrame = {
 
     val joinColumns = options("joinColumns").split(",")
     val pgJoinSql = options("pgJoinSql")
 
     // get the information from postgres
-    val joinTable = df.sparkSession.read.format("postgres")
+    val joinTable = df.sparkSession.read.format("io.frama.parisni.spark.postgres")
       .option("query", pgJoinSql)
       .option("host", host)
       .option("user", user)
@@ -76,7 +87,8 @@ class MetaLoader(host: String, database: String, schema: String, user: String) e
 
   def loadReference(df: DataFrame, dbName: String): Unit = {
     val optSource = Map("joinColumns" -> "lib_database_source,lib_schema_source,lib_table_source,lib_column_source"
-      , "pgJoinSql" -> "select ids_column as ids_source, d.lib_database as lib_database_source, s.lib_schema as lib_schema_source, t.lib_table as lib_table_source, c.lib_column as lib_column_source from meta_column c join meta_table t using (ids_table) join meta_schema s using (ids_schema) join meta_database d using (ids_database)")
+      , "pgJoinSql" ->
+        "select ids_column as ids_source, d.lib_database as lib_database_source, s.lib_schema as lib_schema_source, t.lib_table as lib_table_source, c.lib_column as lib_column_source from meta_column c join meta_table t using (ids_table) join meta_schema s using (ids_schema) join meta_database d using (ids_database)")
     val resultSource = getLookup(df, optSource)
 
     val optTarget = Map("joinColumns" -> "lib_database_target,lib_schema_target,lib_table_target,lib_column_target"

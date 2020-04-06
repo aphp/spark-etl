@@ -17,7 +17,6 @@
 package meta
 
 import com.typesafe.scalalogging.LazyLogging
-import meta.ConfigMetaYaml.Database
 import net.jcazevedo.moultingyaml._
 import org.apache.spark.sql.SparkSession
 
@@ -42,7 +41,7 @@ object MetaSync extends App with LazyLogging {
 
     val ymlTxt = Source.fromFile(yamlFilePath).mkString
     val yaml = ymlTxt.stripMargin.parseYaml
-    val database = yaml.convertTo[Database]
+    val database = yaml.convertTo[meta.ConfigMetaYaml.Database]
 
 
     try {

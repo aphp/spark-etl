@@ -206,6 +206,8 @@ class SelectDatabases extends React.Component {
     this.onSelectDatabase = this.onSelectDatabase.bind(this);
     this.onSelectSchema = this.onSelectSchema.bind(this);
     this.onSelectedDiagramTable = this.onSelectedDiagramTable.bind(this);
+    this.onSelectTable = this.onSelectTable.bind(this);
+    this.selectByTableId = this.selectByTableId.bind(this);
   }
 
   componentDidMount() {
@@ -251,7 +253,7 @@ class SelectDatabases extends React.Component {
     );    
   }
 
-  onSelectSchema (values) {
+  onSelectSchema(values) {
     fetch("/tables?ids_schema=" + values.id)
     .then(res => res.json())
     .then(
@@ -282,12 +284,14 @@ class SelectDatabases extends React.Component {
     );      
   }
 
-  onSelectedDiagramTable(e) {
-    if (!e.isSelected) {
-      return;
-    }
+  onSelectTable(values) {
+    this.selectByTableId(values.id);    
+  }
+
+  selectByTableId(tableId) {
     for (const table of this.state.selectedSchema.tables) {
-      if (table.id === e.entity.id) {
+      if (table.id === tableId) {
+        
         this.setState({
           selectedTable: {
             tables: [table],
@@ -295,9 +299,17 @@ class SelectDatabases extends React.Component {
             attributeCols: getColumns(table.columns, ['id', 'ids_table'])
           }
         });
+
         break;
       }
     }
+  }
+
+  onSelectedDiagramTable(e) {
+    if (!e.isSelected) {
+      return;
+    }
+    this.selectByTableId(e.entity.id);
   }
   
   render() {
@@ -305,12 +317,17 @@ class SelectDatabases extends React.Component {
     const classes = this.props.classes;
     const searchText = '';
 
+    const dbKey = 'db-' + (selectedDatabase ? selectedDatabase.id : 'none');
+    const schemaKey = 'schema-' + (selectedSchema ? selectedSchema.id : 'none');
+    let diagramKey = 'diagram-' + (selectedSchema ? selectedSchema.id : 'none');
+
     return (
       <div>
         <Select label="databases" options={databases} error={error} onChange={this.onSelectDatabase}></Select>
-        <Select key={selectedDatabase} label="schemas" options={schemas} error={error} onChange={this.onSelectSchema}></Select>
-        {selectedSchema && <Diagram key={selectedSchema.id} tables={selectedSchema.tables} links={selectedSchema.links} onSelected={this.onSelectedDiagramTable}></Diagram>}
+        {selectedDatabase && <Select key={dbKey} label="schemas" options={schemas} error={error} onChange={this.onSelectSchema}></Select>}
+        {selectedSchema && <Select key={schemaKey} label="tables" options={selectedSchema.tables} error={error} onChange={this.onSelectTable}></Select>}
         {selectedTable && <DataGrid className={classes.selectedTable} schema={selectedTable} filter={searchText}/>}
+        {selectedSchema && <Diagram key={diagramKey} tables={selectedSchema.tables} links={selectedSchema.links} selectedTable={selectedTable} onSelected={this.onSelectedDiagramTable}></Diagram>}
       </div>
     );
   }

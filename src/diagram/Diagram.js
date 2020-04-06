@@ -152,6 +152,7 @@ class Diagram extends React.Component {
     const nodesIndex = {};
     for (const table of this.props.tables) {
       const node = createNode(table.name + ` [${table.id}]`);
+      table._node = node;
       node.id = table.id;
       node.registerListener({
         selectionChanged: this.props.onSelected
@@ -194,6 +195,12 @@ class Diagram extends React.Component {
   render() {
     if (!this.state.engine) {
       return null;
+    }
+
+    if (this.props.selectedTable) {
+      for (const table of this.props.tables) {
+        table._node.setSelected(table.id === this.props.selectedTable.tables[0].id);
+      }
     }
 
     return <EngineWidget engine={this.state.engine} />;

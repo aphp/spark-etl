@@ -18,6 +18,7 @@ object HiveToPostgresYaml extends DefaultYamlProtocol {
                     , typeLoad: Option[String]
                     , joinTable: Option[String]
                     , filter: Option[String]
+                    , bulkLoadMode: Option[String]
                     , deleteSet: Option[String]
                     , joinPostgresColumn: Option[String]
                     , joinHiveColumn: Option[String]
@@ -43,7 +44,7 @@ object HiveToPostgresYaml extends DefaultYamlProtocol {
                       , tables: Option[List[Table]] = None)
 
 
-  implicit val colorFormat = yamlFormat21(Table)
+  implicit val colorFormat = yamlFormat22(Table)
   implicit val paletteFormat = yamlFormat7(Database)
 }
 

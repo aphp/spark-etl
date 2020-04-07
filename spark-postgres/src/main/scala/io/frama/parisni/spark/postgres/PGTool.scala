@@ -136,8 +136,8 @@ class PGTool(spark: SparkSession
    * the built-in COPY
    *
    */
-  def outputBulk(table: String, df: Dataset[Row], numPartitions: Int = 8, reindex: Boolean = false, bulkLoadMode:String = "CSV"): PGTool = {
-    PGTool.outputBulk(spark, url, table, df, genPath, numPartitions, password, reindex, bulkLoadMode match {case "CSV" => CSV; case "STREAM" => Stream;case _ => throw new Exception("yet CSV and Stream strategy implemented")})
+  def outputBulk(table: String, df: Dataset[Row], numPartitions: Int = 8, reindex: Boolean = false): PGTool = {
+    PGTool.outputBulk(spark, url, table, df, genPath, numPartitions, password, reindex, bulkLoadMode)
     this
   }
 
@@ -483,6 +483,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
                     , password: String = ""
                     , reindex: Boolean = false
                    ) = {
+    logger.warn("using CSV strategy")
     try {
       if (reindex)
         indexDeactivate(url, table, password)
@@ -551,6 +552,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
                        , reindex: Boolean = false
                        , copyTimeoutMs: Long = 1000 * 60 * 10
   ) = {
+    logger.warn("using STREAM strategy")
     try {
       if (reindex)
         indexDeactivate(url, table, password)

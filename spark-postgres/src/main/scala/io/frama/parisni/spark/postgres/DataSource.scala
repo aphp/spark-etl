@@ -92,7 +92,7 @@ class PostgresRelation(val parameters: Map[String, String]
     _pg.tableCreate(tableToLoad, data.schema, isUnlogged = false)
 
     // If loading the real table, kill locks first if conf says so
-    if ((! overwrite) && killLocks)
+    if ((!overwrite) && killLocks)
       _pg.killLocks(tableToLoad)
 
     loadType match {

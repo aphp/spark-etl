@@ -1,0 +1,101 @@
+lib_database,lib_schema,lib_table,typ_table,count_table,lib_column,typ_column,order_column
+pg-qua,eds,cat_transco_new,view,,ids_cat_transco,bigint,1
+pg-qua,eds,cat_transco_new,view,,ids_cat,bigint,2
+pg-qua,eds,cat_transco_new,view,,d8_ins,timestamp without time zone,3
+pg-qua,eds,cat_transco_new,view,,d8_maj,timestamp without time zone,4
+pg-qua,eds,cat_transco_new,view,,d8_sup,timestamp without time zone,5
+pg-qua,eds,cat_transco_new,view,,d8_deb,timestamp without time zone,6
+pg-qua,eds,cat_transco_new,view,,d8_fin,timestamp without time zone,7
+pg-qua,eds,cat_transco_new,view,,source,character varying,8
+pg-qua,eds,cat_transco_new,view,,i2b2_action,smallint,9
+pg-qua,eds,cat_transco_new,view,,id_cat,integer,10
+pg-qua,eds,cat_transco_new,view,,cd_cat,character varying,11
+pg-qua,eds,cat_transco_new,view,,lib_court,character varying,12
+pg-qua,eds,cat_transco_new,view,,lib_long,character varying,13
+pg-qua,eds,cat_transco_new,view,,id_typ_cat,integer,14
+pg-qua,eds,cat_transco_new,view,,cd_typ_cat,character varying,15
+pg-qua,eds,cat_transco_new,view,,lib_court_typ_cat,character varying,16
+pg-qua,eds,cat_transco_new,view,,lib_long_typ_cat,character varying,17
+pg-qua,eds,cat_transco_new,view,,dt_deb_valid,timestamp without time zone,18
+pg-qua,eds,cat_transco_new,view,,dt_fin_valid,timestamp without time zone,19
+pg-qua,eds,cat_transco_new,view,,dt_maj,timestamp without time zone,20
+pg-qua,eds,cat_transco_new,view,,dt_sup,timestamp without time zone,21
+pg-qua,eds,cat_transco_new,view,,inact,integer,22
+pg-qua,eds,cat_transco_new,view,,idseds_transco,bigint,23
+pg-qua,eds,che_administrative,view,,id_patient,integer,1
+pg-qua,eds,che_administrative,view,,cd_genre,character varying,2
+pg-qua,eds,che_administrative,view,,fam_status,character varying,3
+pg-qua,eds,che_administrative,view,,d_naiss,timestamp without time zone,4
+pg-qua,eds,che_administrative,view,,cd_postal_nais,character varying,5
+pg-qua,eds,che_administrative,view,,dt_start_visit,timestamp without time zone,6
+pg-qua,eds,che_administrative,view,,dt_end_visit,timestamp without time zone,7
+pg-qua,eds,cluster_fait_lab,view,,dt_exec,timestamp without time zone,1
+pg-qua,eds,cluster_fait_lab,view,,ids_eds,bigint,2
+pg-qua,eds,cluster_fait_lab,view,,cd_unit,character varying,3
+pg-qua,eds,cluster_fait_lab,view,,valeur_type_tr,character varying,4
+pg-qua,eds,cluster_fait_lab,view,,valeur_sign_tr,character varying,5
+pg-qua,eds,cluster_fait_lab,view,,valeur_num_tr,double precision,6
+pg-qua,eds,cluster_fait_lab,view,,valeur_text_tr,character varying,7
+pg-qua,eds,cluster_fait_lab,view,,valeur_abnormal_tr,character varying,8
+pg-qua,eds,cluster_fait_lab,view,,i2b2_action,integer,9
+pg-qua,eds,cluster_fait_lab,view,,d8_ins,timestamp without time zone,10
+pg-qua,eds,cluster_fait_lab,view,,d8_maj,timestamp without time zone,11
+pg-qua,eds,cluster_fait_lab,view,,borne_inf_tr,double precision,12
+pg-qua,eds,cluster_fait_lab,view,,borne_sup_tr,double precision,13
+pg-qua,eds,cluster_fait_lab,view,,source,character varying,14
+pg-qua,eds,cluster_glims_patient,view,,ids_eds_crypt,bigint,1
+pg-qua,eds,cluster_glims_patient,view,,ids_patient,bigint,2
+pg-qua,eds,cluster_glims_patient,view,,ids_objet,bigint,3
+pg-qua,eds,cluster_glims_patient,view,,ids_ref_cat_sex,integer,4
+pg-qua,eds,cluster_glims_patient,view,,ids_ref_corresp,integer,5
+pg-qua,eds,cluster_glims_patient,view,,ids_ref_user_creat,integer,6
+pg-qua,eds,cluster_glims_patient,view,,ids_ref_user_maj,integer,7
+pg-qua,eds,cluster_glims_patient,view,,d8_ins,timestamp without time zone,8
+pg-qua,eds,cluster_glims_patient,view,,d8_maj,timestamp without time zone,9
+pg-qua,eds,cluster_glims_patient,view,,d8_sup,timestamp without time zone,10
+pg-qua,eds,cluster_glims_patient,view,,d8_deb,timestamp without time zone,11
+pg-qua,eds,cluster_glims_patient,view,,d8_fin,timestamp without time zone,12
+pg-qua,eds,cluster_glims_patient,view,,source,character varying,13
+pg-qua,eds,cluster_glims_patient,view,,i2b2_action,smallint,14
+pg-qua,eds,cluster_glims_patient,view,,id_patient,bigint,15
+pg-qua,eds,cluster_glims_patient,view,,id_objet,bigint,16
+pg-qua,eds,cluster_glims_patient,view,,d_naiss,timestamp without time zone,17
+pg-qua,eds,cluster_glims_patient,view,,id_ref_cat_sex,smallint,18
+pg-qua,eds,cluster_glims_patient,view,,nom,character varying,19
+pg-qua,eds,cluster_glims_patient,view,,prenom,character varying,20
+pg-qua,eds,cluster_glims_patient,view,,nom_jf,character varying,21
+pg-qua,eds,cluster_glims_patient,view,,has_jumeau,boolean,22
+pg-qua,eds,cluster_glims_patient,view,,ipp,character varying,23
+pg-qua,eds,cluster_glims_patient,view,,id_ref_corresp,integer,24
+pg-qua,eds,cluster_glims_patient,view,,dt_deces,timestamp without time zone,25
+pg-qua,eds,cluster_glims_patient,view,,dt_creat,timestamp without time zone,26
+pg-qua,eds,cluster_glims_patient,view,,id_ref_user_creat,integer,27
+pg-qua,eds,cluster_glims_patient,view,,dt_maj,timestamp without time zone,28
+pg-qua,eds,cluster_glims_patient,view,,id_ref_user_maj,integer,29
+pg-qua,eds,cluster_glims_patient,view,,ids_eds,bigint,30
+pg-qua,eds,cluster_hegp_patient,view,,ids_eds_crypt,bigint,1
+pg-qua,eds,cluster_hegp_patient,view,,ids_patient,integer,2
+pg-qua,eds,cluster_hegp_patient,view,,ids_cat_genre,integer,3
+pg-qua,eds,cluster_hegp_patient,view,,ids_cat_statut_familial,integer,4
+pg-qua,eds,cluster_hegp_patient,view,,d8_ins,timestamp without time zone,5
+pg-qua,eds,cluster_hegp_patient,view,,d8_maj,timestamp without time zone,6
+pg-qua,eds,cluster_hegp_patient,view,,d8_sup,timestamp without time zone,7
+pg-qua,eds,cluster_hegp_patient,view,,d8_deb,timestamp without time zone,8
+pg-qua,eds,cluster_hegp_patient,view,,d8_fin,timestamp without time zone,9
+pg-qua,eds,cluster_hegp_patient,view,,source,character varying,10
+pg-qua,eds,cluster_hegp_patient,view,,i2b2_action,smallint,11
+pg-qua,eds,cluster_hegp_patient,view,,id_pat,integer,12
+pg-qua,eds,cluster_hegp_patient,view,,ipp,character varying,13
+pg-qua,eds,cluster_hegp_patient,view,,id_sex,integer,14
+pg-qua,eds,cluster_hegp_patient,view,,cd_sex,character varying,15
+pg-qua,eds,cluster_hegp_patient,view,,nom_nais,character varying,16
+pg-qua,eds,cluster_hegp_patient,view,,nom,character varying,17
+pg-qua,eds,cluster_hegp_patient,view,,prenom,character varying,18
+pg-qua,eds,cluster_hegp_patient,view,,dt_nais,timestamp without time zone,19
+pg-qua,eds,cluster_hegp_patient,view,,nr_secu,character varying,20
+pg-qua,eds,cluster_hegp_patient,view,,id_famstatut,integer,21
+pg-qua,eds,cluster_hegp_patient,view,,cd_famstand,character varying,22
+pg-qua,eds,cluster_hegp_patient,view,,cd_pays_nais,character varying,23
+pg-qua,eds,cluster_hegp_patient,view,,cd_postal_nais,character varying,24
+pg-qua,eds,cluster_hegp_patient,view,,lieu_nais,character varying,25
+pg-qua,eds,cluster_hegp_patient,view,,cd_pays,character varying,26

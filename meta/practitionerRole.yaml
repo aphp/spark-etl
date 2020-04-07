@@ -1,0 +1,163 @@
+droits:
+  prod:
+    catherine_duclos:
+      profile: coord_eds
+      aph: 3004279
+      provider_id: 123
+      roles:
+        - {cs_name: 'GH01', cs_id: 214044734}
+    marie_frank:
+      profile: coord_eds
+      aph: 3110014
+      provider_id:  21
+      roles:
+        - {cs_name: 'GH07', cs_id: 214044739}
+    marilucy_lopez_sublet:
+      profile: medecin
+      aph: 3083919
+      provider_id:  105
+      roles:
+        - {cs_name: 'UFR-095056', cs_id: 192030527}
+    marie_helene_metzger:
+      profile: medecin
+      aph: 4088065
+      provider_id:  186
+      roles:
+              #        - {cs_name: 'UFR-018050', cs_id: ???}
+        - {cs_name: 'UFR-028053', cs_id: 192031595}
+        - {cs_name: 'UFR-028055', cs_id: 192031596}
+    olivier_steichen:
+      profile: medecin
+      aph: 3034274
+      provider_id:  29
+      roles:
+        - {cs_name: 'UFR-087044', cs_id: 192032408}
+        - {cs_name: 'UFR-087167', cs_id: 192032437}
+    namik_taright:
+      profile: medecin
+      aph: 3021771
+      provider_id:  217
+      roles:
+        - {cs_name: 'AP-HP', cs_id: 8314160965}
+        - {cs_name: 'AP-HP', cs_id: 8314160965}
+  qual:
+    fabrice_carrat:
+      profile: coord_eds
+      aph: 516218
+      provider_id:  282
+      roles:
+        - {cs_name: 'GH06', cs_id: 214044730}
+    judith_leblanc:
+      profile: datascientist_eds
+      aph: 3109823
+      provider_id:  568
+      roles:
+        - {cs_name: 'GH06', cs_id: 214044730}
+    patricia_martel:
+      profile: datascientist_eds
+      aph: 3213061
+      provider_id:  321
+      roles:
+        - {cs_name: 'GH07', cs_id: 214044739}
+        - {cs_name: 'GH24', cs_id: 214044738}
+    nathanael_lapidus:
+      profile: referent_eds
+      aph: 3120169
+      provider_id:  149
+      roles:
+        - {cs_name: 'GH06', cs_id: 214044730}
+    elisa_salamanca:
+      profile: dev_eds
+      provider_id: 447
+      roles:
+        - {cs_name: 'GH ParisIDF', cs_id: 214044738}
+        - {cs_name: 'BCT', cs_id: 214044707}
+    adrien_parrot:
+      profile: dev_eds
+      provider_id: 357
+      roles:
+        - {cs_name: 'BCT', cs_id: 214044707}
+        - {cs_name: 'CCH Cardio', cs_id: 192034010}
+    patricia_serre:
+      profile: dev_eds
+      provider_id: 328
+      roles:
+        - {cs_name: 'BCT', cs_id: 214044707}
+        - {cs_name: 'JeanVerdier', cs_id: 214044690}
+    laurent_frobert:
+      profile: dev_eds
+      provider_id: 665
+      roles:
+        - {cs_name: 'GH ParisOuest', cs_id: 214044742}
+        - {cs_name: 'Avicenne', cs_id: 214044692}
+    antonin_sagot:
+      profile: dev_eds
+      provider_id: 669
+      roles:
+        - {cs_name: 'Tenon', cs_id: 214044705}
+        - {cs_name: 'CCH Cardio', cs_id: 192034010}
+    manelle_gueriouz:
+      profile: dev_eds
+      provider_id: 640
+      roles:
+        - {cs_name: 'AP-HP', cs_id: 8314160965}
+    deniz_geres:
+      profile: dev_eds
+      provider_id: 515
+      roles:
+        - {cs_name: 'GH ParisOuest', cs_id: 214044742}
+        - {cs_name: 'GH07', cs_id: 214044739}
+        - {cs_name: 'GH ParisIDF', cs_id: 214044738}
+        - {cs_name: '??', cs_id: 214044737}
+    martin_hilka:
+      profile: dev_eds
+      provider_id: 288
+      roles:
+        - {cs_name: 'GH RobertDebré', cs_id: 214044742}
+        - {cs_name: 'BCT Neurochir', cs_id: 192031096}
+    julien_dubiel:
+      profile: dev_eds
+      provider_id: 567
+      roles:
+        - {cs_name: 'GH Paris IDF', cs_id: 214044738}
+        - {cs_name: 'BCT', cs_id: 214044707}
+    helene_ravera:
+      profile: dev_eds
+      provider_id: 569
+      roles:
+        - {cs_name: 'Tenon', cs_id: 214044705}
+        - {cs_name: 'HMN consult dermato urge', cs_id: 192033295}
+    christel_daniel:
+      profile: dev_eds
+      provider_id: 34
+      roles:
+        - {cs_name: 'Tenon', cs_id: 214044705}
+        - {cs_name: 'GH Paris ouest', cs_id: 214044742}
+    nicolas_paris:
+      profile: dev_eds
+      provider_id: 35
+      roles:
+        - {cs_name: 'AP-HP', cs_id: 8314160965}
+    nina_orlova:
+      profile: dev_eds
+      provider_id: 328
+      roles:
+        - {cs_name: 'GH ParisSud', cs_id: 214044739}
+        - {cs_name: 'HMN rhumato', cs_id: 192032799}
+    stephane_breant:
+      profile: dev_eds
+      provider_id: 37
+      roles:
+        - {cs_name: 'AP-HP', cs_id: 8314160965}
+    ahmed_hadj_brahim:
+      profile: dev_eds
+      provider_id: 676
+      roles:
+        - {cs_name: 'GH Paris ouest', cs_id: 214044742}
+        - {cs_name: 'Tenon', cs_id: 214044705}
+    ahmed_kouachi:
+      profile: dev_eds
+      provider_id: 677
+      roles:
+        - {cs_name: 'GH Paris ouest', cs_id: 214044742}
+        - {cs_name: 'Tenon', cs_id: 214044705}

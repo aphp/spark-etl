@@ -28,6 +28,7 @@ https://dzone.com/articles/deploy-maven-central -->
     <module>spark-csv</module>
     <module>spark-postgres</module>
     <module>spark-hive</module>
+    <module>meta</module>
   </modules>
 
   <dependencies>
@@ -106,6 +107,7 @@ https://dzone.com/articles/deploy-maven-central -->
     <encoding>UTF-8</encoding>
     <spark-csv.version>0.0.1-SNAPSHOT</spark-csv.version>
     <spark-dataframe.version>0.0.4</spark-dataframe.version>
+    <spark-postgres.version>0.0.1</spark-postgres.version>
     <scala.tools.version>2.11</scala.tools.version>
     <scala.version>2.11.11</scala.version>
     <spark.version>2.4.3</spark.version>

@@ -1,0 +1,207 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>spark-meta</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <name>Meta</name>
+    <packaging>jar</packaging>
+    <description></description>
+
+    <parent>
+        <groupId>io.frama.parisni</groupId>
+        <artifactId>spark-etl</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+  <dependencies>
+
+      <dependency>
+          <groupId>io.frama.parisni</groupId>
+          <artifactId>spark-dataframe</artifactId>
+          <version>${spark-dataframe.version}</version>
+      </dependency>
+
+      <dependency>
+          <groupId>io.frama.parisni</groupId>
+          <artifactId>spark-csv</artifactId>
+          <version>${spark-csv.version}</version>
+      </dependency>
+
+      <dependency>
+          <groupId>io.frama.parisni</groupId>
+          <artifactId>spark-postgres</artifactId>
+          <version>${spark-postgres.version}</version>
+      </dependency>
+
+      <dependency>
+          <groupId>net.jcazevedo</groupId>
+          <artifactId>moultingyaml_${scala.tools.version}</artifactId>
+          <version>0.4.1</version>
+      </dependency>
+
+      <!-- Test dependencies -->
+      <dependency>
+          <groupId>com.opentable.components</groupId>
+          <artifactId>otj-pg-embedded</artifactId>
+          <version>0.13.3</version>
+          <scope>provided</scope>
+      </dependency>
+
+      <dependency>
+          <groupId>com.opentable.components</groupId>
+          <artifactId>otj-pg-embedded</artifactId>
+          <version>0.13.3</version>
+          <scope>test</scope>
+          <classifier>tests</classifier>
+      </dependency>
+
+  </dependencies>
+
+    <build>
+        <sourceDirectory>src/main/scala</sourceDirectory>
+        <testSourceDirectory>src/test/scala</testSourceDirectory>
+        <plugins>
+            <!-- BEGIN for scalatest in maven see http://www.scalatest.org/user_guide/using_the_scalatest_maven_plugin-->
+            <!-- disable surefire -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.18.1</version>
+                <configuration>
+                    <skipTests>true</skipTests>
+                </configuration>
+            </plugin>
+            <!-- enable scalatest -->
+            <plugin>
+                <groupId>org.scalatest</groupId>
+                <artifactId>scalatest-maven-plugin</artifactId>
+                <version>1.0</version>
+                <configuration>
+                    <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
+                    <junitxml>.</junitxml>
+                    <filereports>WDF TestSuite.txt</filereports>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>test</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- END for scalatest in maven-->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <shadedArtifactAttached>true</shadedArtifactAttached>
+                            <shadedClassifierName>shaded</shadedClassifierName>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                            <artifactSet>
+                                <excludes>
+                                    <!-- begin removed for livy-->
+                                    <exclude>org.scala-lang:scala-library</exclude>
+                                    <exclude>org.scala-lang:scala-reflect</exclude>
+                                    <exclude>org.scala-lang.modules:scala-parser-combinators_${scala.tools.version}</exclude>
+                                    <exclude>org.postgresql:postgresql</exclude>
+                                    <!-- end   removed for livy-->
+                                    <exclude>log4j:log4j</exclude>
+                                    <exclude>org.slf4j:*</exclude>
+                                </excludes>
+                            </artifactSet>
+                            <relocations>
+                            </relocations>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <!-- see http://davidb.github.com/scala-maven-plugin -->
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>compile</goal>
+                            <goal>testCompile</goal>
+                        </goals>
+                        <configuration>
+                            <args>
+                                <arg>-dependencyfile</arg>
+                                <arg>${project.build.directory}/.scala_dependencies</arg>
+                            </args>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>2.4.2</version>
+                <configuration>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>1.6.8</version>
+                <configuration>
+                    <serverId>nexus</serverId>
+                    <nexusUrl>http://10.188.192.40:8081/</nexusUrl>
+                    <skipStaging>true</skipStaging>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.18.1</version>
+                <configuration>
+                    <useFile>false</useFile>
+                    <disableXmlReport>true</disableXmlReport>
+                    <!-- If you have classpath issue like NoDefClassError,... -->
+                    <!-- useManifestOnlyJar>false</useManifestOnlyJar -->
+                    <includes>
+                        <include>**/*Test.*</include>
+                        <include>**/*Suite.*</include>
+                    </includes>
+                    <filters>
+                        <filter>
+                            <artifact>*:*</artifact>
+                            <excludes>
+                                <exclude>META-INF/*.SF</exclude>
+                                <exclude>META-INF/*.DSA</exclude>
+                                <exclude>META-INF/*.RSA</exclude>
+                            </excludes>
+                        </filter>
+                    </filters>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

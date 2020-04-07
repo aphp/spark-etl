@@ -78,6 +78,10 @@ function TableData({table, columns, attributeCols}) {
 }
 
 function DataGrid({ schema }) { 
+  if (!schema) {
+    return null;
+  }
+  
   const { tables, columns, attributeCols } = schema;
 
   return (

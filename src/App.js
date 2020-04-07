@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import DataGrid from './DataGrid.js';
 import SearchInput from './SearchInput.js';
 import './App.css';
@@ -106,93 +106,55 @@ function getColumns(rows, skip) {
   return columns;
 }
 
-class TabbedApp extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      selectedTable: null,
-      tables: null,
-      error: null,
-      currentTabIndex: 0,
-      searchText: ''
-    };
+function TabbedApp(props) {
+  const {selectedSchema, selectedTable, classes, selectByTableId} = props;
+  const [currentTabIndex, changeTabIndex] = useState(0);
+  
+  const changeTab = (event, newTabIndex) => {
+    changeTabIndex(newTabIndex);
+  };      
+  
+  const onSelectTable = values => {
+    selectByTableId(values.id);   
   }
 
-  componentDidMount() {
-    fetch("/schema")
-      .then(res => res.json())
-      .then(
-        (results) => {
-          const columns = getColumns(results.tables, ['columns', 'id']);
-          const attributeCols = getColumns(results.tables[0].columns, ['id']);
-          const schema = { tables: results.tables, columns, attributeCols };
-          applySearchFilter(schema, '');
-        
-          this.setState({
-            schema: schema,
-            links: results.links
-          });
-        },
-        (error) => {
-          this.setState({
-            error
-          });
-        }
-      );
-  }
-  render() {  
-    const { error, schema, links, currentTabIndex, searchText, selectedTable } = this.state;
-    if (error) {
-      return <div>Error: {error.message}</div>;
-    } else if (!schema) {
-      return <div>Loading data...</div>;
-    } else {
-    
-      const handleChange = (event, newTabIndex) => {
-        this.setState({currentTabIndex: newTabIndex});
-      };      
-      
-      const updateSearchText = e => {
-        const searchText = e.target.value;
-        this.setState({ searchText: searchText });
-        applySearchFilter(schema, searchText);
-      }
-
-      const onSelectedDiagramTable = e => {
-        if (!e.isSelected) {
-          return;
-        }
-        for (const table of schema.tables) {
-          if (table.id === e.entity.id) {
-            this.setState({selectedTable: table});
-            break;
-          }
-        }
-      }
-
-      const classes = this.props.classes;
-      return (
-        <div className={classes.root}>
-          <AppBar position="static">
-          <Toolbar>
-            <Tabs value={currentTabIndex} onChange={handleChange} aria-label="Tabs">
-              <Tab label="Tables" {...a11yProps(0)} />
-              <Tab label="Diagram" {...a11yProps(1)} />
-            </Tabs>
-            <SearchInput updateSearchText={updateSearchText} searchText={searchText}></SearchInput>
-          </Toolbar>
-          </AppBar>
-          <TabPanel value={currentTabIndex} index={0}>
-            <DataGrid schema={schema} filter={searchText}/>
-          </TabPanel>
-          <TabPanel value={currentTabIndex} index={1}>
-            <Diagram tables={schema.tables} links={links} onSelected={onSelectedDiagramTable}></Diagram>
-            { selectedTable && <DataGrid className={classes.selectedTable} schema={{tables: [selectedTable], columns: schema.columns, attributeCols: schema.attributeCols}} filter={searchText}/>}
-          </TabPanel>      
-        </div>
-      );
+  const onSelectedDiagramTable = e => {
+    if (!e.isSelected) {
+      return;
     }
+    selectByTableId(e.entity.id);
   }
+
+  const searchText = '';
+
+  // const updateSearchText = e => {
+  //   const searchText = e.target.value;
+  //   this.setState({ searchText: searchText });
+  //   applySearchFilter(schema, searchText);
+  // }
+
+  const selectedTableValue = selectedTable ? selectedTable.tables[0] : null;
+
+  return (
+    <div className={classes.root}>
+      <Select label="tables" options={selectedSchema.tables} onChange={onSelectTable} selectedValue={selectedTableValue}></Select>
+      <AppBar position="static">
+      <Toolbar>
+        <Tabs value={currentTabIndex} onChange={changeTab} aria-label="Tabs">
+          <Tab label="Diagram" {...a11yProps(0)} />
+          <Tab label="Table" {...a11yProps(1)} />
+        </Tabs>
+        {/* <SearchInput updateSearchText={updateSearchText} searchText={searchText}></SearchInput> */}
+      </Toolbar>
+      </AppBar>
+      <TabPanel value={currentTabIndex} index={0}>
+        <Diagram tables={selectedSchema.tables} links={selectedSchema.links} selectedTable={selectedTable} onSelected={onSelectedDiagramTable}></Diagram>
+      </TabPanel>
+      <TabPanel value={currentTabIndex} index={1}>
+        <DataGrid className={classes.selectedTable} schema={selectedTable} filter={searchText}/>
+      </TabPanel>      
+    </div>
+  );
 }
 
 class SelectDatabases extends React.Component {
@@ -205,8 +167,6 @@ class SelectDatabases extends React.Component {
     };
     this.onSelectDatabase = this.onSelectDatabase.bind(this);
     this.onSelectSchema = this.onSelectSchema.bind(this);
-    this.onSelectedDiagramTable = this.onSelectedDiagramTable.bind(this);
-    this.onSelectTable = this.onSelectTable.bind(this);
     this.selectByTableId = this.selectByTableId.bind(this);
   }
 
@@ -219,7 +179,8 @@ class SelectDatabases extends React.Component {
             databases: results,
             schemas: [],
             selectedSchema: null,
-            selectedDatabase: null
+            selectedDatabase: null,
+            selectedTable: null
           });
         },
         (error) => {
@@ -268,8 +229,9 @@ class SelectDatabases extends React.Component {
           }
         }
 
+        const schema = this.state.schemas.find(e => e.id === values.id);
         this.setState({
-          selectedSchema: {...results, id: values.id},
+          selectedSchema: {...results, schema: schema},
           selectedTable: null,
         });
       },
@@ -284,11 +246,13 @@ class SelectDatabases extends React.Component {
     );      
   }
 
-  onSelectTable(values) {
-    this.selectByTableId(values.id);    
-  }
-
   selectByTableId(tableId) {
+    if (!tableId) {
+      this.setState({
+        selectedTable: null
+      });
+    }
+
     for (const table of this.state.selectedSchema.tables) {
       if (table.id === tableId) {
         
@@ -304,30 +268,18 @@ class SelectDatabases extends React.Component {
       }
     }
   }
-
-  onSelectedDiagramTable(e) {
-    if (!e.isSelected) {
-      return;
-    }
-    this.selectByTableId(e.entity.id);
-  }
   
   render() {
     const { error, databases, schemas, selectedDatabase, selectedSchema, selectedTable } = this.state;
     const classes = this.props.classes;
     const searchText = '';
 
-    const dbKey = 'db-' + (selectedDatabase ? selectedDatabase.id : 'none');
-    const schemaKey = 'schema-' + (selectedSchema ? selectedSchema.id : 'none');
-    let diagramKey = 'diagram-' + (selectedSchema ? selectedSchema.id : 'none');
-
+    const selectedSchemaValue = selectedSchema ? selectedSchema.schema : null;
     return (
       <div>
         <Select label="databases" options={databases} error={error} onChange={this.onSelectDatabase}></Select>
-        {selectedDatabase && <Select key={dbKey} label="schemas" options={schemas} error={error} onChange={this.onSelectSchema}></Select>}
-        {selectedSchema && <Select key={schemaKey} label="tables" options={selectedSchema.tables} error={error} onChange={this.onSelectTable}></Select>}
-        {selectedTable && <DataGrid className={classes.selectedTable} schema={selectedTable} filter={searchText}/>}
-        {selectedSchema && <Diagram key={diagramKey} tables={selectedSchema.tables} links={selectedSchema.links} selectedTable={selectedTable} onSelected={this.onSelectedDiagramTable}></Diagram>}
+        <Select label="schemas" options={schemas} error={error} onChange={this.onSelectSchema} selectedValue={selectedSchemaValue}></Select>
+        {selectedSchema && <TabbedApp classes={classes} selectedTable={selectedTable} selectedSchema={selectedSchema} selectByTableId={this.selectByTableId}></TabbedApp>}
       </div>
     );
   }

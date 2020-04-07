@@ -3,7 +3,7 @@ import TextField from '@material-ui/core/TextField';
 import Autocomplete from '@material-ui/lab/Autocomplete';
 
 function Select(props) {
-  const { error, options, label, onChange } = props;
+  const { error, options, label, onChange, selectedValue } = props;
 
   if (error) {
     return <div>Error: {error.message}</div>;
@@ -15,6 +15,7 @@ function Select(props) {
 
 
   return (<Autocomplete
+    value={selectedValue}
     options={options}
     getOptionLabel={option => option.name}
     onChange={(event, newValue) => {

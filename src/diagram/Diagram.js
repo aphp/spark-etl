@@ -57,7 +57,7 @@ class EngineWidget extends React.Component {
 	componentDidMount() {
 		setTimeout(() => {
       this.autoDistribute();
-      this.zoomToFit()
+      this.zoomToFit();
 		}, 500);
 	}
 
@@ -142,7 +142,6 @@ class Diagram extends React.Component {
     super(props);
     this.state = {
       engine: null,
-      selected: null
     }
   }
   

@@ -26,7 +26,7 @@ function TabPanel(props) {
       aria-labelledby={`simple-tab-${index}`}
       {...other}
     >
-      {value === index && <Box p={3}>{children}</Box>}
+      <Box p={3}>{children}</Box>
     </Typography>
   );
 }
@@ -109,6 +109,10 @@ function getColumns(rows, skip) {
 function TabbedApp(props) {
   const {selectedSchema, selectedTable, classes, selectByTableId} = props;
   const [currentTabIndex, changeTabIndex] = useState(0);
+
+  if (!selectedSchema) {
+    return null;
+  }
   
   const changeTab = (event, newTabIndex) => {
     changeTabIndex(newTabIndex);
@@ -116,14 +120,14 @@ function TabbedApp(props) {
   
   const onSelectTable = values => {
     selectByTableId(values.id);   
-  }
+  };
 
   const onSelectedDiagramTable = e => {
     if (!e.isSelected) {
       return;
     }
     selectByTableId(e.entity.id);
-  }
+  };
 
   const searchText = '';
 
@@ -148,7 +152,12 @@ function TabbedApp(props) {
       </Toolbar>
       </AppBar>
       <TabPanel value={currentTabIndex} index={0}>
-        <Diagram tables={selectedSchema.tables} links={selectedSchema.links} selectedTable={selectedTable} onSelected={onSelectedDiagramTable}></Diagram>
+        <Diagram 
+          tables={selectedSchema.tables} 
+          links={selectedSchema.links} 
+          selectedTable={selectedTable} 
+          onSelected={onSelectedDiagramTable}>
+        </Diagram>
       </TabPanel>
       <TabPanel value={currentTabIndex} index={1}>
         <DataGrid className={classes.selectedTable} schema={selectedTable} filter={searchText}/>
@@ -280,11 +289,13 @@ class SelectDatabases extends React.Component {
     const searchText = '';
 
     const selectedSchemaValue = selectedSchema ? selectedSchema.schema : null;
+    const tabKey = 'tab-' + (selectedSchema ? selectedSchema.schema.id : 'none');
+
     return (
       <div>
         <Select label="databases" options={databases} onChange={this.onSelectDatabase} selectedValue={selectedDatabase}></Select>
         <Select label="schemas" options={schemas} onChange={this.onSelectSchema} selectedValue={selectedSchemaValue}></Select>
-        {selectedSchema && <TabbedApp classes={classes} selectedTable={selectedTable} selectedSchema={selectedSchema} selectByTableId={this.selectByTableId}></TabbedApp>}
+        <TabbedApp key={tabKey} classes={classes} selectedTable={selectedTable} selectedSchema={selectedSchema} selectByTableId={this.selectByTableId}></TabbedApp>
       </div>
     );
   }

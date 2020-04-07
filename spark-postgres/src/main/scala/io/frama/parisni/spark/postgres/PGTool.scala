@@ -136,8 +136,8 @@ class PGTool(spark: SparkSession
    * the built-in COPY
    *
    */
-  def outputBulk(table: String, df: Dataset[Row], numPartitions: Int = 8, reindex: Boolean = false): PGTool = {
-    PGTool.outputBulk(spark, url, table, df, genPath, numPartitions, password, reindex, bulkLoadMode)
+  def outputBulk(table: String, df: Dataset[Row], numPartitions: Int = 8, reindex: Boolean = false, bulkLoadMode:String = "CSV"): PGTool = {
+    PGTool.outputBulk(spark, url, table, df, genPath, numPartitions, password, reindex, bulkLoadMode match {case "CSV" => CSV; case "STREAM" => Stream;case _ => throw new Exception("yet CSV and Stream strategy implemented")})
     this
   }
 

@@ -198,10 +198,15 @@ class SelectDatabases extends React.Component {
       (results) => {
         this.setState({
           schemas: results,
-          selectedDatabase: values.id,
+          selectedDatabase: this.state.databases.find(e => e.id === values.id),
           selectedSchema: null,
           selectedTable: null
         });
+
+        // Only one schema, select it by default
+        if (results.length === 1) {
+          this.onSelectSchema(results[0]);
+        }
       },
       (error) => {
         this.setState({
@@ -277,7 +282,7 @@ class SelectDatabases extends React.Component {
     const selectedSchemaValue = selectedSchema ? selectedSchema.schema : null;
     return (
       <div>
-        <Select label="databases" options={databases} error={error} onChange={this.onSelectDatabase}></Select>
+        <Select label="databases" options={databases} error={error} onChange={this.onSelectDatabase} selectedValue={selectedDatabase}></Select>
         <Select label="schemas" options={schemas} error={error} onChange={this.onSelectSchema} selectedValue={selectedSchemaValue}></Select>
         {selectedSchema && <TabbedApp classes={classes} selectedTable={selectedTable} selectedSchema={selectedSchema} selectByTableId={this.selectByTableId}></TabbedApp>}
       </div>

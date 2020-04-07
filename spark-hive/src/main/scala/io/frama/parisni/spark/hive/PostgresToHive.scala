@@ -51,7 +51,7 @@ object PostgresToHive extends App with LazyLogging {
              |from ${database.databaseHive.get}.${database.timestampTable.get}""".stripMargin
         logger.warn(query)
         val timestampLast = spark.sql(query)
-          .take(1).map(x => x.getString(0)).toList(0)
+          .take(1).map(x => x.getString(0)).head
         logger.warn(s"fetching data created after $timestampLast")
         timestampFilter = database.timestampColumns.get.map(x => x + s" >= '$timestampLast'").mkString(" WHERE ", " OR ", "")
       } catch {

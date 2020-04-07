@@ -7,26 +7,27 @@ class PostgresConf(config: Map[String, String]) extends Serializable with LazyLo
   val PG_NUM_PARTITION = "partitions"
   val PG_REINDEX = "reindex"
   val PG_TYPE = "type"
-  var PG_HOST: String = "host"
-  var PG_PORT: String = "port"
-  var PG_DATABASE: String = "database"
-  var PG_USER: String = "user"
-  var PG_SCHEMA: String = "schema"
-  var PG_TEMP: String = "temp"
-  var PG_TABLE: String = "table"
-  var PG_QUERY: String = "query"
-  var PG_MULTILINE: String = "multiline"
-  var PG_NUM_SPLITS: String = "numSplits"
-  var PG_PARTITION_COLUMN: String = "partitionColumn"
-  var PG_JOIN_KEY: String = "joinkey"
-  var PG_PASSWORD: String = "password"
-  var PG_URL: String = "url"
-  var PG_END_COLUMN: String = "endCol"
-  var PG_PK: String = "pk"
-  var PG_FILTER: String = "filter"
-  var PG_DELETE_SET: String = "deleteSet"
+  val PG_HOST: String = "host"
+  val PG_PORT: String = "port"
+  val PG_DATABASE: String = "database"
+  val PG_USER: String = "user"
+  val PG_SCHEMA: String = "schema"
+  val PG_TEMP: String = "temp"
+  val PG_TABLE: String = "table"
+  val PG_QUERY: String = "query"
+  val PG_MULTILINE: String = "multiline"
+  val PG_NUM_SPLITS: String = "numSplits"
+  val PG_PARTITION_COLUMN: String = "partitionColumn"
+  val PG_JOIN_KEY: String = "joinkey"
+  val PG_PASSWORD: String = "password"
+  val PG_URL: String = "url"
+  val PG_END_COLUMN: String = "endCol"
+  val PG_PK: String = "pk"
+  val PG_FILTER: String = "filter"
+  val PG_DELETE_SET: String = "deleteSet"
   val PG_KILL_LOCKS: String = "kill-locks"
   val PG_SWAP_LOAD: String = "swap-load"
+  val PG_BULK_LOAD_MODE: String = "bulkLoadMode"
 
   require(config != null, "Config cannot be null")
   require(config.nonEmpty, "Config cannot be empty")
@@ -87,6 +88,8 @@ class PostgresConf(config: Map[String, String]) extends Serializable with LazyLo
 
   def getSwapLoad: Option[Boolean] =
     if (config.get(PG_SWAP_LOAD).isDefined) Some(config(PG_SWAP_LOAD).toBoolean) else Some(false)
+
+  def getBulkLoadMode: Option[String] = config.get(PG_BULK_LOAD_MODE)
 
 }
 

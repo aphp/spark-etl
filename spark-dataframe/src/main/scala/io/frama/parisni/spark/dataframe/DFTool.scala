@@ -126,7 +126,7 @@ object DFTool extends LazyLogging {
         tmp += column + ", "
     }
     if (tmp != "") {
-      throw new Exception(f"Missing columns in the data: [${tmp}]")
+      throw new Exception(f"Missing columns in the data: [$tmp]")
     }
   }
 
@@ -193,7 +193,7 @@ object DFTool extends LazyLogging {
     StructType(
       for {
         targetFields <- targetDf.schema.fields
-        if (!sourceDf.schema.fields.map(_.name).contains(targetFields.name))
+        if !sourceDf.schema.fields.map(_.name).contains(targetFields.name)
       } yield {
         targetFields
       }
@@ -210,7 +210,7 @@ object DFTool extends LazyLogging {
    */
   def removeBadColumns(df: DataFrame, schema: StructType): DataFrame = {
     var result = df
-    var dfSchema = df.schema
+    val dfSchema = df.schema
     dfSchema.fields.foreach(
       f => {
         logger.debug(f"Added ${f.name} column")
@@ -244,7 +244,7 @@ object DFTool extends LazyLogging {
   def removeNullRows(df: DataFrame, column: String): DataFrame = {
     df.createOrReplaceTempView("nullTmp")
     val spark = df.sparkSession
-    var nulltmp = spark.sql(f"select * from nullTmp where $column IS NULL")
+    val nulltmp = spark.sql(f"select * from nullTmp where $column IS NULL")
     logger.warn(nulltmp.count + " missing rows")
     spark.sql(f"select * from nullTmp where $column IS NOT NULL and trim($column) !=''")
   }

@@ -114,7 +114,7 @@ class ExampleSuite extends QueryTest with SparkSessionTestWrapper {
     import spark.implicits._
     val schema = ((1, "asdf", 1L, Array(1, 2, 3), Array("bob"), Array(1L, 2L)) :: Nil)
       .toDF("int_col", "string_col", "long_col", "array_int_col", "array_string_col", "array_bigint_col").schema
-    getPgTool().tableCreate("test_array", schema, true)
+    getPgTool().tableCreate("test_array", schema, isUnlogged = true)
   }
 
   @Test
@@ -123,7 +123,7 @@ class ExampleSuite extends QueryTest with SparkSessionTestWrapper {
     val data = ((1, "asdf", 1L, Array(1, 2, 3), Array("bob"), Array(1L, 2L)) :: Nil)
       .toDF("INT_COL", "STRING_COL", "LONG_COL", "ARRAY_INT_COL", "ARRAY_STRING_COL", "ARRAY_BIGINT_COL")
     val schema = data.schema
-    getPgTool().tableCreate("TEST_ARRAY", schema, true)
+    getPgTool().tableCreate("TEST_ARRAY", schema, isUnlogged = true)
     data.write.format("io.frama.parisni.spark.postgres")
       .option("url", getPgUrl)
       .option("type", "full")
@@ -144,7 +144,7 @@ class ExampleSuite extends QueryTest with SparkSessionTestWrapper {
       conn.commit()
       fail()
     } catch {
-      case e: PSQLException => succeed
+      case e: PSQLException => ()
     }
   }
 
@@ -164,6 +164,21 @@ class ExampleSuite extends QueryTest with SparkSessionTestWrapper {
     assert(rs.getBoolean(1))
     conn.close()
   }
+
+  @Test
+  def verifyPostgresBulkLoadMode(): Unit = {
+    import spark.implicits._
+    val data = ((1, "asdf", 1L) :: Nil).toDF("INT_COL", "STRING_COL", "LONG_COL")
+    val schema = data.schema
+    getPgTool().tableCreate("TEST_STREAM_BULK_LOAD", schema, isUnlogged = true)
+    data.write.format("io.frama.parisni.spark.postgres")
+      .option("url", getPgUrl)
+      .option("type", "full")
+      .option("table", "TEST_ARRAY")
+      .option("bulkLoadMode", "stream")
+      .save
+  }
+
 }
 
 import org.apache.spark.sql.SparkSession
@@ -176,7 +191,7 @@ trait SparkSessionTestWrapper {
 
   def getPgUrl = pg.getEmbeddedPostgres.getJdbcUrl("postgres", "postgres") + "&currentSchema=public"
 
-  def getPgTool() = PGTool(spark, getPgUrl, "/tmp")
+  def getPgTool(bulkLoadMode: BulkLoadMode = CSV) = PGTool(spark, getPgUrl, "/tmp", bulkLoadMode)
 
   lazy val spark: SparkSession = {
     SparkSession

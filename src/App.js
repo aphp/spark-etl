@@ -275,15 +275,15 @@ class SelectDatabases extends React.Component {
   }
   
   render() {
-    const { error, databases, schemas, selectedDatabase, selectedSchema, selectedTable } = this.state;
+    const { databases, schemas, selectedDatabase, selectedSchema, selectedTable } = this.state;
     const classes = this.props.classes;
     const searchText = '';
 
     const selectedSchemaValue = selectedSchema ? selectedSchema.schema : null;
     return (
       <div>
-        <Select label="databases" options={databases} error={error} onChange={this.onSelectDatabase} selectedValue={selectedDatabase}></Select>
-        <Select label="schemas" options={schemas} error={error} onChange={this.onSelectSchema} selectedValue={selectedSchemaValue}></Select>
+        <Select label="databases" options={databases} onChange={this.onSelectDatabase} selectedValue={selectedDatabase}></Select>
+        <Select label="schemas" options={schemas} onChange={this.onSelectSchema} selectedValue={selectedSchemaValue}></Select>
         {selectedSchema && <TabbedApp classes={classes} selectedTable={selectedTable} selectedSchema={selectedSchema} selectByTableId={this.selectByTableId}></TabbedApp>}
       </div>
     );

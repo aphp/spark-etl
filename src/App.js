@@ -119,7 +119,7 @@ function TabbedApp(props) {
   };      
   
   const onSelectTable = values => {
-    selectByTableId(values.id);   
+    selectByTableId(values && values.id);   
   };
 
   const onSelectedDiagramTable = e => {
@@ -201,6 +201,16 @@ class SelectDatabases extends React.Component {
   }
 
   onSelectDatabase(values) {
+    if (!values) {
+      this.setState({
+        selectedSchema: null,
+        selectedTable: null,
+        selectedDatabase: null,
+        schemas: []
+      });
+      return;
+    }
+
     fetch("/schemas?ids_database=" + values.id)
     .then(res => res.json())
     .then(
@@ -222,6 +232,7 @@ class SelectDatabases extends React.Component {
           error,
           selectedSchema: null,
           selectedTable: null,
+          selectedDatabase: null,
           schemas: []
         });
       }
@@ -229,6 +240,14 @@ class SelectDatabases extends React.Component {
   }
 
   onSelectSchema(values) {
+    if (!values) {
+      this.setState({
+        selectedSchema: null,
+        selectedTable: null,
+      });
+      return;
+    }
+
     fetch("/tables?ids_schema=" + values.id)
     .then(res => res.json())
     .then(

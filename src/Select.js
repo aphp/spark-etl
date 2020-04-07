@@ -15,9 +15,6 @@ function Select(props) {
     options={options}
     getOptionLabel={option => option.name}
     onChange={(event, newValue) => {
-      if (!newValue) {
-        return;
-      }
       onChange(newValue);
     }}
     autoSelect autoHighlight autoComplete clearOnEscape openOnFocus

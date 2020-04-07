@@ -146,7 +146,7 @@ function TabbedApp(props) {
       <Toolbar>
         <Tabs value={currentTabIndex} onChange={changeTab} aria-label="Tabs">
           <Tab label="Diagram" {...a11yProps(0)} />
-          <Tab label="Table" {...a11yProps(1)} />
+          { selectedTable && <Tab label={'Table: ' + selectedTable.tables[0].name} {...a11yProps(1)} /> }
         </Tabs>
         {/* <SearchInput updateSearchText={updateSearchText} searchText={searchText}></SearchInput> */}
       </Toolbar>

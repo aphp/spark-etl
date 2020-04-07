@@ -1,15 +1,13 @@
 package io.frama.parisni.spark.hive
 
-import org.yaml.snakeyaml.Yaml
-import scala.io.Source
-import java.io.{ File, FileInputStream }
-import org.scalatest.FunSuite
-
 import io.frama.parisni.spark.hive.HiveToPostgresYaml._
 import net.jcazevedo.moultingyaml._
+import org.scalatest.FunSuite
+
+import scala.io.Source
 
 
-class HiveToPostgresTest extends FunSuite{
+class HiveToPostgresTest extends FunSuite {
 
   test("test fhir patient") {
     val filename = "hiveToPostgres.yaml"
@@ -25,7 +23,6 @@ class HiveToPostgresTest extends FunSuite{
     println(palette.toYaml.prettyPrint)
 
   }
-
 }
 
 

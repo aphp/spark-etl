@@ -8,7 +8,6 @@ import org.junit.Test
 
 class Scd2Test extends QueryTest with SparkSessionTestWrapper {
 
-
   def verifyScd2(bulkLoadMode: String): Unit = {
     import spark.implicits._
 

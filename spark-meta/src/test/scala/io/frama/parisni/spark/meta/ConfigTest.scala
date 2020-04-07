@@ -1,6 +1,6 @@
-package meta
+package io.frama.parisni.spark.meta
 
-import meta.ConfigMetaYaml.Database
+import io.frama.parisni.spark.meta.ConfigMetaYaml.Database
 import net.jcazevedo.moultingyaml._
 import org.apache.spark.sql.QueryTest
 

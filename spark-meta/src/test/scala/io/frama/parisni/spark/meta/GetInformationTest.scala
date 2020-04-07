@@ -1,6 +1,6 @@
-package meta
+package io.frama.parisni.spark.meta
 
-import org.apache.spark.sql.functions.{col, lit, regexp_extract, when}
+import org.apache.spark.sql.functions.lit
 import org.apache.spark.sql.{DataFrame, QueryTest}
 
 class GetInformationTest extends QueryTest

@@ -1,14 +1,10 @@
 package io.frama.parisni.spark.postgres
 
-import com.opentable.db.postgres.junit.{EmbeddedPostgresRules, SingleInstancePostgresRule}
 import org.apache.spark.sql.QueryTest
-import org.junit.{Rule, Test}
+import org.junit.Test
 import org.postgresql.util.PSQLException
 
-import scala.annotation.meta.getter
-
-class ExampleSuite extends QueryTest with SparkSessionTestWrapper {
-
+class DdlTest extends QueryTest with SparkSessionTestWrapper {
 
   @Test def verifySpark(): Unit = {
     spark.sql("select 1").show
@@ -17,7 +13,7 @@ class ExampleSuite extends QueryTest with SparkSessionTestWrapper {
   @Test def verifyPostgres() { // Uses JUnit-style assertions
     println(pg.getEmbeddedPostgres.getJdbcUrl("postgres", "pg"))
     val con = pg.getEmbeddedPostgres.getPostgresDatabase.getConnection
-    val res2 = con.createStatement().executeUpdate("create table test(i int)")
+    con.createStatement().executeUpdate("create table test(i int)")
     val res = con.createStatement().executeQuery("select 27")
     while (res.next())
       println(res.getInt(1))
@@ -352,29 +348,6 @@ class ExampleSuite extends QueryTest with SparkSessionTestWrapper {
       .option("table", "TEST_ARRAY")
       .option("bulkLoadMode", "stream")
       .save
-  }
-
-}
-
-import org.apache.spark.sql.SparkSession
-
-trait SparkSessionTestWrapper {
-
-  // looks like crazy but compatibility issue with junit rule (public)
-  @(Rule@getter)
-  var pg: SingleInstancePostgresRule = EmbeddedPostgresRules.singleInstance()
-
-  def getPgUrl = pg.getEmbeddedPostgres.getJdbcUrl("postgres", "postgres") + "&currentSchema=public"
-
-  def getPgTool(bulkLoadMode: BulkLoadMode = CSV) = PGTool(spark, getPgUrl, "/tmp", bulkLoadMode)
-
-  lazy val spark: SparkSession = {
-    SparkSession
-      .builder()
-      .master("local")
-      .appName("spark session")
-      .config("spark.sql.shuffle.partitions", "1")
-      .getOrCreate()
   }
 
 }

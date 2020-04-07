@@ -1,12 +1,10 @@
 package io.frama.parisni.spark.hive
 
-import org.yaml.snakeyaml.Yaml
-import scala.io.Source
-import java.io.{ File, FileInputStream }
-
 import io.frama.parisni.spark.hive.PostgresToHiveYaml._
 import net.jcazevedo.moultingyaml._
 import org.scalatest.FunSuite
+
+import scala.io.Source
 
 class PostgresToHiveTest extends FunSuite {
 
@@ -18,7 +16,7 @@ class PostgresToHiveTest extends FunSuite {
     
     
     for (pal <- palette.tables.getOrElse(Nil)) {
-      println("bob" + pal.isActive.get.toString())
+      println("bob" + pal.isActive.get)
     }
    println(palette.toYaml.prettyPrint)
 

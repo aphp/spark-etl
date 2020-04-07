@@ -1,20 +1,4 @@
-/**
- * This file is part of SPARK-OMOP.
- *
- * SPARK-OMOP is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * SPARK-OMOP is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with SPARK-OMOP.  If not, see <https://www.gnu.org/licenses/>.
- */
-package meta
+package io.frama.parisni.spark.meta
 
 import com.typesafe.scalalogging.LazyLogging
 import net.jcazevedo.moultingyaml._
@@ -41,7 +25,7 @@ object MetaSync extends App with LazyLogging {
 
     val ymlTxt = Source.fromFile(yamlFilePath).mkString
     val yaml = ymlTxt.stripMargin.parseYaml
-    val database = yaml.convertTo[meta.ConfigMetaYaml.Database]
+    val database = yaml.convertTo[ConfigMetaYaml.Database]
 
 
     try {

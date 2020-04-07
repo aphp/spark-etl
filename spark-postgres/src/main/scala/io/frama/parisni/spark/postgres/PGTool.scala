@@ -378,6 +378,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
     s match {
       case "string" => "text"
       case "double" => "double precision"
+      case "float" => "float"
       case "decimal(38,18)" => "double precision"
       case "bigint" => "bigint"
       case "int" => "integer"

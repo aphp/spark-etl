@@ -28,9 +28,9 @@ class DefaultSource extends RelationProvider with CreatableRelationProvider with
                                df: DataFrame): BaseRelation = {
     try {
       // TODO: What to do with the saveMode?
-      val solrRelation: PostgresRelation = new PostgresRelation(parameters, Some(df), sqlContext.sparkSession)
-      solrRelation.insert(df, overwrite = mode.name().toLowerCase() == "overwrite")
-      solrRelation
+      val postgresRelation = new PostgresRelation(parameters, Some(df), sqlContext.sparkSession)
+      postgresRelation.insert(df, overwrite = mode.name().toLowerCase() == "overwrite")
+      postgresRelation
     } catch {
       case re: RuntimeException => throw re
       case e: Exception => throw new RuntimeException(e)
@@ -81,7 +81,7 @@ class PostgresRelation(val parameters: Map[String, String]
     val table = conf.getTable.get
     val tmpTable = "table_" + randomUUID.toString.replaceAll(".*-", "")
     val tableToLoad = if (overwrite && swapLoad) tmpTable else table
-    
+
     if (overwrite && !swapLoad) {
       // tmpTable loaded, kill locks before drop old and renaming
       if (killLocks)
@@ -89,7 +89,7 @@ class PostgresRelation(val parameters: Map[String, String]
       _pg.tableDrop(table)
     }
 
-    _pg.tableCreate(tableToLoad, data.schema, false)
+    _pg.tableCreate(tableToLoad, data.schema, isUnlogged = false)
 
     // If loading the real table, kill locks first if conf says so
     if ((! overwrite) && killLocks)
@@ -129,18 +129,22 @@ class PostgresRelation(val parameters: Map[String, String]
     res
   }
 
-  def getPool() = {
+  def getPool: PGTool = {
 
     require(conf.getHost.nonEmpty || conf.getUrl.isDefined, "Host cannot be empty")
     require(conf.getDatabase.nonEmpty || conf.getUrl.isDefined, "Database cannot be empty")
     require(conf.getUser.nonEmpty || conf.getUrl.isDefined, "User cannot be empty")
+    val bulkLoadMode = conf.getBulkLoadMode.getOrElse("") match {
+      case "stream" => Stream
+      case _ => CSV
+    }
 
     val url = getUrl(conf.getUrl, conf.getHost, conf.getPort, conf.getDatabase, conf.getUser, conf.getSchema)
-    pgTool(url, conf.getTemp, conf.getPassword)
+    pgTool(url, conf.getTemp, conf.getPassword, bulkLoadMode)
   }
 
-  def pgTool(url: String, tempFolder: Option[String], password: Option[String]) = {
-    val pg = PGTool(sparkSession, url, tempFolder.getOrElse("/tmp"))
+  def pgTool(url: String, tempFolder: Option[String], password: Option[String], bulkLoadMode: BulkLoadMode) = {
+    val pg = PGTool(sparkSession, url, tempFolder.getOrElse("/tmp"), bulkLoadMode)
     if (password.isDefined)
       pg.setPassword(password.get)
     pg

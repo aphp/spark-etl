@@ -8,8 +8,8 @@ import org.junit.Test
 
 class Scd1Test extends QueryTest with SparkSessionTestWrapper {
 
-  @Test
-  def verifyScd1(): Unit = {
+
+  def verifyScd1(bulkLoadMode: String): Unit = {
     import spark.implicits._
 
     (
@@ -20,6 +20,7 @@ class Scd1Test extends QueryTest with SparkSessionTestWrapper {
       .format("io.frama.parisni.spark.postgres")
       .option("url", getPgUrl)
       .option("table", "scd1table")
+      .option("bulkLoadMode", bulkLoadMode)
       .save
 
     val df = (
@@ -49,7 +50,12 @@ class Scd1Test extends QueryTest with SparkSessionTestWrapper {
   }
 
   @Test
-  def verifyScd1LowLevel(): Unit = {
+  def verifyScd1Csv(): Unit = verifyScd1("csv")
+  @Test
+  def verifyScd1Stream(): Unit = verifyScd1("stream")
+
+
+  def verifyScd1LowLevel(bulkLoadMode: BulkLoadMode): Unit = {
     import spark.implicits._
 
     val table: String = "test_scd1_low"
@@ -61,14 +67,14 @@ class Scd1Test extends QueryTest with SparkSessionTestWrapper {
 
     val df: DataFrame = ((1, "a", "b", "jim", new Timestamp(1L), -1) ::
       Nil).toDF("id", "key1", "key2", "cd", "end_date", "hash")
-    getPgTool().tableCreate("test_scd1_low", df.schema)
-    getPgTool().outputScd1Hash(table, joinKey, DFTool.dfAddHash(df.drop("end_date", "hash")))
+    getPgTool(bulkLoadMode).tableCreate("test_scd1_low", df.schema)
+    getPgTool(bulkLoadMode).outputScd1Hash(table, joinKey, DFTool.dfAddHash(df.drop("end_date", "hash")))
 
     val df1: DataFrame = ((1, "a", "b", "bob", new Timestamp(1L), -1) ::
       Nil).toDF("id", "key1", "key2", "cd", "end_date", "hash")
-    getPgTool().outputScd1Hash(table, joinKey, DFTool.dfAddHash(df1.drop("end_date", "hash")))
+    getPgTool(bulkLoadMode).outputScd1Hash(table, joinKey, DFTool.dfAddHash(df1.drop("end_date", "hash")))
     // this should make nothing
-    getPgTool().outputScd1Hash(table, joinKey, DFTool.dfAddHash(df1.drop("end_date", "hash")))
+    getPgTool(bulkLoadMode).outputScd1Hash(table, joinKey, DFTool.dfAddHash(df1.drop("end_date", "hash")))
 
     val result = getPgTool().inputBulk("select * from test_scd1_low")
 
@@ -82,9 +88,13 @@ class Scd1Test extends QueryTest with SparkSessionTestWrapper {
     )
   }
 
-
   @Test
-  def verifyScd1WithFilter(): Unit = {
+  def verifyScd1LowLevelCSV(): Unit = verifyScd1LowLevel(CSV)
+  @Test
+  def verifyScd1LowLevelStream(): Unit = verifyScd1LowLevel(Stream)
+
+
+  def verifyScd1WithFilter(bulkLoadMode: String): Unit = {
     import spark.implicits._
 
     ((1L, "a", "bob", new Timestamp(1), 1) ::
@@ -94,6 +104,7 @@ class Scd1Test extends QueryTest with SparkSessionTestWrapper {
       .format("io.frama.parisni.spark.postgres")
       .option("url", getPgUrl)
       .option("table", "scd1table")
+      .option("bulkLoadMode", bulkLoadMode)
       .save
 
     val df = (
@@ -107,6 +118,7 @@ class Scd1Test extends QueryTest with SparkSessionTestWrapper {
       .option("filter", "key is not null")
       .option("joinKey", "key")
       .option("table", "scd1table")
+      .option("bulkLoadMode", bulkLoadMode)
       .save
 
     val result = (
@@ -124,7 +136,12 @@ class Scd1Test extends QueryTest with SparkSessionTestWrapper {
   }
 
   @Test
-  def verifyScd1WithFilterAndDelete(): Unit = {
+  def verifyScd1WithFilterCSV(): Unit = verifyScd1WithFilter("csv")
+  @Test
+  def verifyScd1WithFilterStream(): Unit = verifyScd1WithFilter("stream")
+
+
+  def verifyScd1WithFilterAndDelete(bulkLoadMode: String): Unit = {
     import spark.implicits._
 
     ((1L, "a", "bob", true, 1) ::
@@ -134,6 +151,7 @@ class Scd1Test extends QueryTest with SparkSessionTestWrapper {
       .format("io.frama.parisni.spark.postgres")
       .option("url", getPgUrl)
       .option("table", "scd1table")
+      .option("bulkLoadMode", bulkLoadMode)
       .save
 
     val df = (
@@ -147,6 +165,7 @@ class Scd1Test extends QueryTest with SparkSessionTestWrapper {
       .option("deleteSet", "is_active = false")
       .option("joinKey", "key")
       .option("table", "scd1table")
+      .option("bulkLoadMode", bulkLoadMode)
       .save
 
     val result = (
@@ -162,5 +181,11 @@ class Scd1Test extends QueryTest with SparkSessionTestWrapper {
       , result)
 
   }
+
+  @Test
+  def verifyScd1WithFilterAndDeleteCSV(): Unit = verifyScd1WithFilterAndDelete("csv")
+  @Test
+  def verifyScd1WithFilterAndDeleteStream(): Unit = verifyScd1WithFilterAndDelete("stream")
+
 }
 

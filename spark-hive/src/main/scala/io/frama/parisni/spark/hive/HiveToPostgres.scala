@@ -64,7 +64,7 @@ object HiveToPostgres extends App with LazyLogging {
             dfHive = dfHive.drop(table.joinHiveColumn.get)
         }
 
-        var df = DFTool.dfAddHash(dfHive)
+        val df = DFTool.dfAddHash(dfHive)
         table.typeLoad.getOrElse("scd1") match {
           case "scd1" => pg.outputScd1Hash(table = table.tablePg, key = table.key, df = df, numPartitions = table.numThread, filter = table.filter, deleteSet = table.deleteSet)
           case "scd2" => pg.outputScd2Hash(table = table.tablePg, key = table.key, pk = table.pk.get, df = df, endDatetimeCol = table.updateDatetime.get, partitions = Some(4), multiline = Some(true))

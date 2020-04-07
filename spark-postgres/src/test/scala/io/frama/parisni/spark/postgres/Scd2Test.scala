@@ -6,10 +6,10 @@ import io.frama.parisni.spark.dataframe.DFTool
 import org.apache.spark.sql.{DataFrame, QueryTest}
 import org.junit.Test
 
-class ScdTest extends QueryTest with SparkSessionTestWrapper {
+class Scd2Test extends QueryTest with SparkSessionTestWrapper {
 
-  @Test
-  def verifyScd2(): Unit = {
+
+  def verifyScd2(bulkLoadMode: String): Unit = {
     import spark.implicits._
 
     (
@@ -20,6 +20,7 @@ class ScdTest extends QueryTest with SparkSessionTestWrapper {
       .format("io.frama.parisni.spark.postgres")
       .option("url", getPgUrl)
       .option("table", "scd2table")
+      .option("bulkLoadMode", bulkLoadMode)
       .save
 
     val df = (
@@ -34,6 +35,7 @@ class ScdTest extends QueryTest with SparkSessionTestWrapper {
       .option("pk", "id")
       .option("endCol", "end_date")
       .option("table", "scd2table")
+      .option("bulkLoadMode", bulkLoadMode)
       .save
 
     val result = (
@@ -53,7 +55,12 @@ class ScdTest extends QueryTest with SparkSessionTestWrapper {
   }
 
   @Test
-  def verifyScd2LowLevel(): Unit = {
+  def verifyScd2Csv(): Unit = verifyScd2("csv")
+  @Test
+  def verifyScd2Stream(): Unit = verifyScd2("stream")
+
+
+  def verifyScd2LowLevel(bulkLoadMode: BulkLoadMode): Unit = {
     import spark.implicits._
     val table: String = "test_scd2_low"
     val joinKey: List[String] = "key1" :: "key2" :: Nil
@@ -64,14 +71,14 @@ class ScdTest extends QueryTest with SparkSessionTestWrapper {
 
     val df: DataFrame = ((1, "a", "b", "jim", new Timestamp(1L), -1) ::
       Nil).toDF("id", "key1", "key2", "cd", "end_date", "hash")
-    getPgTool().tableCreate("test_scd2_low", df.schema)
-    getPgTool().outputScd2Hash(table, DFTool.dfAddHash(df.drop("hash", "end_date")), pk, joinKey, endDatetimeCol, partitions, multiline)
+    getPgTool(bulkLoadMode).tableCreate("test_scd2_low", df.schema)
+    getPgTool(bulkLoadMode).outputScd2Hash(table, DFTool.dfAddHash(df.drop("hash", "end_date")), pk, joinKey, endDatetimeCol, partitions, multiline)
 
     val df1: DataFrame = ((1, "a", "b", "bob", new Timestamp(1L), -1) ::
       Nil).toDF("id", "key1", "key2", "cd", "end_date", "hash")
-    getPgTool().outputScd2Hash(table, DFTool.dfAddHash(df1.drop("hash", "end_date")), pk, joinKey, endDatetimeCol, partitions, multiline)
+    getPgTool(bulkLoadMode).outputScd2Hash(table, DFTool.dfAddHash(df1.drop("hash", "end_date")), pk, joinKey, endDatetimeCol, partitions, multiline)
     // this should make nothing
-    getPgTool().outputScd2Hash(table, DFTool.dfAddHash(df1.drop("hash", "end_date")), pk, joinKey, endDatetimeCol, partitions, multiline)
+    getPgTool(bulkLoadMode).outputScd2Hash(table, DFTool.dfAddHash(df1.drop("hash", "end_date")), pk, joinKey, endDatetimeCol, partitions, multiline)
 
     val result = getPgTool().inputBulk("select * from test_scd2_low")
 
@@ -84,6 +91,10 @@ class ScdTest extends QueryTest with SparkSessionTestWrapper {
       , goal)
 
   }
+  @Test
+  def verifyScd2LowLevelCSV(): Unit = verifyScd2LowLevel(CSV)
+  @Test
+  def verifyScd2LowLevelStream(): Unit = verifyScd2LowLevel(Stream)
 
 }
 

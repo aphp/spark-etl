@@ -74,7 +74,7 @@ object CSVTool extends LazyLogging {
       val numBadRows = badRows.count()
       if (numBadRows > 0) {
         badRows.select("`_corrupt_record`").show(false)
-        throw new Exception(numBadRows + " rows are wrong...");
+        throw new Exception(numBadRows + " rows are wrong...")
       }
       badRows.unpersist()
     }
@@ -93,7 +93,7 @@ object CSVTool extends LazyLogging {
   def getStringStructFromArray(ar: Array[String]): StructType = {
     var struct = new ListBuffer[StructField]()
     for (f <- ar) {
-      struct += StructField(f, StringType, true)
+      struct += StructField(f, StringType, nullable = true)
     }
     StructType(struct)
 
@@ -120,11 +120,11 @@ object CSVTool extends LazyLogging {
 
     ds.collect().foreach(
       p => {
-        val fileName = folder + "/" + p.file + ".txt";
-        val writerAnn = new java.io.PrintWriter(fileName, "UTF-8");
+        val fileName = folder + "/" + p.file + ".txt"
+        val writerAnn = new java.io.PrintWriter(fileName, "UTF-8")
         if (p.content != null)
-          writerAnn.write(p.content);
-        writerAnn.close();
+          writerAnn.write(p.content)
+        writerAnn.close()
       }
     )
     logger.info(s"Exported ${ds.count} files")
@@ -135,7 +135,7 @@ object CSVTool extends LazyLogging {
     val hdfs = FileSystem.get(new Configuration())
     val hdfsPath = new Path(tempPath)
     val targetFile = new File(localPath)
-    val fileWDot = new File(targetFile.getPath.substring(0, targetFile.getPath.size - targetFile.getName.size) + "." + targetFile.getName)
+    val fileWDot = new File(targetFile.getPath.substring(0, targetFile.getPath.length - targetFile.getName.length) + "." + targetFile.getName)
     logger.warn(s"writing to temp file ${fileWDot.getAbsolutePath}")
     val mime = format match {
       case "csv" => ".csv"
@@ -168,7 +168,7 @@ object CSVTool extends LazyLogging {
     }
     finally {
       hdfs.delete(hdfsPath, true)
-      logger.warn(s"deleting hdfs path ${hdfsPath}")
+      logger.warn(s"deleting hdfs path $hdfsPath")
       fileWDot.renameTo(targetFile)
       logger.warn(s"renaming ${fileWDot.getAbsolutePath} to ${targetFile.getAbsolutePath}")
     }

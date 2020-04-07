@@ -1,4 +1,4 @@
-package io.frama.parisni.spark.postgres
+package io.frama.parisni.spark.postgres.convert
 
 import java.nio.charset.StandardCharsets
 import java.sql.{Date, Timestamp}
@@ -6,8 +6,12 @@ import java.sql.{Date, Timestamp}
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types._
 
-object PGConverter {
 
+/**
+ * Kept for historical and performance test reasons
+ * Univocity is 1 order of magnitude faster (20x)
+ */
+object PGConverter {
 
   def makeConverter(dataType: DataType): (Row, Int) => String = dataType match {
     case StringType => (r: Row, i: Int) => r.getString(i)

@@ -2,24 +2,26 @@ package io.frama.parisni.spark.postgres
 
 import java.io._
 import java.sql.{Connection, DriverManager, PreparedStatement, ResultSetMetaData}
-import java.util.Properties
 import java.util.UUID.randomUUID
 import java.util.concurrent.TimeUnit
+import java.util.{Properties, TimeZone}
 
 import com.typesafe.scalalogging.LazyLogging
+import io.frama.parisni.spark.postgres.convert.{CSVOptions, UnivocityGenerator}
+import org.apache.commons.io.input.ReaderInputStream
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.Partitioner
 import org.apache.spark.rdd.RDD
-
+import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.functions.{col, expr}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
 import org.postgresql.copy.{CopyManager, PGCopyInputStream}
 import org.postgresql.core.BaseConnection
 
-import scala.concurrent.{Await, TimeoutException, Promise}
 import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Promise, TimeoutException}
 import scala.util.Try
 
 sealed trait BulkLoadMode
@@ -567,13 +569,28 @@ object PGTool extends java.io.Serializable with LazyLogging {
 
       rddToWrite.foreachPartition((p: Iterator[(Long, Row)]) => {
 
-        val outputStream = new PipedOutputStream()
-        val inputStream = new PipedInputStream(outputStream)
-        val valueConverters: Array[(Row, Int) => String] = schema.map(s => PGConverter.makeConverter(s.dataType)).toArray
+        val csvOptionsMap = Map(
+          "delimiter" -> ",",
+          "header" -> "false",
+          "nullValue" -> null,
+          "emptyValue" -> "\"\"",
+          "quote" -> "\"",
+          "escape" -> "\"",
+          "ignoreLeadingWhiteSpace" -> "false",
+          "ignoreTrailingWhiteSpace" -> "false"
+        )
+
+        val csvOptions = new CSVOptions(csvOptionsMap, columnPruning=true, TimeZone.getDefault.getID)
+
+        val outputWriter = new PipedWriter()
+        val inputStream = new ReaderInputStream(new PipedReader(outputWriter))
+
+        val univocityGenerator = new UnivocityGenerator(schema, outputWriter, csvOptions)
+        val rowEncoder = RowEncoder.apply(schema)
 
         // Prepare a thread to copy data to PG asynchronously
         val promisedCopy = Promise[Unit]
-        val sql = s"""COPY "$table" ($columns) FROM STDIN WITH NULL AS 'NULL' DELIMITER AS E'$delimiter'"""
+        val sql = s"""COPY "$table" ($columns) FROM STDIN WITH CSV DELIMITER '$delimiter'  NULL '' ESCAPE '"' QUOTE '"' """
         val conn = connOpen(url, password)
         val copyManager: CopyManager = new CopyManager(conn.asInstanceOf[BaseConnection])
         val copyThread = new Thread("copy-to-pg-thread") {
@@ -586,9 +603,10 @@ object PGTool extends java.io.Serializable with LazyLogging {
           try {
             // Load the copy stream reading from the partition
             p.foreach { case (_, row) =>
-              outputStream.write(PGConverter.convertRow(row, schema.length, delimiter, valueConverters))
+
+              univocityGenerator.write(rowEncoder.toRow(row))
             }
-            outputStream.close()
+            outputWriter.close()
             // Wait for the copy to have finished
             Await.result(promisedCopy.future, Duration(copyTimeoutMs, TimeUnit.MILLISECONDS))
           } catch {

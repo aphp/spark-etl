@@ -1,4 +1,4 @@
-package meta
+package io.frama.parisni.spark.meta
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.DataFrame

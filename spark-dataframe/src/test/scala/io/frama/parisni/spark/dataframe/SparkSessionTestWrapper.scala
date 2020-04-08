@@ -1,7 +1,6 @@
-package fr.aphp.wind.eds.omop.orbis
+package io.frama.parisni.spark.dataframe
 
-import org.apache.spark.sql.{QueryTest, SparkSession}
-
+import org.apache.spark.sql.SparkSession
 
 trait SparkSessionTestWrapper {
 

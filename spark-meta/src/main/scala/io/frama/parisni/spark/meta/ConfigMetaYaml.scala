@@ -1,4 +1,4 @@
-package meta
+package io.frama.parisni.spark.meta
 
 import net.jcazevedo.moultingyaml._
 

@@ -1,12 +1,11 @@
-
 package io.frama.parisni.spark.dataframe
 
+import org.apache.spark.sql.QueryTest
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{QueryTest, SparkSession}
 
 
-class AppTest extends QueryTest with SparkSessionTestWrapper {
+class TestDfTool extends QueryTest with SparkSessionTestWrapper {
 
   val dfTool = DFTool
   test("test reorder") {
@@ -22,7 +21,7 @@ class AppTest extends QueryTest with SparkSessionTestWrapper {
   test("test cast") {
 
     val inputDF = spark.sql("select '2' as c1, '1' as c2")
-    val schema = StructType(StructField("c1", IntegerType, false) :: StructField("c2", IntegerType, false) :: Nil)
+    val schema = StructType(StructField("c1", IntegerType, nullable=false) :: StructField("c2", IntegerType, nullable=false) :: Nil)
     val resultDF = spark.sql("select 2 as c1, 1 as c2")
     val testDF = DFTool.castColumns(inputDF, schema)
     checkAnswer(resultDF, testDF)
@@ -41,7 +40,7 @@ class AppTest extends QueryTest with SparkSessionTestWrapper {
   test("test mandatory columns") {
     val mb = new MetadataBuilder()
     val m = mb.putNull("default").build
-    val schema = StructType(StructField("c1", IntegerType, false) :: StructField("c2", IntegerType, true, m) :: Nil)
+    val schema = StructType(StructField("c1", IntegerType, nullable=false) :: StructField("c2", IntegerType, nullable=true, m) :: Nil)
     val mandatorySchema = StructType(StructField("c1", IntegerType) :: Nil)
 
     assert(DFTool.getMandatoryColumns(schema).toDDL == mandatorySchema.toDDL)
@@ -51,8 +50,8 @@ class AppTest extends QueryTest with SparkSessionTestWrapper {
   test("test optional columns") {
     val mb = new MetadataBuilder()
     val m = mb.putNull("default").build
-    val schema = StructType(StructField("c1", IntegerType, false) :: StructField("c2", IntegerType, true, m) :: Nil)
-    val optionalSchema = StructType(StructField("c2", IntegerType, true, m) :: Nil)
+    val schema = StructType(StructField("c1", IntegerType, nullable=false) :: StructField("c2", IntegerType, nullable=true, m) :: Nil)
+    val optionalSchema = StructType(StructField("c2", IntegerType, nullable=true, m) :: Nil)
 
     assert(DFTool.getOptionalColumns(schema).toDDL == optionalSchema.toDDL)
 
@@ -61,7 +60,7 @@ class AppTest extends QueryTest with SparkSessionTestWrapper {
   test("test add columns") {
     val mb = new MetadataBuilder()
     val m = mb.putNull("default").build
-    val optionalSchema = StructType(StructField("c3", IntegerType, true, m) :: Nil)
+    val optionalSchema = StructType(StructField("c3", IntegerType, nullable=true, m) :: Nil)
     val inputDF = spark.sql("select '2' as c1, '1' as c2")
     val resultDF = spark.sql("select '2' as c1, '1' as c2, cast(null as int) as c3")
 
@@ -72,7 +71,6 @@ class AppTest extends QueryTest with SparkSessionTestWrapper {
   test("test rename columns") {
     val mb = new MetadataBuilder()
     val m = mb.putNull("default").build
-    val optionalSchema = StructType(StructField("c3", IntegerType, true, m) :: Nil)
     val inputDF = spark.sql("select '2' as c1, '1' as c2")
     val resultDF = spark.sql("select '2' as bob, '1' as jim")
 
@@ -167,19 +165,6 @@ class AppTest extends QueryTest with SparkSessionTestWrapper {
 
     ).toDF("dt", "Ji m", "(hi)")
     df.withColumn("dt", DFTool.toDate(col("dt"), "yyyy-MM-dd")).show
-  }
-
-}
-
-trait SparkSessionTestWrapper {
-
-  lazy val spark: SparkSession = {
-    SparkSession
-      .builder()
-      .master("local")
-      .appName("spark session")
-      .config("spark.sql.shuffle.partitions", "1")
-      .getOrCreate()
   }
 
 }

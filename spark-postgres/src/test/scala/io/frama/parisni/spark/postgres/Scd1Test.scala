@@ -60,10 +60,6 @@ class Scd1Test extends QueryTest with SparkSessionTestWrapper {
 
     val table: String = "test_scd1_low"
     val joinKey: List[String] = "key1" :: "key2" :: Nil
-    val endDatetimeCol: String = "end_date"
-    val partitions: Option[Int] = Some(2)
-    val multiline: Option[Boolean] = Some(false)
-    val pk: String = "id"
 
     val df: DataFrame = ((1, "a", "b", "jim", new Timestamp(1L), -1) ::
       Nil).toDF("id", "key1", "key2", "cd", "end_date", "hash")

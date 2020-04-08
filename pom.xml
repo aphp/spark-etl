@@ -28,7 +28,7 @@ https://dzone.com/articles/deploy-maven-central -->
     <module>spark-csv</module>
     <module>spark-postgres</module>
     <module>spark-hive</module>
-    <module>meta</module>
+    <module>spark-meta</module>
   </modules>
 
   <dependencies>

@@ -3,11 +3,10 @@ package io.frama.parisni.spark.csv
 import java.io.File
 import java.nio.file.Files
 
+import org.apache.spark.sql.QueryTest
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{QueryTest, SparkSession}
 
-class AppTest extends QueryTest with SparkSessionTestWrapper {
-
+class TestCSVTool extends QueryTest with SparkSessionTestWrapper {
 
   test("test read csv1") {
     val mb = new MetadataBuilder()
@@ -15,7 +14,7 @@ class AppTest extends QueryTest with SparkSessionTestWrapper {
     val schema = StructType(
       StructField("c1", IntegerType)
         :: StructField("c2", IntegerType)
-        :: StructField("c3", IntegerType, false, m)
+        :: StructField("c3", IntegerType, nullable=false, m)
         :: Nil)
 
     val inputDF = CSVTool(spark, "test1.csv", schema)
@@ -37,7 +36,7 @@ class AppTest extends QueryTest with SparkSessionTestWrapper {
     val schema = StructType(
       StructField("c1", IntegerType)
         :: StructField("c2", IntegerType)
-        :: StructField("c3", DateType, false, m)
+        :: StructField("c3", DateType, nullable=false, m)
         :: Nil)
 
     val inputDF = CSVTool(spark, "test1.csv", schema)
@@ -83,19 +82,6 @@ class AppTest extends QueryTest with SparkSessionTestWrapper {
     val path = Files.createTempDirectory("result")
     CSVTool.writeDfToLocalFiles(df, "file", "content", path.toAbsolutePath.toString)
     assert(new File(path.toString).list().length === 2)
-  }
-
-}
-
-trait SparkSessionTestWrapper {
-
-  lazy val spark: SparkSession = {
-    SparkSession
-      .builder()
-      .master("local")
-      .appName("spark session")
-      .config("spark.sql.shuffle.partitions", "1")
-      .getOrCreate()
   }
 
 }

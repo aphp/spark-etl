@@ -1,12 +1,10 @@
-package meta
+package io.frama.parisni.spark.postgres
 
 import com.opentable.db.postgres.junit.{EmbeddedPostgresRules, SingleInstancePostgresRule}
-import org.junit.{Rule}
-import io.frama.parisni.spark.postgres.PGTool
+import org.apache.spark.sql.SparkSession
+import org.junit.Rule
 
 import scala.annotation.meta.getter
-
-import org.apache.spark.sql.SparkSession
 
 trait SparkSessionTestWrapper {
 
@@ -16,7 +14,7 @@ trait SparkSessionTestWrapper {
 
   def getPgUrl = pg.getEmbeddedPostgres.getJdbcUrl("postgres", "postgres") + "&currentSchema=public"
 
-  def getPgTool() = PGTool(spark, getPgUrl, "/tmp")
+  def getPgTool(bulkLoadMode: BulkLoadMode = CSV) = PGTool(spark, getPgUrl, "/tmp", bulkLoadMode)
 
   lazy val spark: SparkSession = {
     SparkSession

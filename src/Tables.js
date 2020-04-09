@@ -204,15 +204,24 @@ class Tables extends React.Component {
 
     const selectedTable = this.state.selectedTable;
     const selectedTableValue = selectedTable ? selectedTable.tables[0] : null;
-
+    let columnsCount = selectedSchema.tables.reduce((a, b) => a + b.columns.length, 0);
     return (
       <div className={classes.root}>
+        <Box display="flex" style={{ width: '100%' }}>
+          <Box m="auto"><Typography component="div" display="inline" bgcolor="background.paper">{selectedSchema.tables.length} tables</Typography></Box>
+          <Box m="auto"><Typography component="div" display="inline" bgcolor="background.paper">{columnsCount} columns</Typography></Box>
+        </Box>
         <Select label="tables" options={selectedSchema.tables} onChange={onSelectTable} selectedValue={selectedTableValue}></Select>
         <AppBar position="static">
         <Toolbar>
           <Tabs value={this.state.tabIndex} onChange={this.changeTab} aria-label="Tabs">
             <Tab label="Diagram" {...a11yProps(0)} />
-            { selectedTable && <Tab label={'Table: ' + selectedTable.tables[0].name} {...a11yProps(1)} /> }
+            { selectedTable && <Tab
+              label={<div>
+                  <div>{'Table: ' + selectedTable.tables[0].name}</div>
+                  <div>{'(' + selectedTable.tables[0].columns.length + ' columns)'}</div>
+                </div> }
+              {...a11yProps(1)} /> }
           </Tabs>
           {/* <SearchInput updateSearchText={updateSearchText} searchText={searchText}></SearchInput> */}
         </Toolbar>

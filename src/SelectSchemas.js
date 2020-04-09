@@ -1,6 +1,7 @@
 import React from "react";
 import './App.css';
 import Select from './Select.js'
+import Error from './Error.js';
 
 class SelectSchemas extends React.Component {
   constructor(props) {
@@ -61,6 +62,10 @@ class SelectSchemas extends React.Component {
   render() {
     if (!this.props.selectedDatabase) {
       return null;
+    }
+
+    if (this.state.error) {
+      return <Error error={this.state.error}/>
     }
 
     return <Select label="schemas"

@@ -11,6 +11,7 @@ import Typography from '@material-ui/core/Typography';
 import Box from '@material-ui/core/Box';
 import Diagram from './diagram/Diagram.js';
 import Select from './Select.js'
+import Error from './Error.js';
 
 
 function TabPanel(props) {
@@ -107,7 +108,8 @@ class Tables extends React.Component {
     if (!this.props.selectedSchema) {
       this.setState({
         tables: [],
-        selectedTable: null
+        selectedTable: null,
+        error: null
       });
       return;
     }
@@ -130,6 +132,7 @@ class Tables extends React.Component {
         this.props.selectedSchema.links = results.links;
         this.setState({
           selectedTable: null,
+          error: null
         });
       },
       (error) => {
@@ -174,6 +177,11 @@ class Tables extends React.Component {
     if (!selectedSchema) {
       return null;
     }
+
+    if (this.state.error) {
+      return <Error error={this.state.error}/>
+    }
+
 
     const onSelectTable = values => {
       this.selectByTableId(values && values.id);

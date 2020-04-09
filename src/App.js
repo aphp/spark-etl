@@ -4,6 +4,7 @@ import './App.css';
 import Select from './Select.js'
 import SelectSchemas from './SelectSchemas.js'
 import Tables from './Tables.js';
+import Error from './Error.js';
 import { withRouter, HashRouter, Route } from "react-router-dom";
 
 class SelectDatabases extends React.Component {
@@ -55,8 +56,12 @@ class SelectDatabases extends React.Component {
   }
 
   render() {
-    const { databases } = this.state;
+    const { databases, error } = this.state;
     const searchText = '';
+
+    if (error) {
+      return <Error error={error}/>
+    }
 
     return <Select label="databases" options={databases} onChange={values => this.onSelectDatabase(values, true)} selectedValue={this.props.selectedDatabase}/>;
   }

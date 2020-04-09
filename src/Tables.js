@@ -82,7 +82,7 @@ function applySearchFilter(schema, filter) {
 function getColumns(rows, skip) {
   const columns = [];
   const colNames = Object.keys(rows[0]);
-  
+
   for (let i = 0; i < colNames.length; i++ ) {
     const name = colNames[i];
     if (name.startsWith('_') || (skip && skip.includes(name))) {
@@ -99,8 +99,8 @@ class Tables extends React.Component {
   constructor(props) {
     super(props);
     this.state = {tables: [], tabIndex: 0};
-    this.selectByTableId = this.selectByTableId.bind(this);    
-    this.changeTab = this.changeTab.bind(this);    
+    this.selectByTableId = this.selectByTableId.bind(this);
+    this.changeTab = this.changeTab.bind(this);
   }
 
   componentDidMount() {
@@ -116,7 +116,6 @@ class Tables extends React.Component {
     .then(res => res.json())
     .then(
       (results) => {
-        // this.props.history.push('/database/' + this.state.selectedDatabase.id + '/schema/' + values.id);
         for (const table of results.tables) {
           table._display = true;
           table._hasColumnDisplay = true;
@@ -139,7 +138,7 @@ class Tables extends React.Component {
           selectedTable: null,
         });
       }
-    );  
+    );
   }
 
   selectByTableId(tableId) {
@@ -151,7 +150,7 @@ class Tables extends React.Component {
 
     for (const table of this.props.selectedSchema.tables) {
       if (table.id === tableId) {
-        
+
         this.setState({
           selectedTable: {
             tables: [table],
@@ -167,7 +166,7 @@ class Tables extends React.Component {
 
   changeTab (event, newTabIndex) {
     this.setState({tabIndex: newTabIndex});
-  };        
+  };
 
   render() {
     const {selectedSchema, classes} = this.props;
@@ -175,9 +174,9 @@ class Tables extends React.Component {
     if (!selectedSchema) {
       return null;
     }
-    
+
     const onSelectTable = values => {
-      this.selectByTableId(values && values.id);   
+      this.selectByTableId(values && values.id);
     };
 
     const onSelectedDiagramTable = e => {
@@ -211,16 +210,16 @@ class Tables extends React.Component {
         </Toolbar>
         </AppBar>
         <TabPanel value={this.state.tabIndex} index={0}>
-          { selectedSchema.tables.length > 0 && <Diagram 
-            tables={selectedSchema.tables} 
-            links={selectedSchema.links} 
-            selectedTable={selectedTable} 
+          { selectedSchema.tables.length > 0 && <Diagram
+            tables={selectedSchema.tables}
+            links={selectedSchema.links}
+            selectedTable={selectedTable}
             onSelected={onSelectedDiagramTable}>
           </Diagram>}
         </TabPanel>
         <TabPanel value={this.state.tabIndex} index={1}>
           <DataGrid className={classes.selectedTable} schema={selectedTable} filter={searchText}/>
-        </TabPanel>      
+        </TabPanel>
       </div>
     );
   }

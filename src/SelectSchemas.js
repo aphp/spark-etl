@@ -9,6 +9,7 @@ class SelectSchemas extends React.Component {
       schemas: [],
       error: null,
     };
+    this.onSelectSchema = this.onSelectSchema.bind(this);
   }
 
   componentDidMount() {
@@ -25,12 +26,13 @@ class SelectSchemas extends React.Component {
       (results) => {
         this.setState({
           schemas: results,
+        }, () => {
+          if (this.props.match.params.schemaId) {
+            this.onSelectSchema({id: parseInt(this.props.match.params.schemaId)}, false);
+          } else if (results.length === 1) { // Only one schema, select it by default
+            this.onSelectSchema(results[0], true);
+          }
         });
-
-        // Only one schema, select it by default
-        if (results.length === 1) {
-          this.props.onSelectSchema(results[0]);
-        }
       },
       (error) => {
         this.setState({
@@ -38,7 +40,22 @@ class SelectSchemas extends React.Component {
           schemas: []
         });
       }
-    );    
+    );
+  }
+
+  onSelectSchema(values, pushRoute) {
+    if (!values) {
+      this.props.setSelectedSchema(null);
+      return;
+    }
+
+    const schema = this.state.schemas.find(e => e.id === values.id);
+    if (schema) {
+      this.props.setSelectedSchema({schema, tables: [], links: []});
+      if (pushRoute) {
+        this.props.history.push('/database/' + this.props.selectedDatabase.id + '/schema/' + schema.id);
+      }
+    }
   }
 
   render() {
@@ -46,16 +63,10 @@ class SelectSchemas extends React.Component {
       return null;
     }
 
-    return <Select label="schemas" 
-            options={this.state.schemas} 
-            onChange={ values => {
-              let schema = null;
-              if (values) {
-                schema = this.state.schemas.find(e => e.id === values.id);
-              }
-            this.props.onSelectSchema(schema);
-            }}
-            selectedValue={this.props.selectedSchema}>
+    return <Select label="schemas"
+            options={this.state.schemas}
+            onChange={ values => this.onSelectSchema(values, true)}
+            selectedValue={this.props.selectedSchema && this.props.selectedSchema.schema}>
           </Select>;
   }
 }

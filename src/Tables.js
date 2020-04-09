@@ -122,6 +122,7 @@ class Tables extends React.Component {
           table._display = true;
           table._hasColumnDisplay = true;
           table._key = 'table-' + table.id;
+          table.columns_count = table.columns.length;
           for (const column of table.columns) {
             column._display = true;
             column._key = table._key + '-col-' + column.id;

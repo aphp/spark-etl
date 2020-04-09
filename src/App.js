@@ -57,7 +57,6 @@ class SelectDatabases extends React.Component {
 
   render() {
     const { databases, error } = this.state;
-    const searchText = '';
 
     if (error) {
       return <Error error={error}/>

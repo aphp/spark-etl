@@ -186,11 +186,7 @@ class Diagram extends React.Component {
       node.registerListener({
         selectionChanged: this.props.onSelected
       })
-      if (!table._display) {
-        node.options.color = '#cccccc';
-      } else {
-        node.options.color = defaultNodeColor;
-      }
+      node.options.color = defaultNodeColor;
 
       if (this.props.selectedTable) {
         node.setSelected(table.id === this.props.selectedTable.tables[0].id);
@@ -226,6 +222,15 @@ class Diagram extends React.Component {
   render() {
     if (!this.state.engine) {
       return null;
+    }
+
+    for (const table of this.props.tables) {
+      const node = table._node;
+      if (!table._display) {
+        node.options.color = '#cccccc';
+      } else {
+        node.options.color = defaultNodeColor;
+      }
     }
 
     return <EngineWidget engine={this.state.engine} showColumns={this.state.showColumns} showHideColumns={this.showHideColumns}/>;

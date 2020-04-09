@@ -99,7 +99,7 @@ function getColumns(rows, skip) {
 class Tables extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {tables: [], tabIndex: 0};
+    this.state = {tables: [], tabIndex: 0, searchText: ''};
     this.selectByTableId = this.selectByTableId.bind(this);
     this.changeTab = this.changeTab.bind(this);
   }
@@ -200,13 +200,12 @@ class Tables extends React.Component {
       this.selectByTableId(e.entity.id);
     };
 
-    const searchText = '';
 
-    // const updateSearchText = e => {
-    //   const searchText = e.target.value;
-    //   this.setState({ searchText: searchText });
-    //   applySearchFilter(schema, searchText);
-    // }
+    const updateSearchText = e => {
+      const searchText = e.target.value;
+      this.setState({ searchText: searchText });
+      applySearchFilter(this.props.selectedSchema, searchText);
+    }
 
     const selectedTable = this.state.selectedTable;
     const selectedTableValue = selectedTable ? selectedTable.tables[0] : null;
@@ -230,7 +229,7 @@ class Tables extends React.Component {
                 </div> }
               {...a11yProps(2)} /> }
           </Tabs>
-          {/* <SearchInput updateSearchText={updateSearchText} searchText={searchText}></SearchInput> */}
+          <SearchInput updateSearchText={updateSearchText} searchText={this.state.searchText}></SearchInput>
         </Toolbar>
         </AppBar>
         <TabPanel value={this.state.tabIndex} index={0}>

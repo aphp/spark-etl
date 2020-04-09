@@ -9,7 +9,7 @@ import * as React from 'react';
 import { StyledButton, WorkspaceWidget } from './WorkspaceWidget';
 import { CanvasWidget } from '@projectstorm/react-canvas-core';
 import { StyledCanvasWidget } from './StyledCanvasWidget';
-import ZoomAction from './ZoomActions';
+import ZoomAction from './ZoomActions.js';
 
 const defaultNodeColor = 'rgb(0,192,255)';
 function createNode(name) {
@@ -84,7 +84,7 @@ class EngineWidget extends React.Component {
 
     engine.repaintCanvas();
   }
-  
+
   getNodesBoundingRect() {
     let minX = Number.POSITIVE_INFINITY;
     let minY = Number.POSITIVE_INFINITY;
@@ -127,7 +127,8 @@ class EngineWidget extends React.Component {
             this.props.engine.getActionEventBus().fireAction({event: evt});
             }}>
                Zoom out
-          </StyledButton>          
+          </StyledButton>
+          <StyledButton onClick={() => this.props.showHideColumns()}>{ this.props.showColumns ? 'Hide columns' : 'Show columns' }</StyledButton>
         </div>}>
 				<StyledCanvasWidget>
 					<CanvasWidget engine={this.props.engine} />
@@ -142,9 +143,38 @@ class Diagram extends React.Component {
     super(props);
     this.state = {
       engine: null,
+      showColumns: false
+    }
+    this.showHideColumns = this.showHideColumns.bind(this);
+  }
+
+  showHidePorts(showColumns) {
+    for (const table of this.props.tables) {
+      const node = table._node;
+
+      for (const col of table.columns) {
+        const portName = table.name + '.' + col.name;
+
+        if (showColumns) {
+          const port = new DefaultPortModel(true, portName, col.name);
+          port.setLocked(true);
+          node.addPort(port);
+        } else {
+          const port = table._node.ports[portName];
+          if (port) {
+            node.removePort(port);
+          }
+        }
+      }
     }
   }
-  
+
+  showHideColumns() {
+    const showColumns = !this.state.showColumns;
+    this.showHidePorts(showColumns);
+    this.setState({showColumns});
+  }
+
 	componentDidMount() {
     let model = new DiagramModel();
 
@@ -165,21 +195,18 @@ class Diagram extends React.Component {
       if (this.props.selectedTable) {
         node.setSelected(table.id === this.props.selectedTable.tables[0].id);
       }
-            
+
       nodesIndex[table.id] = node;
 
-      for (const col of table.columns) {
-        const port = new DefaultPortModel(true, table.name + '.' + col.name, col.name);
-        port.setLocked(true);
-        node.addPort(port);
-      }
       model.addNode(node);
     }
-  
+
+    this.showHidePorts(this.state.showColumns);
+
     const ports = {}
     for (const srcTgt of this.props.links) {
       const link = connectNodes(ports, nodesIndex[srcTgt.source], nodesIndex[srcTgt.target]);
-      
+
       // link.addLabel(nodesIndex[srcTgt.source].options.name + ' -> ' + nodesIndex[srcTgt.target].options.name)
       model.addLink(link);
     }
@@ -195,13 +222,13 @@ class Diagram extends React.Component {
     engine.setModel(model);
     this.setState({engine});
   }
-  
+
   render() {
     if (!this.state.engine) {
       return null;
     }
 
-    return <EngineWidget engine={this.state.engine} />;
+    return <EngineWidget engine={this.state.engine} showColumns={this.state.showColumns} showHideColumns={this.showHideColumns}/>;
   }
 }
 

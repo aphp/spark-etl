@@ -33,15 +33,18 @@ function connectNodes(ports, nodeFrom, nodeTo) {
 	return ports[outKey].link(ports[toKey]);
 }
 
+const engineMarginX = 25;
+const engineMarginY = 25;
+
 class EngineWidget extends React.Component {
 	constructor(props) {
     super(props);
 		this.engine = new DagreEngine({
 			graph: {
-				rankdir: 'RL',
+				rankdir: 'BT',
 				ranker: 'longest-path',
-				marginx: 25,
-        marginy: 25,
+				marginx: engineMarginX,
+        marginy: engineMarginY,
 			},
 			includeLinks: true
     });
@@ -72,15 +75,14 @@ class EngineWidget extends React.Component {
     const engine = this.props.engine;
     const initialZoomLevel = 100;
     const boundingRect = this.getNodesBoundingRect();
-    const width = boundingRect.maxX - boundingRect.minX;
-    const height = boundingRect.maxY - boundingRect.minY;
+    const width = boundingRect.maxX - boundingRect.minX + engineMarginX * 2;
+    const height = boundingRect.maxY - boundingRect.minY + engineMarginY * 2;
 
     const xFactor = engine.canvas.clientWidth / width;
     const yFactor = engine.canvas.clientHeight / height;
     const zoomFactor = xFactor < yFactor ? xFactor : yFactor;
 
     engine.model.setZoomLevel(initialZoomLevel * zoomFactor);
-    engine.model.setOffset(engine.canvas.clientWidth / 3, 0);
 
     engine.repaintCanvas();
   }

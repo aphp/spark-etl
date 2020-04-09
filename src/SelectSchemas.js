@@ -52,7 +52,7 @@ class SelectSchemas extends React.Component {
 
     const schema = this.state.schemas.find(e => e.id === values.id);
     if (schema) {
-      this.props.setSelectedSchema({schema, tables: [], links: []});
+      this.props.setSelectedSchema({schema, tables: [], links: [], tableHeaders: [], attributeCols: []});
       if (pushRoute) {
         this.props.history.push('/database/' + this.props.selectedDatabase.id + '/schema/' + schema.id);
       }

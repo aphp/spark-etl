@@ -58,8 +58,8 @@ function AttributeTable({table, columns, attributeCols}) {
             ))}
           </TableBody>
         </Table>
-      </TableCell>                  
-    </TableRow>); 
+      </TableCell>
+    </TableRow>);
 }
 
 function TableData({table, columns, attributeCols}) {
@@ -71,32 +71,32 @@ function TableData({table, columns, attributeCols}) {
 
   return (
     <React.Fragment>
-      <DataRow className={classes.tableHead}  key={table._key + '-content'} row={table} useName={true} cells={columns}></DataRow>      
+      <DataRow className={classes.tableHead}  key={table._key + '-content'} row={table} useName={true} cells={columns}></DataRow>
       <AttributeTable table={table} columns={columns} attributeCols={attributeCols}></AttributeTable>
-    </React.Fragment>       
+    </React.Fragment>
   )
 }
 
-function DataGrid({ schema }) { 
+function DataGrid({ schema }) {
   if (!schema) {
     return null;
   }
-  
-  const { tables, columns, attributeCols } = schema;
+
+  const { tables, tableHeaders, attributeCols } = schema;
 
   return (
     <TableContainer component={Paper}>
       <Table aria-label="table">
         <TableHead>
           <TableRow>
-            {columns.map(col => (
+            {tableHeaders.map(col => (
               <StyledHeader key={'col-' + col.name}>{col.name}</StyledHeader>
             ))}
           </TableRow>
         </TableHead>
         <TableBody>
           {tables.map(table => (
-            <TableData key={'tabledata-' + table._key} table={table} columns={columns} attributeCols={attributeCols}></TableData>
+            <TableData key={'tabledata-' + table._key} table={table} columns={tableHeaders} attributeCols={attributeCols}></TableData>
           ))}
         </TableBody>
       </Table>

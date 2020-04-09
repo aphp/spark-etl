@@ -59,7 +59,7 @@ function hasSearchText(col, attributeCols, filter) {
 }
 
 function applySearchFilter(schema, filter) {
-  const { tables, columns, attributeCols } = schema;
+  const { tables, tableHeaders, attributeCols } = schema;
 
   for (let i = 0; i < tables.length; i++) {
     const row = tables[i];
@@ -74,7 +74,7 @@ function applySearchFilter(schema, filter) {
     if (row._hasColumnDisplay) {
       row._display = true;
     } else {
-      row._display = hasSearchText(row, columns, filter);
+      row._display = hasSearchText(row, tableHeaders, filter);
     }
   }
 }
@@ -130,6 +130,12 @@ class Tables extends React.Component {
 
         this.props.selectedSchema.tables = results.tables;
         this.props.selectedSchema.links = results.links;
+        if (results.tables.length > 0) {
+          this.props.selectedSchema.tableHeaders = getColumns(results.tables, ['columns', 'id']);
+          if (results.tables[0].columns.length > 0) {
+            this.props.selectedSchema.attributeCols = getColumns(results.tables[0].columns, ['id', 'ids_table']);
+          }
+        }
         this.setState({
           selectedTable: null,
           error: null
@@ -157,7 +163,7 @@ class Tables extends React.Component {
         this.setState({
           selectedTable: {
             tables: [table],
-            columns: getColumns([table], ['columns', 'id']),
+            tableHeaders: getColumns([table], ['columns', 'id']),
             attributeCols: getColumns(table.columns, ['id', 'ids_table'])
           }
         });
@@ -216,12 +222,13 @@ class Tables extends React.Component {
         <Toolbar>
           <Tabs value={this.state.tabIndex} onChange={this.changeTab} aria-label="Tabs">
             <Tab label="Diagram" {...a11yProps(0)} />
+            <Tab label="All tables" {...a11yProps(1)} />
             { selectedTable && <Tab
               label={<div>
                   <div>{'Table: ' + selectedTable.tables[0].name}</div>
                   <div>{'(' + selectedTable.tables[0].columns.length + ' columns)'}</div>
                 </div> }
-              {...a11yProps(1)} /> }
+              {...a11yProps(2)} /> }
           </Tabs>
           {/* <SearchInput updateSearchText={updateSearchText} searchText={searchText}></SearchInput> */}
         </Toolbar>
@@ -235,7 +242,10 @@ class Tables extends React.Component {
           </Diagram>}
         </TabPanel>
         <TabPanel value={this.state.tabIndex} index={1}>
-          <DataGrid className={classes.selectedTable} schema={selectedTable} filter={searchText}/>
+          { selectedSchema.tables.length > 0  && <DataGrid className={classes.selectedTable} schema={selectedSchema}/> }
+        </TabPanel>
+        <TabPanel value={this.state.tabIndex} index={2}>
+          { selectedTable && <DataGrid className={classes.selectedTable} schema={selectedTable}/> }
         </TabPanel>
       </div>
     );

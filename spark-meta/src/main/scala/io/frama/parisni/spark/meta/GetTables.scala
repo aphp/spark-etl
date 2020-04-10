@@ -92,17 +92,17 @@ trait GetTables {
              f.attnotnull AS is_mandatory,
              i.relname AS index_name,
              CASE
-             WHEN i.oid <> 0::oid THEN 't'::text
-             ELSE 'f'::text
+             WHEN i.oid <> 0::oid THEN true
+             ELSE false
              END AS is_index,
              CASE
-             WHEN p.contype = 'p'::"char" THEN 't'::text
-             ELSE 'f'::text
+             WHEN p.contype = 'p'::"char" THEN true
+             ELSE false
              END AS primarykey,
              CASE
-             WHEN p.contype = 'u'::"char" THEN 't'::text
-             WHEN p.contype = 'p'::"char" THEN 't'::text
-             ELSE 'f'::text
+             WHEN p.contype = 'u'::"char" THEN true
+             WHEN p.contype = 'p'::"char" THEN true
+             ELSE false
              END AS uniquekey,
              col_description(('"'|| n.nspname || '"."' || c.relname ||'"')::regclass, attnum::int) as comment_fonctionnel_column
         FROM pg_attribute f

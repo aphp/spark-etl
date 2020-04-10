@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 import './App.css';
-import Select from './Select.js'
+import Select from './helpers/Select.js'
 import SelectSchemas from './SelectSchemas.js'
 import Tables from './Tables.js';
-import Error from './Error.js';
+import Error from './helpers/Error.js';
 import { withRouter, HashRouter, Route } from "react-router-dom";
 
 class SelectDatabases extends React.PureComponent {

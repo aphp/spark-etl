@@ -1,7 +1,7 @@
 import React from "react";
 import './App.css';
-import Select from './Select.js'
-import Error from './Error.js';
+import Select from './helpers/Select.js'
+import Error from './helpers/Error.js';
 
 class SelectSchemas extends React.PureComponent {
   constructor(props) {

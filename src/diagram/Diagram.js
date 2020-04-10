@@ -10,7 +10,7 @@ import { StyledButton, WorkspaceWidget } from './WorkspaceWidget';
 import { CanvasWidget } from '@projectstorm/react-canvas-core';
 import { StyledCanvasWidget } from './StyledCanvasWidget';
 import ZoomAction from './ZoomActions.js';
-import CircularIndeterminate from '../CircularIndeterminate.js';
+import CircularIndeterminate from '../helpers/CircularIndeterminate.js';
 
 const defaultNodeColor = 'rgb(0,192,255)';
 function createNode(name) {

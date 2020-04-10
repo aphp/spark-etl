@@ -1,6 +1,6 @@
 import React from "react";
 import DataGrid from './DataGrid.js';
-import SearchInput from './SearchInput.js';
+import SearchInput from './helpers/SearchInput.js';
 import PropTypes from 'prop-types';
 import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';

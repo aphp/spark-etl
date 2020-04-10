@@ -18,7 +18,8 @@ trait GetTables {
              (100 * nc."PARAM_VALUE"::bigint / numrow."PARAM_VALUE"::bigint)::float null_ratio_column,
              "COMMENT" comment_fonctionnel,
               cast(null as boolean) as is_mandatory,
-              null::text as comment_fonctionnel_column
+              null::text as comment_fonctionnel_column,
+              null::boolean is_index
           from  "COLUMNS_V2" c
       	  join "SDS" s using ("CD_ID")
       	  join "TBLS" t using ("SD_ID")
@@ -42,7 +43,8 @@ trait GetTables {
              case when numrow."PARAM_VALUE" is null then null::timestamp else to_timestamp(cast(dt."PARAM_VALUE" as bigint))::timestamp end  last_analyze,
              "COMMENT" comment_fonctionnel,
              sch."PARAM_VALUE" as schem,
-             sts.stts
+             sts.stts,
+             null::boolean is_index
           from  "COLUMNS_V2" c
       	  join "SDS" s using ("CD_ID")
       	  join "TBLS" t using ("SD_ID")
@@ -65,7 +67,8 @@ trait GetTables {
              null::timestamp as last_analyze,
              c.column_name lib_column,
              c.data_type typ_column,
-             c.ordinal_position order_column
+             c.ordinal_position order_column,
+             null::boolean is_index
         from information_schema.tables t
       	 left join information_schema.columns c
       	     on t.table_schema = c.table_schema

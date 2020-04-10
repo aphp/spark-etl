@@ -99,7 +99,7 @@ class DefaultFeatureExtractImpl extends FeatureExtractTrait {
     val result = df.dropDuplicates("lib_database", "lib_schema", "lib_table", "lib_column")
       .selectExpr("lib_database", "lib_schema",
         "lib_table", "lib_column", "typ_column", "order_column",
-        "is_mandatory", "is_pk", "is_fk","is_index",
+        "is_mandatory", "is_pk", "is_fk", "is_index",
         "null_ratio_column", "count_distinct_column",
         "comment_fonctionnel_column as comment_fonctionnel")
     result

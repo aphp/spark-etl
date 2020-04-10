@@ -8,9 +8,8 @@ import scala.io.Source
 
 object MetaSync extends App with LazyLogging {
 
-  val YAML = args(0)
+  val YAML = args(0) //Yaml configuration file path
   val LOG = args(1)
-
 
   val spark = SparkSession.builder()
     .appName("cohort sync")
@@ -21,19 +20,21 @@ object MetaSync extends App with LazyLogging {
   run(spark, YAML)
 
   def run(spark: SparkSession, yamlFilePath: String): Unit = {
-    // for each datasource
 
+    //Parsing input configuration Yaml file
     val ymlTxt = Source.fromFile(yamlFilePath).mkString
     val yaml = ymlTxt.stripMargin.parseYaml
     val database = yaml.convertTo[ConfigMetaYaml.Database]
 
-
     try {
+      // for each datasource
       for (source <- database.schemas.getOrElse(Nil)) {
         if (source.isActive.getOrElse(true)) {
+
           // get the information
-          val extract = new MetaExtractor(spark, source.host, source.db, source.user, source.dbType)
+          val extract = new MetaExtractor(source,spark)
           extract.initTables(source.dbName)
+
           // write to db
           val load = new MetaLoader(database.hostPg, database.databasePg, database.schemaPg, database.userPg)
           load.loadDatabase(extract.getDatabase, source.dbName)
@@ -45,5 +46,6 @@ object MetaSync extends App with LazyLogging {
       }
     }
   }
+
 }
 

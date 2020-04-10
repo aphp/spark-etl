@@ -1,11 +1,13 @@
 package io.frama.parisni.spark.meta
 
-import org.apache.spark.sql.functions.lit
+import extractor.{DefaultFeatureExtractImpl, FeatureExtractTrait}
+import org.apache.spark.sql.functions.{col, lit, regexp_extract, when}
 import org.apache.spark.sql.{DataFrame, QueryTest}
 
 class GetInformationTest extends QueryTest
-  with SparkSessionTestWrapper
-  with FeatureExtract {
+  with SparkSessionTestWrapper {
+
+  val featureExtract:FeatureExtractTrait = new DefaultFeatureExtractImpl
 
   test("is 'is_index' in 'meta_column' table") {
     val pgTableCsvPath: String = getClass.getResource("/meta/postgres-table.csv").getPath
@@ -18,9 +20,9 @@ class GetInformationTest extends QueryTest
     pgTable.printSchema()
 
     //Replay the transformation dataflow
-    pgTable = extractPrimaryKey(pgTable)
-    pgTable = extractForeignKey(pgTable)
-    pgTable = generateColumn(pgTable)
+    pgTable = featureExtract.extractPrimaryKey(pgTable)
+    pgTable = featureExtract.extractForeignKey(pgTable)
+    pgTable = featureExtract.generateColumn(pgTable)
 
     pgTable.filter("is_index=='f'").show(3)
     pgTable.filter("is_index=='t'").show(3)

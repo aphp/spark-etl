@@ -1,9 +1,11 @@
-package io.frama.parisni.spark.meta
+package io.frama.parisni.spark.meta.extractor
 
-import org.apache.spark.sql._
-import org.apache.spark.sql.functions._
+import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.functions.{col, expr, lit, regexp_extract, regexp_replace, when}
 
-trait FeatureExtract {
+class DefaultFeatureExtractImpl extends FeatureExtractTrait {
+
+  override def toString: String = "class DefaultFeatureExtractImpl extends FeatureExtractTrait"
 
   def extractSource(df: DataFrame): DataFrame = {
     df.withColumn("outil_source", regexp_extract(col("lib_table"), "^([^_]+)_.*$", 1))
@@ -82,7 +84,7 @@ trait FeatureExtract {
           OR  (lib_database = 'edsp-prod' AND lib_schema in ('edsp'))
           OR  (lib_database = 'spark-prod' AND lib_schema in ('edsprod', 'omop_prod', 'coronaomop'))
           OR  (lib_database = 'omop-prod' AND lib_schema in ('omop'))
-        """)
+          """)
         , lit(false))
         .otherwise(lit(true)))
       .select("lib_database", "lib_schema", "is_technical")
@@ -101,7 +103,5 @@ trait FeatureExtract {
         "null_ratio_column", "count_distinct_column",
         "comment_fonctionnel_column as comment_fonctionnel")
     result
-
-
   }
 }

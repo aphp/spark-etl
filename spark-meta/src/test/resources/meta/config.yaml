@@ -11,6 +11,16 @@ schemas:
     db: edsr
     user: nparis
     isActive: true
+    extractor:
+      featureExtractImplClass: io.frama.parisni.spark.meta.TestFeatureExtractImpl
+  - dbName: pg-prod
+    dbType: postgresql
+    host: 0.0.0.0
+    db: edsr
+    user: nparis
+    isActive: true
+    extractor:
+      featureExtractImplClass: io.frama.parisni.spark.meta.extractor.DefaultFeatureExtractImpl
   - dbName: spark-prod
     dbType: spark
     host: 0.0.0.0

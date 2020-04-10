@@ -145,6 +145,7 @@ class Diagram extends React.Component {
     super(props);
     this.state = {
       engine: null,
+      nodesIndex: null,
       showColumns: false
     }
     this.showHideColumns = this.showHideColumns.bind(this);
@@ -152,7 +153,7 @@ class Diagram extends React.Component {
 
   showHidePorts(showColumns) {
     for (const table of this.props.tables) {
-      const node = table._node;
+      const node = this.state.nodesIndex[table.id];
 
       for (const col of table.columns) {
         const portName = table.name + '.' + col.name;
@@ -162,7 +163,7 @@ class Diagram extends React.Component {
           port.setLocked(true);
           node.addPort(port);
         } else {
-          const port = table._node.ports[portName];
+          const port = node.ports[portName];
           if (port) {
             node.removePort(port);
           }
@@ -183,7 +184,6 @@ class Diagram extends React.Component {
     const nodesIndex = {};
     for (const table of this.props.tables) {
       const node = createNode(table.name + ` [${table.id}]`);
-      table._node = node;
       node.id = table.id;
       node.registerListener({
         selectionChanged: this.props.onSelected
@@ -199,8 +199,6 @@ class Diagram extends React.Component {
       model.addNode(node);
     }
 
-    this.showHidePorts(this.state.showColumns);
-
     const ports = {}
     for (const srcTgt of this.props.links) {
       const link = connectNodes(ports, nodesIndex[srcTgt.source], nodesIndex[srcTgt.target]);
@@ -208,7 +206,6 @@ class Diagram extends React.Component {
       // link.addLabel(nodesIndex[srcTgt.source].options.name + ' -> ' + nodesIndex[srcTgt.target].options.name)
       model.addLink(link);
     }
-
 
     // model.setLocked(true);
     let engine = createEngine({
@@ -218,16 +215,21 @@ class Diagram extends React.Component {
     engine.getActionEventBus().registerAction(new ZoomAction());
 
     engine.setModel(model);
-    this.setState({engine});
+    this.setState({engine, nodesIndex}, () => {
+      this.showHidePorts(this.state.showColumns);
+    });
   }
 
   render() {
-    if (!this.state.engine) {
+    if (!this.state.engine || this.props.tables.length === 0) {
       return null;
     }
 
     for (const table of this.props.tables) {
-      const node = table._node;
+      const node = this.state.nodesIndex[table.id];
+      if (!node) {
+        continue;
+      }
       if (!table._display) {
         node.options.color = '#cccccc';
       } else {

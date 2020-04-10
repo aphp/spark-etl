@@ -40,7 +40,7 @@ export const StyledButton = styled.button`
 	}
 `;
 
-export class WorkspaceWidget extends React.Component<WorkspaceWidgetProps> {
+export class WorkspaceWidget extends React.PureComponent<WorkspaceWidgetProps> {
 	render() {
 		return (
 			<Container>

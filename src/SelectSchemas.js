@@ -3,7 +3,7 @@ import './App.css';
 import Select from './Select.js'
 import Error from './Error.js';
 
-class SelectSchemas extends React.Component {
+class SelectSchemas extends React.PureComponent {
   constructor(props) {
     super(props);
     this.state = {
@@ -52,7 +52,7 @@ class SelectSchemas extends React.Component {
 
     const schema = this.state.schemas.find(e => e.id === values.id);
     if (schema) {
-      this.props.setSelectedSchema({schema, tables: [], links: [], tableHeaders: [], attributeCols: []});
+      this.props.setSelectedSchema({ schema });
       if (pushRoute) {
         this.props.history.push('/database/' + this.props.selectedDatabase.id + '/schema/' + schema.id);
       }

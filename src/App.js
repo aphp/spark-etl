@@ -7,7 +7,7 @@ import Tables from './Tables.js';
 import Error from './Error.js';
 import { withRouter, HashRouter, Route } from "react-router-dom";
 
-class SelectDatabases extends React.Component {
+class SelectDatabases extends React.PureComponent {
   constructor(props) {
     super(props);
     this.state = {

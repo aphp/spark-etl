@@ -10,6 +10,7 @@ import { StyledButton, WorkspaceWidget } from './WorkspaceWidget';
 import { CanvasWidget } from '@projectstorm/react-canvas-core';
 import { StyledCanvasWidget } from './StyledCanvasWidget';
 import ZoomAction from './ZoomActions.js';
+import CircularIndeterminate from '../CircularIndeterminate.js';
 
 const defaultNodeColor = 'rgb(0,192,255)';
 function createNode(name) {
@@ -140,13 +141,14 @@ class EngineWidget extends React.Component {
 	}
 }
 
-class Diagram extends React.Component {
+class Diagram extends React.PureComponent {
 	constructor(props) {
     super(props);
     this.state = {
       engine: null,
       nodesIndex: null,
-      showColumns: false
+      showColumns: false,
+      isLoading: true
     }
     this.showHideColumns = this.showHideColumns.bind(this);
   }
@@ -215,7 +217,7 @@ class Diagram extends React.Component {
     engine.getActionEventBus().registerAction(new ZoomAction());
 
     engine.setModel(model);
-    this.setState({engine, nodesIndex}, () => {
+    this.setState({engine, nodesIndex, isLoading: false}, () => {
       this.showHidePorts(this.state.showColumns);
     });
   }
@@ -223,6 +225,10 @@ class Diagram extends React.Component {
   render() {
     if (!this.state.engine || this.props.tables.length === 0) {
       return null;
+    }
+
+    if (this.state.isLoading) {
+      return <CircularIndeterminate size="100px"/>;
     }
 
     for (const table of this.props.tables) {

@@ -1,7 +1,6 @@
 import React from "react";
 import DataGrid from './DataGrid.js';
 import SearchInput from './SearchInput.js';
-import './App.css';
 import PropTypes from 'prop-types';
 import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
@@ -10,8 +9,10 @@ import Tab from '@material-ui/core/Tab';
 import Typography from '@material-ui/core/Typography';
 import Box from '@material-ui/core/Box';
 import Diagram from './diagram/Diagram.js';
-import Select from './Select.js'
-import Error from './Error.js';
+import Select from './helpers/Select.js'
+import Error from './helpers/Error.js';
+import CircularIndeterminate from './helpers/CircularIndeterminate.js';
+import SchemaStats from './SchemaStats.js';
 
 
 function TabPanel(props) {
@@ -58,31 +59,47 @@ function hasSearchText(col, attributeCols, filter) {
   return false;
 }
 
+// This is the only place where a table or row content can change
+// so this is also where we handle the '_forceUpdate' attribute to improve performance in DataGrid with shouldComponentUpdate()
 function applySearchFilter(schema, filter) {
   const { tables, tableHeaders, attributeCols } = schema;
+  let changed = false;
 
   for (let i = 0; i < tables.length; i++) {
     const row = tables[i];
 
     row._hasColumnDisplay = false;
+    let tableChanged = false;
+
     for (let j = 0; j < row.columns.length; j++) {
       const col = row.columns[j];
-      col._display = hasSearchText(col, attributeCols, filter);
+      const hasText = hasSearchText(col, attributeCols, filter);
+      const colChanged = col._display !== hasText;
+      col._forceUpdate = colChanged;
+      tableChanged = tableChanged || colChanged;
+      col._display = hasText;
       row._hasColumnDisplay = row._hasColumnDisplay || col._display;
     }
+
+    row._forceUpdate = tableChanged;
+    changed = changed || tableChanged;
 
     if (row._hasColumnDisplay) {
       row._display = true;
     } else {
-      row._display = hasSearchText(row, tableHeaders, filter);
+      const hasText = hasSearchText(row, tableHeaders, filter);
+      changed = changed || (row._display !== hasText);
+      row._display = hasText;
     }
   }
+
+  schema._forceUpdate = changed;
 }
 
-class Tables extends React.Component {
+class Tables extends React.PureComponent {
   constructor(props) {
     super(props);
-    this.state = {tables: [], tabIndex: 0, searchText: ''};
+    this.state = {tables: [], tabIndex: 0, searchText: '', isLoading: true};
     this.selectByTableId = this.selectByTableId.bind(this);
     this.changeTab = this.changeTab.bind(this);
   }
@@ -104,9 +121,11 @@ class Tables extends React.Component {
         for (const table of results.tables) {
           table._display = true;
           table._hasColumnDisplay = true;
+          table._forceUpdate = false;
           table._key = 'table-' + table.id;
           for (const column of table.columns) {
             column._display = true;
+            column._forceUpdate = false;
             column._key = table._key + '-col-' + column.id;
           }
         }
@@ -115,14 +134,19 @@ class Tables extends React.Component {
         this.props.selectedSchema.links = results.links;
         this.props.selectedSchema.tableHeaders = results.tableHeaders;
         this.props.selectedSchema.attributeCols = results.attributeCols;
+        this.props.selectedSchema._forceUpdate = false;
         this.setState({
           selectedTable: null,
+          searchText: '',
+          isLoading: false,
           error: null
         });
       },
       (error) => {
         this.setState({
           error,
+          searchText: '',
+          isLoading: false,
           selectedTable: null,
         });
       }
@@ -163,6 +187,10 @@ class Tables extends React.Component {
       return <Error error={this.state.error}/>
     }
 
+    if (this.state.isLoading) {
+      return <CircularIndeterminate size="100px"/>;
+    }
+
 
     const onSelectTable = values => {
       this.selectByTableId(values && values.id);
@@ -178,19 +206,15 @@ class Tables extends React.Component {
 
     const updateSearchText = e => {
       const searchText = e.target.value;
-      this.setState({ searchText: searchText });
       applySearchFilter(this.props.selectedSchema, searchText);
+      this.setState({ searchText: searchText });
     }
 
     const selectedTable = this.state.selectedTable;
     const selectedTableValue = selectedTable ? selectedTable.tables[0] : null;
-    let columnsCount = selectedSchema.tables.reduce((a, b) => a + b.columns.length, 0);
     return (
       <div className={classes.root}>
-        <Box display="flex" style={{ width: '100%' }}>
-          <Box m="auto"><Typography component="div" display="inline" bgcolor="background.paper">{selectedSchema.tables.length} tables</Typography></Box>
-          <Box m="auto"><Typography component="div" display="inline" bgcolor="background.paper">{columnsCount} columns</Typography></Box>
-        </Box>
+        <SchemaStats selectedSchema={selectedSchema}/>
         <Select label="tables" options={selectedSchema.tables} onChange={onSelectTable} selectedValue={selectedTableValue}></Select>
         <AppBar position="static">
         <Toolbar>
@@ -204,7 +228,7 @@ class Tables extends React.Component {
                 </div> }
               {...a11yProps(2)} /> }
           </Tabs>
-          <SearchInput updateSearchText={updateSearchText} searchText={this.state.searchText}></SearchInput>
+          <SearchInput updateSearchText={updateSearchText} searchText={this.state.searchText}/>
         </Toolbar>
         </AppBar>
         <TabPanel value={this.state.tabIndex} index={0}>
@@ -212,8 +236,7 @@ class Tables extends React.Component {
             tables={selectedSchema.tables}
             links={selectedSchema.links}
             selectedTable={selectedTable}
-            onSelected={onSelectedDiagramTable}>
-          </Diagram>}
+            onSelected={onSelectedDiagramTable}/>}
         </TabPanel>
         <TabPanel value={this.state.tabIndex} index={1}>
           <DataGrid className={classes.selectedTable} schema={selectedSchema}/>

@@ -17,12 +17,32 @@ const StyledHeader = withStyles(theme => ({
 }))(TableCell);
 
 
+class TextHightlighter extends React.PureComponent {
+  render() {
+    const {text, highlight} = this.props;
+
+    if (!highlight || highlight === '' || typeof text !== 'string') {
+      return <span>{text}</span>;
+    }
+
+
+    // Split on highlight term and include term into parts, ignore case
+    const parts = text.split(new RegExp(`(${highlight})`, 'gi'));
+    return <span> { parts.map((part, i) =>
+        <span key={i} style={part.toLowerCase() === highlight.toLowerCase() ? { backgroundColor: 'orange' } : {} }>
+            { part }
+        </span>)
+    } </span>;
+  }
+}
+
 class DataRow extends React.Component {
   shouldComponentUpdate(nextProps, nextState) {
     return (nextProps.row._forceUpdate);
   }
   render() {
-    const {row, useName, cells, className} = this.props;
+    const {row, useName, cells, className, searchText} = this.props;
+
     if (!row._display) {
       return null;
     }
@@ -31,7 +51,7 @@ class DataRow extends React.Component {
       <TableRow className={className} hover={true}>
       {cells.map(col => (
         <TableCell key={'table-cell-' + row._key + '-' + col.name}>
-          <React.Fragment>{useName ? row[col.name] : col.name}</React.Fragment>
+          <TextHightlighter text={useName ? row[col.name] : col.name} highlight={searchText}/>
         </TableCell>
       ))}
     </TableRow>
@@ -41,7 +61,7 @@ class DataRow extends React.Component {
 
 class AttributeTable extends React.Component {
   render() {
-    const {table, columns, attributeCols} = this.props;
+    const {table, columns, attributeCols, searchText} = this.props;
     if (!table._hasColumnDisplay) {
       return null;
     }
@@ -51,11 +71,21 @@ class AttributeTable extends React.Component {
         <TableCell colSpan={columns.length}>
           <Table aria-label="table">
             <TableHead>
-              <DataRow key={table._key + '-attributes-head'} row={table} useName={false} cells={attributeCols}></DataRow>
+              <DataRow
+                key={table._key + '-attributes-head'}
+                row={table}
+                useName={false}
+                cells={attributeCols}
+                searchText={searchText}/>
             </TableHead>
             <TableBody>
               {table.columns.map(tableColumn => (
-                <DataRow row={tableColumn} useName={true} cells={attributeCols} key={table._key + '-attributes-' + tableColumn.name}></DataRow>
+                <DataRow
+                  row={tableColumn}
+                  useName={true}
+                  cells={attributeCols}
+                  key={table._key + '-attributes-' + tableColumn.name}
+                  searchText={searchText}/>
               ))}
             </TableBody>
           </Table>
@@ -70,15 +100,15 @@ class TableData extends React.Component {
   }
 
   render() {
-    const {table, columns, attributeCols, classes} = this.props;
+    const {table, columns, attributeCols, classes, searchText} = this.props;
     if (!table._display) {
       return null;
     }
 
     return (
       <React.Fragment>
-        <DataRow className={classes.tableHead} key={table._key + '-content'} row={table} useName={true} cells={columns}></DataRow>
-        <AttributeTable table={table} columns={columns} attributeCols={attributeCols}></AttributeTable>
+        <DataRow className={classes.tableHead} key={table._key + '-content'} row={table} useName={true} cells={columns} searchText={searchText}></DataRow>
+        <AttributeTable table={table} columns={columns} attributeCols={attributeCols} searchText={searchText}></AttributeTable>
       </React.Fragment>
     );
   }
@@ -101,7 +131,7 @@ class DataGrid extends React.Component {
   }
 
   render() {
-    const { schema } = this.props;
+    const { schema, searchText } = this.props;
     if (!schema || schema.tables.length === 0) {
       return null;
     }
@@ -120,7 +150,11 @@ class DataGrid extends React.Component {
           </TableHead>
           <TableBody>
             {tables.map(table => (
-              <StyledTableData key={'tabledata-' + table._key} table={table} columns={tableHeaders} attributeCols={attributeCols}></StyledTableData>
+              <StyledTableData
+                key={'tabledata-' + table._key}
+                table={table} columns={tableHeaders}
+                attributeCols={attributeCols}
+                searchText={searchText}/>
             ))}
           </TableBody>
         </Table>

@@ -77,8 +77,8 @@ function applySearchFilter(schema, filter) {
       const col = row.columns[j];
       const hasText = hasSearchText(col, attributeCols, filter);
       const colChanged = col._display !== hasText;
-      col._forceUpdate = colChanged;
-      tableChanged = tableChanged || colChanged;
+      col._forceUpdate = colChanged || hasText;
+      tableChanged = tableChanged || col._forceUpdate;
       col._display = hasText;
       row._hasColumnDisplay = row._hasColumnDisplay || col._display;
       if (hasText) {
@@ -86,16 +86,18 @@ function applySearchFilter(schema, filter) {
       }
     }
 
-    row._forceUpdate = tableChanged;
-    changed = changed || tableChanged;
 
     if (row._hasColumnDisplay) {
       row._display = true;
     } else {
       const hasText = hasSearchText(row, tableHeaders, filter);
-      changed = changed || (row._display !== hasText);
+      tableChanged = tableChanged || (row._display !== hasText);
       row._display = hasText;
     }
+
+    row._forceUpdate = tableChanged;
+    changed = changed || tableChanged;
+
     if (row._display) {
       visibleTable++;
     }
@@ -246,10 +248,10 @@ class Tables extends React.PureComponent {
             onSelected={this.onSelectedDiagramTable}/>}
         </TabPanel>
         <TabPanel value={this.state.tabIndex} index={1}>
-          <DataGrid className={classes.selectedTable} schema={selectedSchema}/>
+          <DataGrid className={classes.selectedTable} schema={selectedSchema} searchText={this.state.searchText}/>
         </TabPanel>
         <TabPanel value={this.state.tabIndex} index={2}>
-          <DataGrid className={classes.selectedTable} schema={selectedTable}/>
+          <DataGrid className={classes.selectedTable} schema={selectedTable} searchText={this.state.searchText}/>
         </TabPanel>
       </div>
     );

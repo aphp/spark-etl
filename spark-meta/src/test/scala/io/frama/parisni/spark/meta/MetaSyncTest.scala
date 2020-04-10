@@ -3,8 +3,7 @@ package io.frama.parisni.spark.meta
 import org.apache.spark.sql.QueryTest
 
 class MetaSyncTest extends QueryTest
-  with SparkSessionTestWrapper
-  with FeatureExtract {
+  with SparkSessionTestWrapper {
 
 
   test("test loading postgres") {

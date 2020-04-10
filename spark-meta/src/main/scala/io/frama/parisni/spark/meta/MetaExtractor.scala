@@ -2,10 +2,21 @@ package io.frama.parisni.spark.meta
 
 import com.typesafe.scalalogging.LazyLogging
 import io.frama.parisni.spark.dataframe.DFTool
+import io.frama.parisni.spark.meta.extractor.FeatureExtractTrait
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
-class MetaExtractor(spark: SparkSession, host: String, database: String, user: String, dbType: String, schema: String = "public") extends FeatureExtract with GetTables with LazyLogging {
+class MetaExtractor(extractor: FeatureExtractTrait, spark: SparkSession, host: String, database: String, user: String, dbType: String, schema: String)
+  extends GetTables with LazyLogging {
+
+  /**
+   * Alternative constructor
+   */
+  def this(confSchema: ConfigMetaYaml.Schema, spark: SparkSession, schema: String = "public") {
+
+    this(io.frama.parisni.spark.meta.extractor.Utils.getFeatureExtractImplClass(confSchema.extractor)
+      , spark, confSchema.host, confSchema.db, confSchema.user, confSchema.dbType, schema)
+  }
 
   def fetchTable(sql: String): DataFrame = {
     logger.warn(s"$host, $database, $schema, $sql")
@@ -26,20 +37,20 @@ class MetaExtractor(spark: SparkSession, host: String, database: String, user: S
       case "spark" => getSparkTable(dbName)
     }
 
-    var res = extractSource(result)
+    var res = extractor.extractSource(result)
 
     // extraire la pk
-    res = extractPrimaryKey(res)
+    res = extractor.extractPrimaryKey(res)
 
     // extraire les fk
-    res = extractForeignKey(res).cache
+    res = extractor.extractForeignKey(res).cache
 
 
-    resdatabase = generateDatabase(res)
-    resschema = generateSchema(res)
-    restable = generateTable(res)
-    rescolumn = generateColumn(res)
-    resreference = inferForeignKey(res)
+    resdatabase = extractor.generateDatabase(res)
+    resschema = extractor.generateSchema(res)
+    restable = extractor.generateTable(res)
+    rescolumn = extractor.generateColumn(res)
+    resreference = extractor.inferForeignKey(res)
   }
 
   var resdatabase: DataFrame = _

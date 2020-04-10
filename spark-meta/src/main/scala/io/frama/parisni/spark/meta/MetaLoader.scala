@@ -3,7 +3,7 @@ package io.frama.parisni.spark.meta
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.DataFrame
 
-class MetaLoader(host: String, database: String, schema: String, user: String) extends FeatureExtract with LazyLogging {
+class MetaLoader(host: String, database: String, schema: String, user: String) extends LazyLogging {
 
   /**
    * Return a Dataframe as the left jointure between an input dataframe and the result of an SQL query

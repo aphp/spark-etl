@@ -176,7 +176,7 @@ class PGTool(spark: SparkSession
 
 object PGTool extends java.io.Serializable with LazyLogging {
 
-  def apply(spark: SparkSession, url: String, tmpPath: String, bulkLoadMode: BulkLoadMode = CSV): PGTool = {
+  def apply(spark: SparkSession, url: String, tmpPath: String, bulkLoadMode: BulkLoadMode = Stream): PGTool = {
     new PGTool(spark, url, tmpPath + "/spark-postgres-" + randomUUID.toString, bulkLoadMode).setPassword("")
   }
 
@@ -468,7 +468,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
                  , numPartitions: Int = 8
                  , password: String = ""
                  , reindex: Boolean = false
-                 , bulkLoadMode: BulkLoadMode = CSV
+                 , bulkLoadMode: BulkLoadMode = Stream
   ) = {
     bulkLoadMode match  {
       case CSV => outputBulkCsv(spark, url, table, df, path, numPartitions, password, reindex)
@@ -862,7 +862,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
                            , scdFilter: Option[String] = None
                            , deleteSet: Option[String] = None
                            , password: String = ""
-                           , bulkLoadMode: BulkLoadMode = CSV
+                           , bulkLoadMode: BulkLoadMode = Stream
                           ): Unit = {
     if (loadEmptyTable(spark, url, table, candidate, path, partitions, password, bulkLoadMode))
       return
@@ -983,7 +983,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
                            , partitions: Int
                            , path: String
                            , password: String = ""
-                           , bulkLoadMode: BulkLoadMode = CSV
+                           , bulkLoadMode: BulkLoadMode = Stream
                           ): Unit = {
 
     if (loadEmptyTable(spark, url, table, candidate, path, partitions, password, bulkLoadMode))

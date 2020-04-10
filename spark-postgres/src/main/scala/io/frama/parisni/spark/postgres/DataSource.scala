@@ -135,8 +135,8 @@ class PostgresRelation(val parameters: Map[String, String]
     require(conf.getDatabase.nonEmpty || conf.getUrl.isDefined, "Database cannot be empty")
     require(conf.getUser.nonEmpty || conf.getUrl.isDefined, "User cannot be empty")
     val bulkLoadMode = conf.getBulkLoadMode.getOrElse("") match {
-      case "stream" => Stream
-      case _ => CSV
+      case "csv" => CSV
+      case _ => Stream
     }
 
     val url = getUrl(conf.getUrl, conf.getHost, conf.getPort, conf.getDatabase, conf.getUser, conf.getSchema)

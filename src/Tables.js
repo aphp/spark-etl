@@ -79,23 +79,6 @@ function applySearchFilter(schema, filter) {
   }
 }
 
-
-function getColumns(rows, skip) {
-  const columns = [];
-  const colNames = Object.keys(rows[0]);
-
-  for (let i = 0; i < colNames.length; i++ ) {
-    const name = colNames[i];
-    if (name.startsWith('_') || (skip && skip.includes(name))) {
-      continue;
-    }
-
-    columns.push({name: name})
-  }
-
-  return columns;
-}
-
 class Tables extends React.Component {
   constructor(props) {
     super(props);
@@ -122,7 +105,6 @@ class Tables extends React.Component {
           table._display = true;
           table._hasColumnDisplay = true;
           table._key = 'table-' + table.id;
-          table.columns_count = table.columns.length;
           for (const column of table.columns) {
             column._display = true;
             column._key = table._key + '-col-' + column.id;
@@ -131,12 +113,8 @@ class Tables extends React.Component {
 
         this.props.selectedSchema.tables = results.tables;
         this.props.selectedSchema.links = results.links;
-        if (results.tables.length > 0) {
-          this.props.selectedSchema.tableHeaders = getColumns(results.tables, ['columns', 'id']);
-          if (results.tables[0].columns.length > 0) {
-            this.props.selectedSchema.attributeCols = getColumns(results.tables[0].columns, ['id', 'ids_table']);
-          }
-        }
+        this.props.selectedSchema.tableHeaders = results.tableHeaders;
+        this.props.selectedSchema.attributeCols = results.attributeCols;
         this.setState({
           selectedTable: null,
           error: null
@@ -158,20 +136,16 @@ class Tables extends React.Component {
       });
     }
 
-    for (const table of this.props.selectedSchema.tables) {
-      if (table.id === tableId) {
-
-        this.setState({
-          selectedTable: {
-            tables: [table],
-            tableHeaders: getColumns([table], ['columns', 'id']),
-            attributeCols: getColumns(table.columns, ['id', 'ids_table'])
-          }
-        });
-
-        break;
-      }
+    const table = this.props.selectedSchema.tables.filter(e => e.id === tableId);
+    if (!table) {
+      return;
     }
+
+    const selectedTable = {};
+    selectedTable.tables = table;
+    selectedTable.tableHeaders = this.props.selectedSchema.tableHeaders;
+    selectedTable.attributeCols = this.props.selectedSchema.attributeCols;
+    this.setState({ selectedTable });
   }
 
   changeTab (event, newTabIndex) {
@@ -225,8 +199,8 @@ class Tables extends React.Component {
             <Tab label="All tables" {...a11yProps(1)} />
             { selectedTable && <Tab
               label={<div>
-                  <div>{'Table: ' + selectedTable.tables[0].name}</div>
-                  <div>{'(' + selectedTable.tables[0].columns.length + ' columns)'}</div>
+                  <div>{'Table: ' + selectedTableValue.name}</div>
+                  <div>{'(' + selectedTableValue.columns.length + ' columns)'}</div>
                 </div> }
               {...a11yProps(2)} /> }
           </Tabs>

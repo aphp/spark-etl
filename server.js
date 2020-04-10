@@ -86,6 +86,27 @@ function createLinks(references, tableNameIndex) {
   return links;
 }
 
+
+function getColumns(rows, skip) {
+  if (rows.length === 0) {
+    return [];
+  }
+  const columns = [];
+  const colNames = Object.keys(rows[0]);
+
+  for (let i = 0; i < colNames.length; i++ ) {
+    const name = colNames[i];
+    if (name.startsWith('_') || (skip && skip.includes(name))) {
+      continue;
+    }
+
+    columns.push({name: name})
+  }
+
+  return columns;
+}
+
+
 app.get('/tables', (req, res) => {
   Promise.all([
     pool.query({
@@ -152,9 +173,15 @@ app.get('/tables', (req, res) => {
         tableIndex[column.ids_table].columns.push(column);
       }
 
+      for (const table of tables) {
+        table.columns_count = table.columns.length;
+      }
+
       res.json({
-        tables,
+        tables: tables,
         links: createLinks(references, tableNameIndex),
+        tableHeaders: getColumns(tables, ['columns', 'id']),
+        attributeCols: (tables.length > 0 ? getColumns(tables[0].columns, ['id', 'ids_table']) : [])
       });
     })
     .catch(err => {

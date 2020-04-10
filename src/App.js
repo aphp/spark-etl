@@ -14,10 +14,9 @@ class SelectDatabases extends React.PureComponent {
       databases: [],
       error: null,
     };
-    this.onSelectDatabase = this.onSelectDatabase.bind(this);
   }
 
-  onSelectDatabase(values, pushRoute) {
+  onSelectDatabase = (values, pushRoute) => {
     if (!values) {
       this.props.setSelectedDatabase(null);
       this.props.setSelectedSchema(null);

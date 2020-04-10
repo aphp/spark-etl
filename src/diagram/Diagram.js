@@ -65,14 +65,14 @@ class EngineWidget extends React.Component {
 		}, 500);
 	}
 
-	reroute() {
+	reroute = () => {
 		this.props.engine
 			.getLinkFactories()
 			.getFactory(PathFindingLinkFactory.NAME)
 			.calculateRoutingMatrix();
   }
 
-  zoomToFit() {
+  zoomToFit = () =>  {
     const engine = this.props.engine;
     const initialZoomLevel = 100;
     const boundingRect = this.getNodesBoundingRect();
@@ -88,7 +88,7 @@ class EngineWidget extends React.Component {
     engine.repaintCanvas();
   }
 
-  getNodesBoundingRect() {
+  getNodesBoundingRect = () =>  {
     let minX = Number.POSITIVE_INFINITY;
     let minY = Number.POSITIVE_INFINITY;
     let maxY = Number.NEGATIVE_INFINITY;
@@ -111,27 +111,26 @@ class EngineWidget extends React.Component {
     return {minX, minY, maxX, maxY};
   }
 
+  zoomIn = () =>  {
+    // Create a fake event to trigger zoom in
+    const evt = {type: 'wheel', deltaY: 1};
+    this.props.engine.getActionEventBus().fireAction({event: evt});
+  }
+
+  zoomOut = () =>  {
+    // Create a fake event to trigger zoom out
+    const evt = {type: 'wheel', deltaY: -1};
+    this.props.engine.getActionEventBus().fireAction({event: evt});
+  }
 	render() {
 		return (
       <WorkspaceWidget buttons={
         <div>
           <StyledButton onClick={this.autoDistribute}>Re-distribute</StyledButton>
-          <StyledButton onClick={() => this.zoomToFit()}>Zoom to fit</StyledButton>
-          <StyledButton onClick={() => {
-            // Create a fake event to trigger zoom in
-            const evt = {type: 'wheel', deltaY: 1};
-            this.props.engine.getActionEventBus().fireAction({event: evt});
-           	}}>
-               Zoom in
-          </StyledButton>
-          <StyledButton onClick={() => {
-            // Create a fake event to trigger zoom out
-            const evt = {type: 'wheel', deltaY: -1};
-            this.props.engine.getActionEventBus().fireAction({event: evt});
-            }}>
-               Zoom out
-          </StyledButton>
-          <StyledButton onClick={() => this.props.showHideColumns()}>{ this.props.showColumns ? 'Hide columns' : 'Show columns' }</StyledButton>
+          <StyledButton onClick={this.zoomToFit}>Zoom to fit</StyledButton>
+          <StyledButton onClick={this.zoomIn}>Zoom in</StyledButton>
+          <StyledButton onClick={this.zoomOut}>Zoom out</StyledButton>
+          <StyledButton onClick={this.props.showHideColumns}>{ this.props.showColumns ? 'Hide columns' : 'Show columns' }</StyledButton>
         </div>}>
 				<StyledCanvasWidget>
 					<CanvasWidget engine={this.props.engine} />
@@ -150,10 +149,9 @@ class Diagram extends React.PureComponent {
       showColumns: false,
       isLoading: true
     }
-    this.showHideColumns = this.showHideColumns.bind(this);
   }
 
-  showHidePorts(showColumns) {
+  showHidePorts = (showColumns) => {
     for (const table of this.props.tables) {
       const node = this.state.nodesIndex[table.id];
 
@@ -174,7 +172,7 @@ class Diagram extends React.PureComponent {
     }
   }
 
-  showHideColumns() {
+  showHideColumns = () => {
     const showColumns = !this.state.showColumns;
     this.showHidePorts(showColumns);
     this.setState({showColumns});

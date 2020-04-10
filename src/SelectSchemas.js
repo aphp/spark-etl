@@ -10,7 +10,6 @@ class SelectSchemas extends React.PureComponent {
       schemas: [],
       error: null,
     };
-    this.onSelectSchema = this.onSelectSchema.bind(this);
   }
 
   componentDidMount() {
@@ -44,7 +43,7 @@ class SelectSchemas extends React.PureComponent {
     );
   }
 
-  onSelectSchema(values, pushRoute) {
+  onSelectSchema = (values, pushRoute) => {
     if (!values) {
       this.props.setSelectedSchema(null);
       return;

@@ -110,8 +110,6 @@ class Tables extends React.PureComponent {
   constructor(props) {
     super(props);
     this.state = {tables: [], tabIndex: 0, searchText: '', isLoading: true};
-    this.selectByTableId = this.selectByTableId.bind(this);
-    this.changeTab = this.changeTab.bind(this);
   }
 
   componentDidMount() {
@@ -163,7 +161,7 @@ class Tables extends React.PureComponent {
     );
   }
 
-  selectByTableId(tableId) {
+  selectByTableId = (tableId) => {
     if (!tableId) {
       this.setState({
         selectedTable: null
@@ -182,9 +180,27 @@ class Tables extends React.PureComponent {
     this.setState({ selectedTable });
   }
 
-  changeTab (event, newTabIndex) {
+  changeTab = (event, newTabIndex) => {
     this.setState({tabIndex: newTabIndex});
   };
+
+  onSelectTable = (values) => {
+    this.selectByTableId(values && values.id);
+  }
+
+  onSelectedDiagramTable = (e) => {
+    if (!e.isSelected) {
+      return;
+    }
+    this.selectByTableId(e.entity.id);
+  };
+
+
+  updateSearchText = (e) => {
+    const searchText = e.target.value;
+    applySearchFilter(this.props.selectedSchema, searchText);
+    this.setState({ searchText: searchText });
+  }
 
   render() {
     const {selectedSchema, classes} = this.props;
@@ -201,31 +217,12 @@ class Tables extends React.PureComponent {
       return <CircularIndeterminate size="100px"/>;
     }
 
-
-    const onSelectTable = values => {
-      this.selectByTableId(values && values.id);
-    };
-
-    const onSelectedDiagramTable = e => {
-      if (!e.isSelected) {
-        return;
-      }
-      this.selectByTableId(e.entity.id);
-    };
-
-
-    const updateSearchText = e => {
-      const searchText = e.target.value;
-      applySearchFilter(this.props.selectedSchema, searchText);
-      this.setState({ searchText: searchText });
-    }
-
     const selectedTable = this.state.selectedTable;
     const selectedTableValue = selectedTable ? selectedTable.tables[0] : null;
     return (
       <div className={classes.root}>
         <SchemaStats selectedSchema={selectedSchema}/>
-        <Select label="tables" options={selectedSchema.tables} onChange={onSelectTable} selectedValue={selectedTableValue}></Select>
+        <Select label="tables" options={selectedSchema.tables} onChange={this.onSelectTable} selectedValue={selectedTableValue}></Select>
         <AppBar position="static">
         <Toolbar>
           <Tabs value={this.state.tabIndex} onChange={this.changeTab} aria-label="Tabs">
@@ -238,7 +235,7 @@ class Tables extends React.PureComponent {
                 </div> }
               {...a11yProps(2)} /> }
           </Tabs>
-          <SearchInput updateSearchText={updateSearchText} searchText={this.state.searchText}/>
+          <SearchInput updateSearchText={this.updateSearchText} searchText={this.state.searchText}/>
         </Toolbar>
         </AppBar>
         <TabPanel value={this.state.tabIndex} index={0}>
@@ -246,7 +243,7 @@ class Tables extends React.PureComponent {
             tables={selectedSchema.tables}
             links={selectedSchema.links}
             selectedTable={selectedTable}
-            onSelected={onSelectedDiagramTable}/>}
+            onSelected={this.onSelectedDiagramTable}/>}
         </TabPanel>
         <TabPanel value={this.state.tabIndex} index={1}>
           <DataGrid className={classes.selectedTable} schema={selectedSchema}/>

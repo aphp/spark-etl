@@ -78,7 +78,7 @@ function TableData({table, columns, attributeCols}) {
 }
 
 function DataGrid({ schema }) {
-  if (!schema) {
+  if (!schema || schema.tables.length === 0) {
     return null;
   }
 

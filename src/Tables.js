@@ -216,10 +216,10 @@ class Tables extends React.Component {
           </Diagram>}
         </TabPanel>
         <TabPanel value={this.state.tabIndex} index={1}>
-          { selectedSchema.tables.length > 0  && <DataGrid className={classes.selectedTable} schema={selectedSchema}/> }
+          <DataGrid className={classes.selectedTable} schema={selectedSchema}/>
         </TabPanel>
         <TabPanel value={this.state.tabIndex} index={2}>
-          { selectedTable && <DataGrid className={classes.selectedTable} schema={selectedTable}/> }
+          <DataGrid className={classes.selectedTable} schema={selectedTable}/>
         </TabPanel>
       </div>
     );

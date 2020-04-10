@@ -64,6 +64,8 @@ function hasSearchText(col, attributeCols, filter) {
 function applySearchFilter(schema, filter) {
   const { tables, tableHeaders, attributeCols } = schema;
   let changed = false;
+  let visibleColumns = 0;
+  let visibleTable = 0;
 
   for (let i = 0; i < tables.length; i++) {
     const row = tables[i];
@@ -79,6 +81,9 @@ function applySearchFilter(schema, filter) {
       tableChanged = tableChanged || colChanged;
       col._display = hasText;
       row._hasColumnDisplay = row._hasColumnDisplay || col._display;
+      if (hasText) {
+        visibleColumns++;
+      }
     }
 
     row._forceUpdate = tableChanged;
@@ -91,9 +96,14 @@ function applySearchFilter(schema, filter) {
       changed = changed || (row._display !== hasText);
       row._display = hasText;
     }
+    if (row._display) {
+      visibleTable++;
+    }
   }
 
   schema._forceUpdate = changed;
+  schema.visibleTables = visibleTable;
+  schema.visibleColumns = visibleColumns;
 }
 
 class Tables extends React.PureComponent {

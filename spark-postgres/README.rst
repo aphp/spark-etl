@@ -61,9 +61,10 @@ Datasource Usage
       .option("table","thePgTable")     
       .option("host","localhost")
       .option("database","myDb")
+      .option("deleteSet","delete_date = now()") // this update statement will be applied when the row is not in the candidate table anymore
       .option("user","myUser")
       .option("schema","mySchema")
-      .mode(org.apache.spark.sql.SaveMode.Overwrite)
+      .mode(org.apache.spark.sql.SaveMode.Overwrite) // this drops the table and recreates it from scratch
       .save
 
       // this applies an optimized SCD1 from the spark dataframe into postgres with 4 threads
@@ -73,6 +74,7 @@ Datasource Usage
       ((1,1,"bob")::(2,3,"jim")::Nil).toDF("bookId", "clienId", "content")
       .write.format("postgres")
       .option("type","scd1")
+      .option("filter","thecol = 31") // only fetch the rows matching the predicate for scd1
       .option("partitions",4)
       .option("joinKey","bookId,clienId")
       .option("table","thePgTable")     
@@ -95,6 +97,8 @@ Datasource Usage
       .option("joinKey","bookId,clienId")
       .option("table","thePgTable")     
       .option("host","localhost")
+      .option("kill-locks","true") // this will kill the query that would lock the table if droped
+      .option("bulkLoadMode","csv") // choose the copy strategy (csv/stream)
       .option("user","myUser")
       .option("database","myDb")
       .option("filter","col = 'value' AND col2 = 1")

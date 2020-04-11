@@ -948,7 +948,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
          |SELECT $insertCol
          |FROM "$insertTmp"
          |""".stripMargin
-    logger.warn(query)
+    logger.info(query)
     query
   }
 
@@ -969,7 +969,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
          |SELECT $insertCol, null as "$endDatetimeCol"
          |FROM "$insertTmp"
          |""".stripMargin
-    logger.warn(query)
+    logger.info(query)
     query
   }
 

@@ -80,7 +80,7 @@ object HiveToPostgres extends App with LazyLogging {
               .save
           }
           case "full" => {
-            logger.warn("type load" + table.typeLoad)
+            logger.warn("type load" + table.typeLoad.getOrElse("scd1"))
 
             pg.tableTruncate(table.tablePg)
             df.write.format("postgres")

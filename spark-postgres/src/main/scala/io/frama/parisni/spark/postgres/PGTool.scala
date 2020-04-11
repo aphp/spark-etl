@@ -729,7 +729,6 @@ object PGTool extends java.io.Serializable with LazyLogging {
       REINDEX TABLE "$schema"."$table"
     """
 
-    logger.warn(s"Recreating indexes from $schema.$table")
     sqlExec(url, query2, password)
   }
 

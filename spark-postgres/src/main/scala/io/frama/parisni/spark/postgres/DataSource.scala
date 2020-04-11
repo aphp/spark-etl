@@ -73,7 +73,7 @@ class PostgresRelation(val parameters: Map[String, String]
     val killLocks = conf.getKillLocks.get
     val swapLoad = conf.getSwapLoad.get
 
-    logger.warn("is_overwrite" + overwrite)
+    logger.warn("is_overwrite " + overwrite)
 
     // Overwrite bulk-loading strategy:
     // Bulk-load a temporary table and when done

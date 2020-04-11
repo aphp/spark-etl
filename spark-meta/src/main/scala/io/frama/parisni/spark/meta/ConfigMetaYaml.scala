@@ -16,6 +16,7 @@ object ConfigMetaYaml extends DefaultYamlProtocol {
                     , dbType: String
                     , host: String
                     , db: String
+                    , schemaRegexFilter: Option[String]
                     , user: String
                     , isActive: Option[Boolean]
                     , extractor: Option[ExtractStrategy]
@@ -32,7 +33,7 @@ object ConfigMetaYaml extends DefaultYamlProtocol {
   case class ExtractStrategy(featureExtractImplClass: Option[String] = Some("io.frama.parisni.spark.meta.extractor.DefaultFeatureExtractImpl"))
 
   implicit val primaryColorFormat = yamlFormat1(ExtractStrategy)
-  implicit val colorFormat = yamlFormat7(Schema)
+  implicit val colorFormat = yamlFormat8(Schema)
   implicit val paletteFormat = yamlFormat7(Database)
 
 }

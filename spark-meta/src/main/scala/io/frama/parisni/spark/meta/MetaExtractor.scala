@@ -31,13 +31,13 @@ class MetaExtractor(extractor: FeatureExtractTrait, spark: SparkSession, host: S
       .load
   }
 
-  def initTables(dbName: String): Unit = {
+  def initTables(dbName: String, schemaRegexFilter: Option[String]): Unit = {
     val result = dbType match {
       case "postgresql" => getPostgresTable(dbName)
       case "spark" => getSparkTable(dbName)
     }
-
     var res = extractor.extractSource(result)
+      .filter(col("lib_schema").rlike(schemaRegexFilter.getOrElse(".*")))
 
     // extraire la pk
     res = extractor.extractPrimaryKey(res)

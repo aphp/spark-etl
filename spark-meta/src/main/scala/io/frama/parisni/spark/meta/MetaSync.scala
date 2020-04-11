@@ -33,7 +33,7 @@ object MetaSync extends App with LazyLogging {
 
           // get the information
           val extract = new MetaExtractor(source,spark)
-          extract.initTables(source.dbName)
+          extract.initTables(source.dbName, source.schemaRegexFilter)
 
           // write to db
           val load = new MetaLoader(database.hostPg, database.databasePg, database.schemaPg, database.userPg)

@@ -36,7 +36,7 @@ object HiveToPostgres extends App with LazyLogging {
   try {
     for (table <- database.tables.getOrElse(Nil)) {
       if (table.isActive.getOrElse(true)) {
-        logger.warn(f"LOADING $table.tableHive")
+        logger.warn(f"LOADING ${table.tableHive}")
         val query = f"select * from ${table.schemaHive}.${table.tableHive}"
 
         var dfHive = table.format.getOrElse("hive") match {
@@ -96,7 +96,7 @@ object HiveToPostgres extends App with LazyLogging {
           }
           case _ => throw new UnsupportedOperationException
         }
-        logger.warn(f"LOADED $table.tableHive")
+        logger.warn(f"LOADED ${table.tableHive}")
       }
     }
   } finally {

@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const pgStructure = require('pg-structure').default;
 const Pool = require('pg').Pool
+const bodyParser = require('body-parser')
 
 // DB credentials
 const database = process.env.POSTGRES_DB || 'docker';
@@ -23,6 +24,7 @@ pool.on('connect', (client) => {
 });
 
 const app = express();
+app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'build')));
 
 app.get('/schema', function (req, res) {
@@ -191,6 +193,45 @@ app.get('/tables', (req, res) => {
 
 app.get('/', function (req, res) {
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
+});
+
+const allowedColumnNames = ['comment_fonctionnel', 'comment_technique', 'typ_column'];
+app.post('/columns', function (req, res) {
+  if (allowedColumnNames.indexOf(req.body.colName) === -1) {
+    res.status(500).send({message: 'unknown column ' + req.body.colName});
+    return;
+  }
+  let colName = req.body.colName === 'name' ? 'lib_column' : 'name';
+  colName += '_m';
+  pool.query({
+    text: `UPDATE meta_column set ${colName} = $1 where ids_column = $2`,
+      values: [req.body.text, req.body.id]
+  }).then( _ => {
+    res.json({message: 'ok'});
+  }).catch( err => {
+    console.log('An error occured updating columns', err);
+    res.status(500).send({err});
+  });
+});
+
+const allowedTableColumnNames = ['comment_fonctionnel', 'comment_technique', 'typ_table'];
+app.post('/tables', function (req, res) {
+  if (allowedTableColumnNames.indexOf(req.body.colName) === -1) {
+    res.status(500).send({message: 'unknown column ' + req.body.colName});
+    return;
+  }
+  let colName = req.body.colName === 'name' ? 'lib_table' : 'name';
+  colName += '_m';
+  pool.query({
+    text: `UPDATE meta_table set ${colName} = $1 where ids_table = $2`,
+      values: [req.body.text, req.body.id]
+  }).then( _ => {
+    res.json({message: 'ok'});
+  }).catch( err => {
+    console.log('An error occured updating tables', err);
+    res.status(500).send({err});
+  });
+  // res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
 const serverPort = process.env.PORT || 8080;

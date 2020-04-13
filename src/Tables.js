@@ -108,10 +108,28 @@ function applySearchFilter(schema, filter) {
   schema.visibleColumns = visibleColumns;
 }
 
+async function postData(url = '', data = {}) {
+  // Default options are marked with *
+  const response = await fetch(url, {
+    method: 'POST', // *GET, POST, PUT, DELETE, etc.
+    mode: 'cors', // no-cors, *cors, same-origin
+    cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+    credentials: 'same-origin', // include, *same-origin, omit
+    headers: {
+      'Content-Type': 'application/json'
+      // 'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    redirect: 'follow', // manual, *follow, error
+    referrerPolicy: 'no-referrer', // no-referrer, *client
+    body: JSON.stringify(data) // body data type must match "Content-Type" header
+  });
+  return response; // parses JSON response into native JavaScript objects
+}
+
 class Tables extends React.PureComponent {
   constructor(props) {
     super(props);
-    this.state = {tables: [], tabIndex: 0, searchText: '', isLoading: true};
+    this.state = {tables: [], tabIndex: 0, searchText: '', isLoading: true, updateId: 0};
   }
 
   componentDidMount() {
@@ -161,6 +179,40 @@ class Tables extends React.PureComponent {
         });
       }
     );
+  }
+
+  updateTables = (row, col, text) => {
+    postData('/tables', { id: row.id, colName: col, text: text })
+      .then((res) => {
+        if (res.status !== 200) {
+          res.json().then(err => {
+            console.error(`error updating row table: ${row.id}, name: ${col} with value: ${text}: ${err}`); // JSON data parsed by `response.json()` call
+          });
+          return;
+        }
+        row[col] = text;
+        this.setState({updateId: this.state.updateId + 1})
+        console.log(`successfully updated table: ${row.id}, name: ${col} with value: ${text}`); // JSON data parsed by `response.json()` call
+      }).catch((err) => {
+        console.error(`error updating row table: ${row.id}, name: ${col} with value: ${text}: ${err}`); // JSON data parsed by `response.json()` call
+      });
+  }
+
+  updateColumns = (row, col, text) => {
+    postData('/columns', { id: row.id, colName: col, text: text })
+      .then((res) => {
+        if (res.status !== 200) {
+          res.json().then(err => {
+            console.error(`error updating row column: ${row.id}, name: ${col} with value: ${text}: ${err}`); // JSON data parsed by `response.json()` call
+          });
+          return;
+        }
+        row[col] = text;
+        this.setState({updateId: this.state.updateId + 1})
+        console.log(`successfully updated column: ${row.id}, name: ${col} with value: ${text}`); // JSON data parsed by `response.json()` call
+      }).catch((err) => {
+        console.error(`error updating row column: ${row.id}, name: ${col} with value: ${text}: ${err}`); // JSON data parsed by `response.json()` call
+      });
   }
 
   selectByTableId = (tableId) => {
@@ -219,6 +271,8 @@ class Tables extends React.PureComponent {
       return <CircularIndeterminate size="100px"/>;
     }
 
+    const alltablesKey = 'alltables-' + this.state.updateId;
+    const singleTableKey = 'singletable-' + this.state.updateId;
     const selectedTable = this.state.selectedTable;
     const selectedTableValue = selectedTable ? selectedTable.tables[0] : null;
     return (
@@ -248,10 +302,22 @@ class Tables extends React.PureComponent {
             onSelected={this.onSelectedDiagramTable}/>}
         </TabPanel>
         <TabPanel value={this.state.tabIndex} index={1}>
-          <DataGrid className={classes.selectedTable} schema={selectedSchema} searchText={this.state.searchText}/>
+          <DataGrid
+            key={alltablesKey}
+            className={classes.selectedTable}
+            schema={selectedSchema}
+            searchText={this.state.searchText}
+            updateColumns={this.updateColumns}
+            updateTables={this.updateTables}/>
         </TabPanel>
         <TabPanel value={this.state.tabIndex} index={2}>
-          <DataGrid className={classes.selectedTable} schema={selectedTable} searchText={this.state.searchText}/>
+          <DataGrid
+            key={singleTableKey}
+            className={classes.selectedTable}
+            schema={selectedTable}
+            searchText={this.state.searchText}
+            updateColumns={this.updateColumns}
+            updateTables={this.updateTables}/>
         </TabPanel>
       </div>
     );

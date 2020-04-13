@@ -7,6 +7,7 @@ import TableContainer from '@material-ui/core/TableContainer';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Paper from '@material-ui/core/Paper';
+import Editable from './helpers/Editable.js';
 
 const StyledHeader = withStyles(theme => ({
   head: {
@@ -18,21 +19,56 @@ const StyledHeader = withStyles(theme => ({
 
 
 class TextHightlighter extends React.PureComponent {
-  render() {
-    const {text, highlight} = this.props;
+  constructor(props) {
+    super(props)
+    this.contentEditable = React.createRef();
+    this.state = {
+      text: props.text  // todo: only use props by setting on save
+    }
+  };
 
-    if (!highlight || highlight === '' || typeof text !== 'string') {
-      return <span>{text}</span>;
+  save = evt => {
+    if (evt.target.value !== this.props.text) {
+      this.props.updateText(evt.target.value);
+      this.setState({text: evt.target.value});
+    }
+  };
+
+  onChange = evt => {
+    this.setState({text: evt.target.value});
+  }
+
+  render() {
+    const {highlight} = this.props;
+
+    if (typeof this.props.text !== 'string' || !this.props.updateText) {
+      return <span>{this.props.text}</span>;
+    }
+    let displayText;
+    if (!highlight || highlight === '') {
+      displayText = this.props.text;
+    } else {
+      const parts = this.props.text.split(new RegExp(`(${highlight})`, 'gi'));
+      displayText = parts.map((part, i) => {
+        if (part.toLowerCase() === highlight.toLowerCase()) {
+          return `<span style="background-color: orange">${part}</span>`;
+        }
+        return part;
+      }).join('');
     }
 
-
-    // Split on highlight term and include term into parts, ignore case
-    const parts = text.split(new RegExp(`(${highlight})`, 'gi'));
-    return <span> { parts.map((part, i) =>
-        <span key={i} style={part.toLowerCase() === highlight.toLowerCase() ? { backgroundColor: 'orange' } : {} }>
-            { part }
-        </span>)
-    } </span>;
+    return <Editable
+      text={displayText}
+      childRef={this.contentEditable}
+      type="input">
+      <textarea
+        ref={this.contentEditable}
+        type="text"
+        rows="5"
+        value={this.state.text}
+        onChange={this.onChange}
+        onBlur={this.save}/>
+    </Editable>
   }
 }
 
@@ -40,6 +76,11 @@ class DataRow extends React.Component {
   shouldComponentUpdate(nextProps, nextState) {
     return (nextProps.row._forceUpdate);
   }
+
+  updateText = (col, text) => {
+    this.props.updateText(this.props.row, col, text);
+  }
+
   render() {
     const {row, useName, cells, className, searchText} = this.props;
 
@@ -51,7 +92,10 @@ class DataRow extends React.Component {
       <TableRow className={className} hover={true}>
       {cells.map(col => (
         <TableCell key={'table-cell-' + row._key + '-' + col.name}>
-          <TextHightlighter text={useName ? row[col.name] : col.name} highlight={searchText}/>
+          <TextHightlighter
+            text={useName ? row[col.name] : col.name}
+            highlight={searchText}
+            updateText={this.props.updateText ? (text => this.updateText(col.name, text)) : null}/>
         </TableCell>
       ))}
     </TableRow>
@@ -60,6 +104,10 @@ class DataRow extends React.Component {
 }
 
 class AttributeTable extends React.Component {
+  shouldComponentUpdate(nextProps, nextState) {
+    return (nextProps.table._forceUpdate);
+  }
+
   render() {
     const {table, columns, attributeCols, searchText} = this.props;
     if (!table._hasColumnDisplay) {
@@ -76,7 +124,8 @@ class AttributeTable extends React.Component {
                 row={table}
                 useName={false}
                 cells={attributeCols}
-                searchText={searchText}/>
+                searchText={searchText}
+                />
             </TableHead>
             <TableBody>
               {table.columns.map(tableColumn => (
@@ -85,7 +134,8 @@ class AttributeTable extends React.Component {
                   useName={true}
                   cells={attributeCols}
                   key={table._key + '-attributes-' + tableColumn.name}
-                  searchText={searchText}/>
+                  searchText={searchText}
+                  updateText={this.props.updateText}/>
               ))}
             </TableBody>
           </Table>
@@ -107,8 +157,19 @@ class TableData extends React.Component {
 
     return (
       <React.Fragment>
-        <DataRow className={classes.tableHead} key={table._key + '-content'} row={table} useName={true} cells={columns} searchText={searchText}></DataRow>
-        <AttributeTable table={table} columns={columns} attributeCols={attributeCols} searchText={searchText}></AttributeTable>
+        <DataRow
+          className={classes.tableHead}
+          key={table._key + '-content'}
+          row={table} useName={true}
+          cells={columns}
+          searchText={searchText}
+          updateText={this.props.updateTables}/>
+        <AttributeTable
+          table={table}
+          columns={columns}
+          attributeCols={attributeCols}
+          searchText={searchText}
+          updateText={this.props.updateColumns}/>
       </React.Fragment>
     );
   }
@@ -154,7 +215,9 @@ class DataGrid extends React.Component {
                 key={'tabledata-' + table._key}
                 table={table} columns={tableHeaders}
                 attributeCols={attributeCols}
-                searchText={searchText}/>
+                searchText={searchText}
+                updateColumns={this.props.updateColumns}
+                updateTables={this.props.updateTables}/>
             ))}
           </TableBody>
         </Table>

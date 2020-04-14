@@ -140,7 +140,7 @@ class EngineWidget extends React.Component {
 	}
 }
 
-class Diagram extends React.PureComponent {
+class Diagram extends React.Component {
 	constructor(props) {
     super(props);
     this.state = {
@@ -149,6 +149,12 @@ class Diagram extends React.PureComponent {
       showColumns: false,
       isLoading: true
     }
+  }
+
+  shouldComponentUpdate(nextProps, nextState) {
+    return (nextProps.forceUpdate ||
+      this.state.engine !== nextState.engine ||
+       this.state.showColumns !== nextState.showColumns);
   }
 
   showHidePorts = (showColumns) => {

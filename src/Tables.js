@@ -299,6 +299,7 @@ class Tables extends React.PureComponent {
             tables={selectedSchema.tables}
             links={selectedSchema.links}
             selectedTable={selectedTable}
+            forceUpdate={selectedSchema._forceUpdate}
             onSelected={this.onSelectedDiagramTable}/>}
         </TabPanel>
         <TabPanel value={this.state.tabIndex} index={1}>

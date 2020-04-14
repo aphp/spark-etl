@@ -89,7 +89,7 @@ function createLinks(references, tableNameIndex) {
 }
 
 
-function getColumns(rows, skip) {
+function getColumns(rows, skip, editableColumns) {
   if (rows.length === 0) {
     return [];
   }
@@ -102,12 +102,16 @@ function getColumns(rows, skip) {
       continue;
     }
 
-    columns.push({name: name})
+    const editable = editableColumns.indexOf(name) !== -1;
+    columns.push({name: name, editable: editable});
   }
 
   return columns;
 }
 
+
+const allowedColumnNames = ['comment_fonctionnel', 'comment_technique', 'typ_column'];
+const allowedTableColumnNames = ['comment_fonctionnel', 'comment_technique', 'typ_table'];
 
 app.get('/tables', (req, res) => {
   Promise.all([
@@ -182,8 +186,8 @@ app.get('/tables', (req, res) => {
       res.json({
         tables: tables,
         links: createLinks(references, tableNameIndex),
-        tableHeaders: getColumns(tables, ['columns', 'id']),
-        attributeCols: (tables.length > 0 ? getColumns(tables[0].columns, ['id', 'ids_table']) : [])
+        tableHeaders: getColumns(tables, ['columns', 'id'], allowedTableColumnNames),
+        attributeCols: (tables.length > 0 ? getColumns(tables[0].columns, ['id', 'ids_table'], allowedColumnNames) : [])
       });
     })
     .catch(err => {
@@ -195,13 +199,12 @@ app.get('/', function (req, res) {
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
-const allowedColumnNames = ['comment_fonctionnel', 'comment_technique', 'typ_column'];
 app.post('/columns', function (req, res) {
   if (allowedColumnNames.indexOf(req.body.colName) === -1) {
     res.status(500).send({message: 'unknown column ' + req.body.colName});
     return;
   }
-  let colName = req.body.colName === 'name' ? 'lib_column' : 'name';
+  let colName = req.body.colName === 'name' ? 'lib_column' : req.body.colName;
   colName += '_m';
   pool.query({
     text: `UPDATE meta_column set ${colName} = $1 where ids_column = $2`,
@@ -214,13 +217,12 @@ app.post('/columns', function (req, res) {
   });
 });
 
-const allowedTableColumnNames = ['comment_fonctionnel', 'comment_technique', 'typ_table'];
 app.post('/tables', function (req, res) {
   if (allowedTableColumnNames.indexOf(req.body.colName) === -1) {
     res.status(500).send({message: 'unknown column ' + req.body.colName});
     return;
   }
-  let colName = req.body.colName === 'name' ? 'lib_table' : 'name';
+  let colName = req.body.colName === 'name' ? 'lib_table' : req.body.colName;
   colName += '_m';
   pool.query({
     text: `UPDATE meta_table set ${colName} = $1 where ids_table = $2`,

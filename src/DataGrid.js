@@ -23,14 +23,19 @@ class TextHightlighter extends React.PureComponent {
     super(props)
     this.contentEditable = React.createRef();
     this.state = {
-      text: props.text  // todo: only use props by setting on save
+      text: props.text || ''
     }
   };
 
   save = evt => {
-    if (evt.target.value !== this.props.text) {
-      this.props.updateText(evt.target.value);
-      this.setState({text: evt.target.value});
+    const value = evt.target.value;
+    // This is still empty text
+    if (this.props.text === null && value.trim().length === 0) {
+      return;
+    }
+    if (value !== this.props.text) {
+      this.props.updateText(value);
+      this.setState({text: value});
     }
   };
 
@@ -39,22 +44,23 @@ class TextHightlighter extends React.PureComponent {
   }
 
   render() {
-    const {highlight} = this.props;
+    const {highlight, editable, text} = this.props;
 
-    if (typeof this.props.text !== 'string' || !this.props.updateText) {
-      return <span>{this.props.text}</span>;
-    }
     let displayText;
-    if (!highlight || highlight === '') {
-      displayText = this.props.text;
+    if (!highlight || highlight === '' || typeof text !== 'string') {
+      displayText = text;
     } else {
-      const parts = this.props.text.split(new RegExp(`(${highlight})`, 'gi'));
+      const parts = text.split(new RegExp(`(${highlight})`, 'gi'));
       displayText = parts.map((part, i) => {
         if (part.toLowerCase() === highlight.toLowerCase()) {
           return `<span style="background-color: orange">${part}</span>`;
         }
         return part;
       }).join('');
+    }
+
+    if (!editable || !this.props.updateText) {
+      return <span dangerouslySetInnerHTML={{ __html: displayText}}></span>;
     }
 
     return <Editable
@@ -95,7 +101,8 @@ class DataRow extends React.Component {
           <TextHightlighter
             text={useName ? row[col.name] : col.name}
             highlight={searchText}
-            updateText={this.props.updateText ? (text => this.updateText(col.name, text)) : null}/>
+            updateText={this.props.updateText ? (text => this.updateText(col.name, text)) : null}
+            editable={col.editable}/>
         </TableCell>
       ))}
     </TableRow>
@@ -104,10 +111,6 @@ class DataRow extends React.Component {
 }
 
 class AttributeTable extends React.Component {
-  shouldComponentUpdate(nextProps, nextState) {
-    return (nextProps.table._forceUpdate);
-  }
-
   render() {
     const {table, columns, attributeCols, searchText} = this.props;
     if (!table._hasColumnDisplay) {

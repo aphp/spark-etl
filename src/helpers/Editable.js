@@ -10,6 +10,7 @@ const Editable = ({
   ...props
 }) => {
   const [isEditing, setEditing] = useState(false);
+  const isTextarea = children.type === 'textarea';
 
   /*
     using use effect, when isEditing state is changing, check whether it is set to true, if true, then focus on the reference element
@@ -25,15 +26,16 @@ const Editable = ({
     const keys = ["Escape", "Tab"];
     const enterKey = "Enter";
     const allKeys = [...keys, enterKey]; // All keys array
-
-  /*
-    - For textarea, check only Escape and Tab key and set the state to false
-    - For everything else, all three keys will set the state to false
-  */
-    if ((type === "textarea" && keys.indexOf(key) > -1) ||(type !== "textarea" && allKeys.indexOf(key) > -1)) {
+    /*
+      - For textarea, check only Escape and Tab key and set the state to false
+      - For everything else, all three keys will set the state to false
+    */
+    if ((isTextarea && keys.indexOf(key) > -1) ||(!isTextarea && allKeys.indexOf(key) > -1)) {
       setEditing(false);
     }
   };
+  // display an space if no string, so that it can be clickable
+  const displayText = text == null || text.length === 0 ? '&nbsp;' : text;
   return (
     <section {...props}>
       {isEditing ? (
@@ -44,7 +46,7 @@ const Editable = ({
         </div>
       ) : (
         <div onClick={() => setEditing(true)} style={{cursor:'pointer'}}>
-          <span dangerouslySetInnerHTML={{ __html: text}}>
+          <span dangerouslySetInnerHTML={{ __html: displayText}}>
           </span>
         </div>
       )}

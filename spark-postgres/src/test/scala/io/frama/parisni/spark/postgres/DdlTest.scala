@@ -345,9 +345,29 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
     data.write.format("io.frama.parisni.spark.postgres")
       .option("url", getPgUrl)
       .option("type", "full")
-      .option("table", "TEST_ARRAY")
+      .option("table", "TEST_STREAM_BULK_LOAD")
       .option("bulkLoadMode", "stream")
       .save
+  }
+
+  @Test
+  def verifyPostgresBulkLoadModeError(): Unit = {
+    import spark.implicits._
+    val fakeData = ((1, "asdf", 1L) :: Nil).toDF("INT_COL", "STRING_COL", "LONG_COL")
+    val schema = fakeData.schema
+    val data = ((1, "asdf", 1L, "err") :: Nil).toDF("INT_COL", "STRING_COL", "LONG_COL", "ERR_COL")
+
+    getPgTool().tableCreate("TEST_STREAM_BULK_LOAD", schema, isUnlogged = true)
+
+    assertThrows[RuntimeException](
+      data.write.format("io.frama.parisni.spark.postgres")
+        .option("url", getPgUrl)
+        .option("type", "full")
+        .option("table", "TEST_STREAM_BULK_LOAD")
+        .option("bulkLoadMode", "stream")
+        .save
+    )
+
   }
 
 }

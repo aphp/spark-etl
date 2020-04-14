@@ -112,12 +112,23 @@ object Constraints extends LazyLogging with DefaultYamlProtocol {
     ret
   }
 
-  def fromSchema(schema: Schema): DataFrame => Try[DataFrame] = {
+  // Environment variable to disable all but manual checks
+  val ENV_VAR_SKIP = "SKIP_QUALITY_CONSTRAINTS"
+  lazy val skipped: Boolean = ! Option(System.getenv(ENV_VAR_SKIP)).forall(_.isEmpty)
+
+  def skippable(doIt: => DataFrame => Try[DataFrame]): DataFrame => Try[DataFrame] =
+    if (skipped) Success(_) else doIt
+
+  def fromSchema(schema: Schema): DataFrame => Try[DataFrame] = skippable {
     val checks = schema.checks
     apply(checks :_*)
   }
-  def fromYaml(schemaYaml: String): DataFrame => Try[DataFrame] = fromSchema(yaml2Schema(schemaYaml))
-  def fromYamlFile(schemaYamlPath: String): DataFrame => Try[DataFrame] = {
+
+  def fromYaml(schemaYaml: String): DataFrame => Try[DataFrame] = skippable {
+    fromSchema(yaml2Schema(schemaYaml))
+  }
+
+  def fromYamlFile(schemaYamlPath: String): DataFrame => Try[DataFrame] = skippable {
     val source = Source.fromFile(schemaYamlPath)
     try {
       fromYaml(source.mkString)

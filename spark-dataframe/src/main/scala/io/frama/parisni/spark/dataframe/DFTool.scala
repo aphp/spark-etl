@@ -366,6 +366,7 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
     })
   }
 
+
   def toDate(c: Column, format: String): Column = {
     expr("TO_timestamp(CAST(UNIX_TIMESTAMP(`" + c.toString() + "`, '" + format + "') AS TIMESTAMP))")
   }

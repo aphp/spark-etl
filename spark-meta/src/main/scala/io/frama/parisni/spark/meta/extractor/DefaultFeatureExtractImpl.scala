@@ -12,10 +12,11 @@ class DefaultFeatureExtractImpl extends FeatureExtractTrait {
       .withColumn("outil_source", when(col("outil_source").isin("orbis", "hegp", "mediweb", "phedra", "glims", "general", "arem", "ems"), col("outil_source")).otherwise("orbis"))
   }
 
-  def extractPrimaryKey(df: DataFrame): DataFrame = {
+
+    def extractPrimaryKey(df: DataFrame): DataFrame = {
     df.withColumn("is_pk", when((col("lib_column").rlike("^ids_")
       && col("order_column") === lit(1))
-      || (col("lib_schema") === lit("coronaomop")
+      || (col("lib_schema"). rlike ("omop")
       && col("lib_column").rlike("_id$")
       && col("order_column") === lit(1))
       , lit(true))
@@ -26,13 +27,14 @@ class DefaultFeatureExtractImpl extends FeatureExtractTrait {
     df.withColumn("is_fk"
       , when((col("lib_column").rlike("^ids_")
         && col("order_column") =!= lit(1))
-        || (col("lib_schema") === lit("coronaomop")
+        || (col("lib_schema").rlike("omop")
         && col("lib_column").rlike("_id$")
         && col("order_column") =!= lit(1)
         )
         , lit(true))
         .otherwise(lit(false)))
   }
+
 
   def inferForeignKey(df: DataFrame): DataFrame = {
     df.as("s")
@@ -48,7 +50,7 @@ class DefaultFeatureExtractImpl extends FeatureExtractTrait {
       .union(
         df.as("s")
           .filter(col("s.is_fk") === lit(true))
-          .filter(col("s.lib_schema") === lit("coronaomop"))
+          .filter(col("s.lib_schema").rlike("omop"))
           .join(df.as("t"),
             col("t.lib_table") =!= col("s.lib_table")
               && col("t.lib_schema") === col("s.lib_schema")
@@ -69,12 +71,13 @@ class DefaultFeatureExtractImpl extends FeatureExtractTrait {
         , "'FK' as lib_reference")
   }
 
+
   def generateDatabase(df: DataFrame): DataFrame = {
     df.dropDuplicates("lib_database")
       .select("lib_database")
   }
 
-  def generateSchema(df: DataFrame): DataFrame = {
+    def generateSchema(df: DataFrame): DataFrame = {
     df.dropDuplicates("lib_database", "lib_schema")
       .withColumn("is_technical", when(expr(
         """
@@ -82,13 +85,14 @@ class DefaultFeatureExtractImpl extends FeatureExtractTrait {
           OR  (lib_database = 'pg-prod' AND lib_schema in ('eds'))
           OR  (lib_database = 'eds-qua' AND lib_schema in ('eds'))
           OR  (lib_database = 'edsp-prod' AND lib_schema in ('edsp'))
-          OR  (lib_database = 'spark-prod' AND lib_schema in ('edsprod', 'omop_prod', 'coronaomop'))
-          OR  (lib_database = 'omop-prod' AND lib_schema in ('omop'))
+          OR  (lib_database = 'spark-prod' AND lib_schema in ('edsprod', 'omop_prod', 'omop'))
+          OR  (lib_database = 'omop-prod' AND lib_schema rlike ('omop'))
           """)
         , lit(false))
         .otherwise(lit(true)))
       .select("lib_database", "lib_schema", "is_technical")
   }
+
 
   def generateTable(df: DataFrame): DataFrame = {
     df.dropDuplicates("lib_database", "lib_schema", "lib_table")

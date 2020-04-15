@@ -9,6 +9,8 @@ class ConstraintsTest extends QueryTest with SparkSessionTestWrapper {
   import spark.implicits._
   import Constraints.{Schema, Field, ConstraintException}
 
+  assume(! Constraints.skipped, "Constraint checking is skipped by environment variable")
+
   test("Check schema") {
     val df = List(
       ("value", 42)

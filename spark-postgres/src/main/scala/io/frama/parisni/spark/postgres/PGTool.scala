@@ -250,6 +250,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
   }
 
   def killLocks(url: String, table: String, password: String): Int = {
+    logger.warn(s"Looking for locks")
     var killed = 0
     val conn = connOpen(url, password)
     try {
@@ -265,6 +266,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
         st2.setInt(2, pid)
         st2.executeQuery()
         killed += 1
+        logger.warn(s"Killed postgres process $pid")
       }
     } finally {
       conn.close()

@@ -96,7 +96,6 @@ object HiveToPostgres extends App with LazyLogging {
           }
           case _ => throw new UnsupportedOperationException
         }
-        logger.warn(f"LOADED ${table.tableHive}")
       }
     }
   } finally {

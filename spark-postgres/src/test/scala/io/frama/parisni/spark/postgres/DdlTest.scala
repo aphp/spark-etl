@@ -301,6 +301,103 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
     assert(rsCopy.getString(2) == expectedColumnComment)
   }
 
+  @Test
+  def verifyPostgresCopyTableOwner(): Unit = {
+    val db = pg.getEmbeddedPostgres.getPostgresDatabase
+    val conn = db.getConnection()
+
+    conn.createStatement().execute("CREATE TABLE base_table_for_owner()")
+    conn.createStatement().execute("CREATE ROLE ru1 LOGIN")
+    conn.createStatement().execute("ALTER TABLE base_table_for_owner OWNER TO ru1")
+
+    getPgTool().tableCopy("base_table_for_owner", "copy_table_for_owner", copyOwner = true)
+
+    // Check table perms
+    val rsBaseTableOwner = conn.createStatement().executeQuery("SELECT relowner FROM pg_class WHERE relname = 'base_table_for_owner'")
+    rsBaseTableOwner.next()
+    val baseTableOwner = rsBaseTableOwner.getString(1).drop(1).dropRight(1).split(",").map(p => p.split("/")(0)).toSeq
+    rsBaseTableOwner.close()
+
+    val rsCopyTableOwner = conn.createStatement().executeQuery("SELECT relowner FROM pg_class WHERE relname = 'copy_table_for_owner'")
+    rsCopyTableOwner.next()
+    val copyTableOwner = rsCopyTableOwner.getString(1).drop(1).dropRight(1).split(",").map(p => p.split("/")(0)).toSeq
+    rsCopyTableOwner.close()
+
+    assert(baseTableOwner == copyTableOwner)
+
+  }
+
+  @Test
+  def verifyPostgresCopyTablePermissions(): Unit = {
+    val db = pg.getEmbeddedPostgres.getPostgresDatabase
+    val conn = db.getConnection()
+
+    conn.createStatement().execute("CREATE TABLE base_table_for_perms(perm_col int)")
+
+    conn.createStatement().execute("CREATE ROLE ru1 LOGIN INHERIT")
+    conn.createStatement().execute("CREATE ROLE rg1 NOINHERIT")
+    conn.createStatement().execute("CREATE ROLE rg2 NOINHERIT")
+
+    conn.createStatement().execute("GRANT rg1 TO ru1")
+    conn.createStatement().execute("GRANT rg2 TO rg1")
+
+    conn.createStatement().execute("GRANT SELECT ON base_table_for_perms TO PUBLIC")
+    conn.createStatement().execute("GRANT INSERT ON base_table_for_perms TO ru1")
+    conn.createStatement().execute("GRANT UPDATE ON base_table_for_perms TO ru1 WITH GRANT OPTION")
+    conn.createStatement().execute("GRANT INSERT ON base_table_for_perms TO rg1")
+    conn.createStatement().execute("GRANT TRUNCATE ON base_table_for_perms TO rg2")
+
+    conn.createStatement().execute("GRANT INSERT(perm_col) ON base_table_for_perms TO ru1")
+    conn.createStatement().execute("GRANT UPDATE(perm_col) ON base_table_for_perms TO rg1")
+
+    getPgTool().tableCopy("base_table_for_perms", "copy_table_for_perms", copyPermissions = true)
+
+    // Check table perms
+    val rsBaseTablePerms = conn.createStatement().executeQuery("SELECT relacl FROM pg_class WHERE relname = 'base_table_for_perms'")
+    rsBaseTablePerms.next()
+    val baseTablePerms = rsBaseTablePerms.getString(1).drop(1).dropRight(1).split(",").map(p => p.split("/")(0)).toSeq
+    rsBaseTablePerms.close()
+
+    val rsCopyTablePerms = conn.createStatement().executeQuery("SELECT relacl FROM pg_class WHERE relname = 'copy_table_for_perms'")
+    rsCopyTablePerms.next()
+    val copyTablePerms = rsCopyTablePerms.getString(1).drop(1).dropRight(1).split(",").map(p => p.split("/")(0)).toSeq
+    rsCopyTablePerms.close()
+
+    baseTablePerms.foreach(p => assert(copyTablePerms.contains(p)))
+
+
+    // Check columns perms
+    val rsBaseTableColumnsPerms = conn.createStatement().executeQuery(
+      """
+        SELECT attacl
+        |FROM pg_attribute a
+        |  JOIN pg_class c
+        |    ON a.attrelid = c.oid
+        |WHERE c.relname = 'base_table_for_perms'
+        |  AND a.attname = 'perm_col'
+      """.stripMargin)
+    rsBaseTableColumnsPerms.next()
+    val baseTableColumnPerms = rsBaseTableColumnsPerms.getString(1).drop(1).dropRight(1).split(",").map(p => p.split("/")(0)).toSeq
+    rsBaseTableColumnsPerms.close()
+
+    val rsCopyTableColumnPerms = conn.createStatement().executeQuery(
+      """
+        SELECT attacl
+        |FROM pg_attribute a
+        |  JOIN pg_class c
+        |    ON a.attrelid = c.oid
+        |WHERE c.relname = 'copy_table_for_perms'
+        |  AND a.attname = 'perm_col'
+      """.stripMargin
+    )
+    rsCopyTableColumnPerms.next()
+    val copyTableColumnPerms = rsCopyTableColumnPerms.getString(1).drop(1).dropRight(1).split(",").map(p => p.split("/")(0)).toSeq
+    rsCopyTableColumnPerms.close()
+
+    baseTableColumnPerms.foreach(p => assert(copyTableColumnPerms.contains(p)))
+
+  }
+
 
   @Test
   def verifyKillLocks(): Unit = {

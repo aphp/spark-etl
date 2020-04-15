@@ -22,7 +22,7 @@ import org.postgresql.core.BaseConnection
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Promise, TimeoutException}
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 sealed trait BulkLoadMode
 object CSV extends BulkLoadMode
@@ -66,11 +66,12 @@ class PGTool(spark: SparkSession
   /**
    * Copy a table from an other table excluding data
    *
-   * @param tableSrc   String
-   * @param tableTarg  String
-   * @param isUnlogged Boolean
+   * Takes parameters to copy constraints, indexes, storage, comments, owner, permissions
    *
-   *
+   * Limitations:
+   *  - If defaults use functions, the copied table and source table will be using the same function
+   *    and might be functionally linked
+   *  - reloptions are not copied
    */
   def tableCopy(tableSrc: String
                 , tableTarg: String
@@ -79,8 +80,11 @@ class PGTool(spark: SparkSession
                 , copyIndexes: Boolean = false
                 , copyStorage: Boolean = false
                 , copyComments: Boolean = false
+                , copyOwner: Boolean = false
+                , copyPermissions: Boolean = false
                ): PGTool = {
-    PGTool.tableCopy(url, tableSrc, tableTarg, password, isUnlogged, copyConstraints, copyIndexes, copyStorage, copyComments)
+    PGTool.tableCopy(url, tableSrc, tableTarg, password, isUnlogged, copyConstraints,
+                     copyIndexes, copyStorage, copyComments, copyOwner, copyPermissions)
     this
   }
 
@@ -334,6 +338,182 @@ object PGTool extends java.io.Serializable with LazyLogging {
     })
   }
 
+  def copyTableOwner(url: String
+    , tableSrc: String
+    , tableTarg: String
+    , password: String = ""
+  ): Unit = {
+    val conn = connOpen(url, password)
+
+    val retrieveTablePermsQuery =
+      s"""
+         |SELECT r.rolname
+         |FROM pg_roles r
+         |  JOIN pg_class c
+         |    ON r.oid = c.relowner
+         |WHERE c.relname = '$tableSrc'
+         |  AND c.relkind = 'r' -- Only consider ordinary tables
+       """.stripMargin
+    val retrieveOwnerStatement: PreparedStatement = conn.prepareStatement(retrieveTablePermsQuery)
+    val ownerResultSet = retrieveOwnerStatement.executeQuery()
+    // If no result, throw error
+    if (ownerResultSet.isAfterLast)
+      throw new IllegalStateException(s"No owner to copy for table $tableSrc")
+
+    // Retrieve owner
+    ownerResultSet.next()
+    val owner = ownerResultSet.getString(1)
+
+    // Throw error if more than one row (multiple rows for same table-name)
+    ownerResultSet.next()
+    if (!ownerResultSet.isAfterLast)
+      throw new IllegalStateException(s"More than one owner row for table $tableSrc")
+    ownerResultSet.close()
+    retrieveOwnerStatement.close()
+
+    // Update owner of taget table
+    val updateOwnerStatement: PreparedStatement = conn.prepareStatement(s"ALTER TABLE $tableTarg OWNER TO $owner")
+    updateOwnerStatement.execute()
+    updateOwnerStatement.close()
+
+    conn.close()
+
+  }
+
+  def postgresPermissionToGrant(permission: String
+                                , role: String
+                                , tableTarg: String
+                                , column: Option[String]
+                               ): String = {
+    // No role means permission is assigned to all
+    val roleSql = if (role.isEmpty) "PUBLIC" else role
+
+    // If permission has 2 chars, second char is * meaning add grant option to perm
+    val grantOption = if (permission.length == 2) "WITH GRANT OPTION" else ""
+
+    val columnSql = column.map(name => s"($name)").getOrElse("")
+
+    val privilege = permission.head match {
+      case 'a' => "INSERT"
+      case 'r' => "SELECT"
+      case 'w' => "UPDATE"
+      case 'd' => "DELETE"
+      case 'D' => "TRUNCATE"
+      case 'x' => "REFERENCES"
+      case 't' => "TRIGGER"
+    }
+    s"GRANT $privilege $columnSql ON $tableTarg TO $roleSql $grantOption"
+  }
+
+  def postgresPermissionsArrayToGrants(permissions: String
+                                       , tableTarg: String
+                                       , column: Option[String]
+                                      ): Seq[String] = {
+    val permsPattern = "^\\{(\\S*=([arwdDxt]\\\\*?)+/\\S*)+\\}$".r
+
+    permissions match {
+      case permsPattern(_*) =>
+        val permissionsSplit = permissions.drop(1).dropRight(1).split(",")
+        permissionsSplit.flatMap(rolePerms => {
+          val Array(role, perms) = rolePerms.split("/")(0).split("=")
+          val matches = "([arwdDxt]\\*?)".r.findAllIn(perms)
+          matches.map(perm => {
+            postgresPermissionToGrant(perm, role, tableTarg, column)
+          })
+        })
+      case _ => throw new IllegalStateException(s"Incorrect permissions-array format for $permissions")
+    }
+  }
+
+  def copyTablePermissions(url: String
+    , tableSrc: String
+    , tableTarg: String
+    , password: String = ""
+  ): Unit = {
+    val conn = connOpen(url, password)
+
+    val retrieveTablePermsQuery =
+      s"""
+         |SELECT relacl
+         |FROM pg_class
+         |WHERE relname = '$tableSrc'
+         |  AND relkind = 'r' -- Only consider ordinary tables
+       """.stripMargin
+    val retrieveTableSrcPermsStatement: PreparedStatement = conn.prepareStatement(retrieveTablePermsQuery)
+    val tableSrcPermsResultSet = retrieveTableSrcPermsStatement.executeQuery()
+    // If no result, throw error
+    if (tableSrcPermsResultSet.isAfterLast)
+      throw new IllegalStateException(s"No permission to copy for table $tableSrc")
+
+    // Retrieve permissions as postgres array-string
+    tableSrcPermsResultSet.next()
+    val tableSrcPermsToParse = tableSrcPermsResultSet.getString(1)
+
+    // Throw error if more than one row (multiple rows for same table-name
+    tableSrcPermsResultSet.next()
+    if (!tableSrcPermsResultSet.isAfterLast)
+      throw new IllegalStateException(s"More than one permission row for table $tableSrc")
+    tableSrcPermsResultSet.close()
+    retrieveTableSrcPermsStatement.close()
+
+    // Parse permissions and apply them
+    postgresPermissionsArrayToGrants(tableSrcPermsToParse, tableTarg, column = None).foreach(grant =>{
+      val updateTableTargPermsStatement: PreparedStatement = conn.prepareStatement(grant)
+      updateTableTargPermsStatement.execute()
+      updateTableTargPermsStatement.close()
+    })
+
+    conn.close()
+
+  }
+
+  def copyColumnsPermissions(url: String
+    , tableSrc: String
+    , tableTarg: String
+    , password: String = ""
+  ): Unit = {
+    val conn = connOpen(url, password)
+
+    val retrieveTableSrcColumnsPermsQuery =
+      s"""
+         |SELECT a.attname, a.attacl
+         |FROM pg_attribute a
+         |  JOIN pg_class c
+         |    ON a.attrelid = c.oid
+         |WHERE c.relname = '$tableSrc'
+         |  AND c.relkind = 'r' -- Only consider ordinary tables
+         |  -- Look only to attribute explicitly defined (no internal one)
+         |  AND a.attname IN (
+         |    SELECT column_name
+         |    FROM information_schema.columns
+         |    WHERE table_name   = '$tableSrc')
+       """.stripMargin
+    val retrieveTableSrcColumnsPermsStatement: PreparedStatement = conn.prepareStatement(retrieveTableSrcColumnsPermsQuery)
+    val tableSrcColumnsPermsResultSet = retrieveTableSrcColumnsPermsStatement.executeQuery()
+
+    // if some result, loop over them
+    if (!tableSrcColumnsPermsResultSet.isAfterLast) {
+      tableSrcColumnsPermsResultSet.next()
+      while(! tableSrcColumnsPermsResultSet.isAfterLast) {
+        // Retrieve column-name and permissions as postgres array-string
+        val columnName = tableSrcColumnsPermsResultSet.getString(1)
+        val columnPermsToParse = tableSrcColumnsPermsResultSet.getString(2)
+
+        // Parse permissions and apply them
+        postgresPermissionsArrayToGrants(columnPermsToParse, tableTarg, column = Some(columnName)).foreach(grant =>{
+          val updateTableTargColumnPermsStatement: PreparedStatement = conn.prepareStatement(grant)
+          updateTableTargColumnPermsStatement.execute()
+          updateTableTargColumnPermsStatement.close()
+        })
+
+        tableSrcColumnsPermsResultSet.next()
+      }
+    }
+    tableSrcColumnsPermsResultSet.close()
+    conn.close()
+
+  }
+
   def tableCopy(url: String
                 , tableSrc: String
                 , tableTarg: String
@@ -343,10 +523,12 @@ object PGTool extends java.io.Serializable with LazyLogging {
                 , copyIndexes: Boolean = false
                 , copyStorage: Boolean = false
                 , copyComments: Boolean = false
+                , copyOwner: Boolean = false
+                , copyPermissions: Boolean = false
                ): Unit = {
     val conn = connOpen(url, password)
     val unlogged = if (isUnlogged) "UNLOGGED" else ""
-    // TODO -- Add permissions, reloptions, triggers
+    // TODO -- Add triggers
     val copyIncludeParams = {
       Seq("INCLUDING DEFAULTS") ++
         (if (copyConstraints) Seq("INCLUDING CONSTRAINTS") else Nil) ++
@@ -355,11 +537,21 @@ object PGTool extends java.io.Serializable with LazyLogging {
         (if (copyComments) Seq("INCLUDING COMMENTS") else Nil)
     }
 
-
     val queryCreate = s"""CREATE $unlogged TABLE "$tableTarg" (LIKE "$tableSrc" ${copyIncludeParams.mkString(" ")})"""
     val st: PreparedStatement = conn.prepareStatement(queryCreate)
     st.executeUpdate()
     conn.close()
+
+    if (copyPermissions) {
+      copyTablePermissions(url, tableSrc, tableTarg, password)
+      copyColumnsPermissions(url, tableSrc, tableTarg, password)
+    }
+
+    // Copy owner last to prevent permissions issues
+    if (copyOwner) {
+      copyTableOwner(url, tableSrc, tableTarg)
+    }
+
   }
 
   def tableCreate(url: String, tableTarg: String, schema: StructType, password: String = "", isUnlogged: Boolean = true): Unit = {
@@ -604,8 +796,17 @@ object PGTool extends java.io.Serializable with LazyLogging {
           copyThread.start()
           try {
             // Load the copy stream reading from the partition
-            p.foreach { case (_, row) =>
-
+            p.foreach { case (idx, row) =>
+              // Check if the copying thread is still alive every thousand row to prevent the main
+              // thread to produce unread data indefinitely
+              if (idx % 1000 == 0 && promisedCopy.isCompleted) {
+                // No need to check for None, promise has completed
+                promisedCopy.future.value match {
+                  case Some(Success(())) => throw new IllegalStateException(
+                    "The copying thread finished successfully but not all data had been copied. This is very much unexpected!")
+                  case Some(Failure(t)) =>  throw new IllegalStateException("The copying thread finished with an error.", t)
+                }
+              }
               univocityGenerator.write(rowEncoder.toRow(row))
             }
             outputWriter.close()
@@ -619,7 +820,9 @@ object PGTool extends java.io.Serializable with LazyLogging {
                    | more than the timeout: ${TimeUnit.MILLISECONDS.toSeconds(copyTimeoutMs)}s.
                    | You can configure this timeout with option copyTimeoutMs, such as "2h", "100min",
                    | and default copyTimeout is "10min".
-               """.stripMargin)
+                """.stripMargin)
+            // Rethrow the IllegalStateException caught in case of copy-thread error
+            case ise: IllegalStateException => throw ise
           }
         } finally {
           // Finalize
@@ -628,9 +831,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
           inputStream.close()
           conn.close()
         }
-
       })
-
 
     } finally {
       if (reindex)

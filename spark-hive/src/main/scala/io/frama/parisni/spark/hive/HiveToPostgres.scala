@@ -69,6 +69,7 @@ object HiveToPostgres extends App with LazyLogging {
           case "scd1" => pg.outputScd1Hash(table = table.tablePg, key = table.key, df = df, numPartitions = table.numThread, filter = table.filter, deleteSet = table.deleteSet)
           case "scd2" => pg.outputScd2Hash(table = table.tablePg, key = table.key, pk = table.pk.get, df = df, endDatetimeCol = table.updateDatetime.get, partitions = Some(4), multiline = Some(true))
           case "megafull" => {
+            pg.killLocks(table.tablePg)
             df.write.format("postgres")
               .mode(SaveMode.Overwrite)
               .option("url", url)
@@ -82,6 +83,7 @@ object HiveToPostgres extends App with LazyLogging {
           case "full" => {
             logger.warn("type load" + table.typeLoad.getOrElse("scd1"))
 
+            pg.killLocks(table.tablePg)
             pg.tableTruncate(table.tablePg)
             df.write.format("postgres")
               .option("url", url)

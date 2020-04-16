@@ -1,6 +1,5 @@
 const express = require('express');
 const path = require('path');
-const pgStructure = require('pg-structure').default;
 const Pool = require('pg').Pool
 const bodyParser = require('body-parser')
 

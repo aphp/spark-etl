@@ -758,6 +758,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
       val columns = schema.fields.map(x => s"${sanP(x.name)}").mkString(",")
       //transform arrays to string
       val dfTmp = dataframeToPgCsv(spark, df, schema)
+      val dfTmpSchema = dfTmp.schema
 
       val rddToWrite: RDD[(Long, Row)] = dfTmp.rdd.zipWithIndex.map(_.swap).partitionBy(new ExactPartitioner(numPartitions))
 
@@ -779,8 +780,8 @@ object PGTool extends java.io.Serializable with LazyLogging {
         val outputWriter = new PipedWriter()
         val inputStream = new ReaderInputStream(new PipedReader(outputWriter))
 
-        val univocityGenerator = new UnivocityGenerator(schema, outputWriter, csvOptions)
-        val rowEncoder = RowEncoder.apply(schema)
+        val univocityGenerator = new UnivocityGenerator(dfTmpSchema, outputWriter, csvOptions)
+        val rowEncoder = RowEncoder.apply(dfTmpSchema)
 
         // Prepare a thread to copy data to PG asynchronously
         val promisedCopy = Promise[Unit]

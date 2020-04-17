@@ -7,9 +7,13 @@ package io.frama.parisni.spark.postgres.convert
 
 import java.io.StringWriter
 import java.sql.Timestamp
+import java.util
 import java.util.TimeZone
+import java.util.function.Consumer
 
-import io.frama.parisni.spark.postgres.SparkSessionTestWrapper
+import de.bytefish.pgbulkinsert.pgsql.handlers.ValueHandlerProvider
+import de.bytefish.pgbulkinsert.row.SimpleRow
+import io.frama.parisni.spark.postgres.{PGTool, SparkSessionTestWrapper}
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{QueryTest, Row}
@@ -53,7 +57,7 @@ class TestPGConverterPerf extends QueryTest with SparkSessionTestWrapper {
     val t0 = System.nanoTime()
     rows.map(r => PGConverter.convertRow(r, schema.length, ",", converters))
     val duration = System.nanoTime() - t0
-    println(duration)
+    println(s"Rows manual CSV: $duration")
   }
 
   @Test def writeRowsCSV(): Unit = {
@@ -74,11 +78,11 @@ class TestPGConverterPerf extends QueryTest with SparkSessionTestWrapper {
       .mode(org.apache.spark.sql.SaveMode.Overwrite)
       .save(dest)
     val duration = System.nanoTime() - t0
-    println(duration)
+    println(s"Rows CSV: $duration")
 
   }
 
-  @Test def convert100KInternalRowsUnivocity(): Unit = {
+  @Test def convertInternalRowsUnivocity(): Unit = {
 
     val csvOptionsMap = Map(
       "delimiter" -> ",",
@@ -100,11 +104,32 @@ class TestPGConverterPerf extends QueryTest with SparkSessionTestWrapper {
     val t0 = System.nanoTime()
     rows.foreach(r => univocityGenerator.write(rowEncoder.toRow(r)))
     val duration = System.nanoTime() - t0
-    println(duration)
+    println(s"Rows Univocity: $duration")
 
     assert(writer.toString.startsWith("1,"))
     writer.close()
 
   }
+
+  @Test def convertRowsPgBulkImport(): Unit = {
+
+    val rowConverter = PGTool.makePgBulkInsertRowConverter(schema)
+    val pgBulkInsertRowConsumer = (sparkRow: Row) => new Consumer[SimpleRow]() {
+      override def accept(pgBulkInsertRow: SimpleRow): Unit = rowConverter(sparkRow, pgBulkInsertRow)
+    }
+    val nullHandler = new java.util.function.Function[String, String] {
+      override def apply(v: String): String = v
+    }
+
+    val t0 = System.nanoTime()
+    rows.foreach(sparkRow => {
+      val simpleRow = new SimpleRow(new ValueHandlerProvider(), new util.HashMap(), nullHandler)
+      pgBulkInsertRowConsumer(sparkRow).accept(simpleRow)
+    })
+    val duration = System.nanoTime() - t0
+    println(s"Rows PgBulkImport: $duration")
+
+  }
+
 }
 */

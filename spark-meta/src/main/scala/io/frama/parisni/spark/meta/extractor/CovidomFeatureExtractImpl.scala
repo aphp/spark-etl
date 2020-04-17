@@ -61,7 +61,8 @@ class CovidomFeatureExtractImpl extends FeatureExtractTrait {
 
   def generateTable(df: DataFrame): DataFrame = {
     df.dropDuplicates("lib_database", "lib_schema", "lib_table")
-      .select("lib_database", "lib_schema", "lib_table", "outil_source", "count_table", "last_analyze", "typ_table")
+      .select("lib_database", "lib_schema", "lib_table"
+        , "outil_source", "count_table", "last_analyze", "typ_table")
   }
 
   def generateColumn(df: DataFrame): DataFrame = {

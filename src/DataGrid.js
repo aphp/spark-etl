@@ -80,7 +80,7 @@ class TextHightlighter extends React.PureComponent {
 
 class DataRow extends React.Component {
   shouldComponentUpdate(nextProps, nextState) {
-    return (nextProps.row._forceUpdate);
+    return nextProps.row._forceUpdate || this.props.canEdit !== nextProps.canEdit;
   }
 
   updateText = (col, text) => {
@@ -88,7 +88,7 @@ class DataRow extends React.Component {
   }
 
   render() {
-    const {row, useName, cells, className, searchText} = this.props;
+    const {row, useName, cells, className, searchText, canEdit} = this.props;
 
     if (!row._display) {
       return null;
@@ -102,7 +102,7 @@ class DataRow extends React.Component {
             text={useName ? row[col.name] : col.name}
             highlight={searchText}
             updateText={this.props.updateText ? (text => this.updateText(col.name, text)) : null}
-            editable={col.editable}/>
+            editable={col.editable && canEdit}/>
         </TableCell>
       ))}
     </TableRow>
@@ -111,6 +111,10 @@ class DataRow extends React.Component {
 }
 
 class AttributeTable extends React.Component {
+  shouldComponentUpdate(nextProps, nextState) {
+    return nextProps.table._forceUpdate || this.props.canEdit !== nextProps.canEdit;
+  }
+
   render() {
     const {table, columns, attributeCols, searchText} = this.props;
     if (!table._hasColumnDisplay) {
@@ -128,7 +132,7 @@ class AttributeTable extends React.Component {
                 useName={false}
                 cells={attributeCols}
                 searchText={searchText}
-                />
+                canEdit={this.props.canEdit}/>
             </TableHead>
             <TableBody>
               {table.columns.map(tableColumn => (
@@ -138,7 +142,8 @@ class AttributeTable extends React.Component {
                   cells={attributeCols}
                   key={table._key + '-attributes-' + tableColumn.name}
                   searchText={searchText}
-                  updateText={this.props.updateText}/>
+                  updateText={this.props.updateText}
+                  canEdit={this.props.canEdit}/>
               ))}
             </TableBody>
           </Table>
@@ -149,7 +154,7 @@ class AttributeTable extends React.Component {
 
 class TableData extends React.Component {
   shouldComponentUpdate(nextProps, nextState) {
-    return (nextProps.table._forceUpdate);
+    return (nextProps.table._forceUpdate || this.props.canEdit !== nextProps.canEdit);
   }
 
   render() {
@@ -166,13 +171,15 @@ class TableData extends React.Component {
           row={table} useName={true}
           cells={columns}
           searchText={searchText}
-          updateText={this.props.updateTables}/>
+          updateText={this.props.updateTables}
+          canEdit={this.props.canEdit}/>
         <AttributeTable
           table={table}
           columns={columns}
           attributeCols={attributeCols}
           searchText={searchText}
-          updateText={this.props.updateColumns}/>
+          updateText={this.props.updateColumns}
+          canEdit={this.props.canEdit}/>
       </React.Fragment>
     );
   }
@@ -189,7 +196,8 @@ const StyledTableData = withStyles(theme => ({
 class DataGrid extends React.Component {
   shouldComponentUpdate(nextProps, nextState) {
     if (nextProps.schema && this.props.schema) {
-      return this.props.schema.id === nextProps.schema.id || nextProps.schema._forceUpdate;
+      return this.props.schema.id === nextProps.schema.id ||
+        nextProps.schema._forceUpdate || this.props.canEdit !== nextProps.canEdit;
     }
     return false;
   }
@@ -220,7 +228,8 @@ class DataGrid extends React.Component {
                 attributeCols={attributeCols}
                 searchText={searchText}
                 updateColumns={this.props.updateColumns}
-                updateTables={this.props.updateTables}/>
+                updateTables={this.props.updateTables}
+                canEdit={this.props.canEdit}/>
             ))}
           </TableBody>
         </Table>

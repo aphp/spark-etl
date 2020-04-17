@@ -8,7 +8,8 @@ const database = process.env.POSTGRES_DB || 'docker';
 const user = process.env.POSTGRES_USER || 'docker';
 const password = process.env.POSTGRES_PASSWORD || 'docker';
 const host = process.env.POSTGRES_HOST || 'localhost';
-const port = process.env.POSTGRES_PORT || 5432
+const port = process.env.POSTGRES_PORT || 5432;
+const authToken = process.env.AUTH_TOKEN || null;
 
 const pool = new Pool({
   user,
@@ -198,7 +199,21 @@ app.get('/', function (req, res) {
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
+
+function checkAuth({ authorization }) {
+  if (!authorization) {
+    return false;
+  }
+  return authorization === 'Bearer ' + authToken;
+}
+
+
 app.post('/columns', function (req, res) {
+  if (!checkAuth(req.headers)) {
+    res.status(403).send({message: 'Unauthorized'});
+    return;
+  }
+
   if (allowedColumnNames.indexOf(req.body.colName) === -1) {
     res.status(500).send({message: 'unknown column ' + req.body.colName});
     return;
@@ -217,6 +232,11 @@ app.post('/columns', function (req, res) {
 });
 
 app.post('/tables', function (req, res) {
+  if (!checkAuth(req.headers)) {
+    res.status(403).send({message: 'Unauthorized'});
+    return;
+  }
+
   if (allowedTableColumnNames.indexOf(req.body.colName) === -1) {
     res.status(500).send({message: 'unknown column ' + req.body.colName});
     return;

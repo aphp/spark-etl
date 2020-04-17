@@ -8,6 +8,7 @@ import Tabs from '@material-ui/core/Tabs';
 import Tab from '@material-ui/core/Tab';
 import Typography from '@material-ui/core/Typography';
 import Box from '@material-ui/core/Box';
+import SimpleModal from './helpers/Modal.js'
 import Diagram from './diagram/Diagram.js';
 import Select from './helpers/Select.js'
 import Error from './helpers/Error.js';
@@ -108,17 +109,22 @@ function applySearchFilter(schema, filter) {
   schema.visibleColumns = visibleColumns;
 }
 
-async function postData(url = '', data = {}) {
+async function postData(url = '', data = {}, authToken) {
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+
+  if (authToken) {
+    headers['Authorization'] = 'Bearer ' + authToken;
+  }
+
   // Default options are marked with *
   const response = await fetch(url, {
     method: 'POST', // *GET, POST, PUT, DELETE, etc.
     mode: 'cors', // no-cors, *cors, same-origin
     cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
     credentials: 'same-origin', // include, *same-origin, omit
-    headers: {
-      'Content-Type': 'application/json'
-      // 'Content-Type': 'application/x-www-form-urlencoded',
-    },
+    headers,
     redirect: 'follow', // manual, *follow, error
     referrerPolicy: 'no-referrer', // no-referrer, *client
     body: JSON.stringify(data) // body data type must match "Content-Type" header
@@ -129,7 +135,14 @@ async function postData(url = '', data = {}) {
 class Tables extends React.PureComponent {
   constructor(props) {
     super(props);
-    this.state = {tables: [], tabIndex: 0, searchText: '', isLoading: true, updateId: 0};
+    this.state = {
+      tables: [],
+      tabIndex: 0,
+      searchText: '',
+      isLoading: true,
+      updateId: 0,
+      authToken: ''
+    };
   }
 
   componentDidMount() {
@@ -182,7 +195,7 @@ class Tables extends React.PureComponent {
   }
 
   updateTables = (row, col, text) => {
-    postData('/tables', { id: row.id, colName: col, text: text })
+    postData('/tables', { id: row.id, colName: col, text: text }, this.state.authToken)
       .then((res) => {
         if (res.status !== 200) {
           res.json().then(err => {
@@ -194,16 +207,16 @@ class Tables extends React.PureComponent {
         this.setState({updateId: this.state.updateId + 1})
         console.log(`successfully updated table: ${row.id}, name: ${col} with value: ${text}`); // JSON data parsed by `response.json()` call
       }).catch((err) => {
-        console.error(`error updating row table: ${row.id}, name: ${col} with value: ${text}: ${err}`); // JSON data parsed by `response.json()` call
+        console.error(`error updating row table: ${row.id}, name: ${col} with value: ${text}: ${err.message}`); // JSON data parsed by `response.json()` call
       });
   }
 
   updateColumns = (row, col, text) => {
-    postData('/columns', { id: row.id, colName: col, text: text })
+    postData('/columns', { id: row.id, colName: col, text: text }, this.state.authToken)
       .then((res) => {
         if (res.status !== 200) {
           res.json().then(err => {
-            console.error(`error updating row column: ${row.id}, name: ${col} with value: ${text}: ${err}`); // JSON data parsed by `response.json()` call
+            console.error(`error updating row column: ${row.id}, name: ${col} with value: ${text}: ${err.message}`); // JSON data parsed by `response.json()` call
           });
           return;
         }
@@ -249,6 +262,10 @@ class Tables extends React.PureComponent {
     this.selectByTableId(e.entity.id);
   };
 
+  setAuthToken = (v) => {
+    this.setState({authToken: v});
+  }
+
 
   updateSearchText = (e) => {
     const searchText = e.target.value;
@@ -281,7 +298,7 @@ class Tables extends React.PureComponent {
         <Select label="tables" options={selectedSchema.tables} onChange={this.onSelectTable} selectedValue={selectedTableValue}></Select>
         <AppBar position="static">
         <Toolbar>
-          <Tabs value={this.state.tabIndex} onChange={this.changeTab} aria-label="Tabs">
+          <Tabs value={this.state.tabIndex} onChange={this.changeTab} aria-label="Tabs" className={classes.grow}>
             <Tab label="Diagram" {...a11yProps(0)} />
             <Tab label="All tables" {...a11yProps(1)} />
             { selectedTable && <Tab
@@ -291,7 +308,8 @@ class Tables extends React.PureComponent {
                 </div> }
               {...a11yProps(2)} /> }
           </Tabs>
-          <SearchInput updateSearchText={this.updateSearchText} searchText={this.state.searchText}/>
+            <SearchInput updateSearchText={this.updateSearchText} searchText={this.state.searchText}/>
+            <SimpleModal authToken={this.state.authToken} setAuthToken={this.setAuthToken}/>
         </Toolbar>
         </AppBar>
         <TabPanel value={this.state.tabIndex} index={0}>
@@ -305,20 +323,20 @@ class Tables extends React.PureComponent {
         <TabPanel value={this.state.tabIndex} index={1}>
           <DataGrid
             key={alltablesKey}
-            className={classes.selectedTable}
             schema={selectedSchema}
             searchText={this.state.searchText}
             updateColumns={this.updateColumns}
-            updateTables={this.updateTables}/>
+            updateTables={this.updateTables}
+            canEdit={this.state.authToken !== ''}/>
         </TabPanel>
         <TabPanel value={this.state.tabIndex} index={2}>
           <DataGrid
             key={singleTableKey}
-            className={classes.selectedTable}
             schema={selectedTable}
             searchText={this.state.searchText}
             updateColumns={this.updateColumns}
-            updateTables={this.updateTables}/>
+            updateTables={this.updateTables}
+            canEdit={this.state.authToken !== ''}/>
         </TabPanel>
       </div>
     );

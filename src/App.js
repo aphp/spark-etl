@@ -74,9 +74,9 @@ const useStyles = makeStyles(theme => ({
     flexGrow: 1,
     backgroundColor: theme.palette.background.paper,
   },
-  selectedTable: {
-    float: 'right'
-  }
+  grow: {
+    flexGrow: 1,
+  },
 }));
 
 function App() {

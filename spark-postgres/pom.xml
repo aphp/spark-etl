@@ -50,6 +50,14 @@
       <artifactId>postgresql</artifactId>
       <version>${postgres.version}</version>
     </dependency>
+
+    <!-- https://mvnrepository.com/artifact/de.bytefish/pgbulkinsert -->
+    <dependency>
+      <groupId>de.bytefish</groupId>
+      <artifactId>pgbulkinsert</artifactId>
+      <version>4.1</version>
+    </dependency>
+
     <!-- https://mvnrepository.com/artifact/junit/junit -->
 
     <!-- Test -->

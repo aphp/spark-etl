@@ -4,9 +4,12 @@ import java.io._
 import java.sql.{Connection, DriverManager, PreparedStatement, ResultSetMetaData}
 import java.util.UUID.randomUUID
 import java.util.concurrent.TimeUnit
+import java.util.function.Consumer
 import java.util.{Properties, TimeZone}
 
 import com.typesafe.scalalogging.LazyLogging
+import de.bytefish.pgbulkinsert.row.{SimpleRow, SimpleRowWriter}
+import de.bytefish.pgbulkinsert.util.PostgreSqlUtils
 import io.frama.parisni.spark.postgres.convert.{CSVOptions, UnivocityGenerator}
 import org.apache.commons.io.input.ReaderInputStream
 import org.apache.hadoop.conf.Configuration
@@ -20,13 +23,16 @@ import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
 import org.postgresql.copy.{CopyManager, PGCopyInputStream}
 import org.postgresql.core.BaseConnection
 
+import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Promise, TimeoutException}
 import scala.util.{Failure, Success, Try}
 
+
 sealed trait BulkLoadMode
 object CSV extends BulkLoadMode
 object Stream extends BulkLoadMode
+object PgBulkInsert extends BulkLoadMode
 
 
 class PGTool(spark: SparkSession
@@ -180,7 +186,9 @@ class PGTool(spark: SparkSession
 
 object PGTool extends java.io.Serializable with LazyLogging {
 
-  def apply(spark: SparkSession, url: String, tmpPath: String, bulkLoadMode: BulkLoadMode = Stream): PGTool = {
+  private val defaultBulkLoadStrategy = Stream
+
+  def apply(spark: SparkSession, url: String, tmpPath: String, bulkLoadMode: BulkLoadMode = defaultBulkLoadStrategy): PGTool = {
     new PGTool(spark, url, tmpPath + "/spark-postgres-" + randomUUID.toString, bulkLoadMode).setPassword("")
   }
 
@@ -662,11 +670,12 @@ object PGTool extends java.io.Serializable with LazyLogging {
                  , numPartitions: Int = 8
                  , password: String = ""
                  , reindex: Boolean = false
-                 , bulkLoadMode: BulkLoadMode = Stream
+                 , bulkLoadMode: BulkLoadMode = defaultBulkLoadStrategy
   ) = {
     bulkLoadMode match  {
       case CSV => outputBulkCsv(spark, url, table, df, path, numPartitions, password, reindex)
       case Stream => outputBulkStream(spark, url, table, df, numPartitions, password, reindex)
+      case PgBulkInsert => outputBulkInsert(spark, url, table, df, numPartitions, password, reindex)
     }
   }
 
@@ -758,6 +767,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
       val columns = schema.fields.map(x => s"${sanP(x.name)}").mkString(",")
       //transform arrays to string
       val dfTmp = dataframeToPgCsv(spark, df, schema)
+      val dfTmpSchema = dfTmp.schema
 
       val rddToWrite: RDD[(Long, Row)] = dfTmp.rdd.zipWithIndex.map(_.swap).partitionBy(new ExactPartitioner(numPartitions))
 
@@ -779,8 +789,8 @@ object PGTool extends java.io.Serializable with LazyLogging {
         val outputWriter = new PipedWriter()
         val inputStream = new ReaderInputStream(new PipedReader(outputWriter))
 
-        val univocityGenerator = new UnivocityGenerator(schema, outputWriter, csvOptions)
-        val rowEncoder = RowEncoder.apply(schema)
+        val univocityGenerator = new UnivocityGenerator(dfTmpSchema, outputWriter, csvOptions)
+        val rowEncoder = RowEncoder.apply(dfTmpSchema)
 
         // Prepare a thread to copy data to PG asynchronously
         val promisedCopy = Promise[Unit]
@@ -831,6 +841,99 @@ object PGTool extends java.io.Serializable with LazyLogging {
           inputStream.close()
           conn.close()
         }
+      })
+
+    } finally {
+      if (reindex)
+        indexReactivate(url, table, password)
+    }
+  }
+
+  def makePgBulkInsertRowConverter(t: DataType, idx: Int): ((Row, SimpleRow) => Unit) = {
+    (r: Row, s: SimpleRow) => {
+      t match {
+        case BooleanType => s.setBoolean(idx, r.getBoolean(idx))
+        case ByteType => s.setByte(idx, r.getByte(idx))
+        case ShortType => s.setShort(idx, r.getShort(idx))
+        case IntegerType => s.setInteger(idx, r.getInt(idx))
+        case LongType => s.setLong(idx, r.getLong(idx))
+        case FloatType => s.setFloat(idx, r.getFloat(idx))
+        case DoubleType => s.setDouble(idx, r.getDouble(idx))
+        case DecimalType() => s.setNumeric(idx, r.getDecimal(idx))
+
+        case StringType => s.setText(idx, r.getString(idx))
+        case BinaryType => s.setByteArray(idx, r.get(idx).asInstanceOf[Array[Byte]])
+
+        case DateType => s.setDate(idx, r.getDate(idx).toLocalDate)
+        case TimestampType => s.setTimeStamp(idx, r.getTimestamp(idx).toLocalDateTime)
+        // TODO: Check if we prefer the following in comparison to toLocalDate
+        //case TimestampType => s.setTimeStampTz(idx, ZonedDateTime.ofInstant(r.getTimestamp(idx).toInstant, ZoneId.of("UTC")))
+
+
+        case ArrayType(BooleanType, _) => s.setBooleanArray(idx, r.getSeq[Boolean](idx).map(b => Boolean.box(b)).asJava)
+        case ArrayType(ByteType, _) => s.setByteArray(idx, r.getSeq[Byte](idx).toArray)
+        case ArrayType(ShortType, _) => s.setShortArray(idx, r.getSeq[Short](idx).map(s => Short.box(s)).asJava)
+        case ArrayType(IntegerType, _) => s.setIntegerArray(idx, r.getSeq[Int](idx).map(i => Int.box(i)).asJava)
+        case ArrayType(LongType, _) => s.setLongArray(idx, r.getSeq[Long](idx).map(i => Long.box(i)).asJava)
+        case ArrayType(FloatType, _) => s.setFloatArray(idx, r.getSeq[Float](idx).map(i => Float.box(i)).asJava)
+        case ArrayType(DoubleType, _) => s.setDoubleArray(idx, r.getSeq[Double](idx).map(i => Double.box(i)).asJava)
+        case ArrayType(DecimalType(), _) => s.setNumericArray(idx, r.getSeq[BigDecimal](idx).asJava)
+        case ArrayType(StringType, _) => s.setTextArray(idx, r.getSeq[String](idx).asJava)
+
+        // TODO Convert to hstore/jsonb?
+        case ArrayType(_, _) => throw new UnsupportedOperationException("Trying to insert an Array not supported by PgBulkInsert")
+        case MapType(_, _, _) => throw new UnsupportedOperationException("Trying to insert a spark Map into postgres - Not yet supported")
+        case StructType(_) => throw new UnsupportedOperationException("Trying to insert a spark Struct into postgres - Not yet supported")
+      }
+    }
+  }
+
+  def makePgBulkInsertRowConverter(schema: StructType): ((Row, SimpleRow) => Unit) = {
+    val converters = schema.fields.toSeq.zipWithIndex.map {case (sf: StructField, idx: Int) =>
+      makePgBulkInsertRowConverter(sf.dataType, idx)
+    }
+
+    (r: Row, s: SimpleRow) => converters.foreach(c => c(r, s))
+
+  }
+
+  def outputBulkInsert(spark: SparkSession
+    , url: String
+    , table: String
+    , df: Dataset[Row]
+    , numPartitions: Int = 8
+    , password: String = ""
+    , reindex: Boolean = false
+    , copyTimeoutMs: Long = 1000 * 60 * 10
+  ) = {
+    logger.warn("using PgBulkInsert strategy")
+    try {
+      if (reindex)
+        indexDeactivate(url, table, password)
+
+      val schema = df.schema
+      val columns = schema.fields.map(x => s"${sanP(x.name)}")
+
+      val rddToWrite: RDD[(Long, Row)] = df.rdd.zipWithIndex.map(_.swap).partitionBy(new ExactPartitioner(numPartitions))
+
+      rddToWrite.foreachPartition((p: Iterator[(Long, Row)]) => {
+
+        val rowConverter = makePgBulkInsertRowConverter(schema)
+        val pgBulkInsertRowConsumer = (sparkRow: Row) => new Consumer[SimpleRow]() {
+          override def accept(pgBulkInsertRow: SimpleRow): Unit = rowConverter(sparkRow, pgBulkInsertRow)
+        }
+
+        val conn = PostgreSqlUtils.getPGConnection(connOpen(url, password))
+        val pgBulkInsertTable = new SimpleRowWriter.Table(null, table, columns:_*)
+        val pgBulkInsertWriter = new SimpleRowWriter(pgBulkInsertTable, true)
+        pgBulkInsertWriter.enableNullCharacterHandler()
+        pgBulkInsertWriter.open(conn)
+
+        p.foreach { case (_, sparkRow) =>
+          pgBulkInsertWriter.startRow(pgBulkInsertRowConsumer(sparkRow))
+        }
+        pgBulkInsertWriter.close()
+
       })
 
     } finally {
@@ -1064,7 +1167,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
                            , scdFilter: Option[String] = None
                            , deleteSet: Option[String] = None
                            , password: String = ""
-                           , bulkLoadMode: BulkLoadMode = Stream
+                           , bulkLoadMode: BulkLoadMode = defaultBulkLoadStrategy
                           ): Unit = {
     if (loadEmptyTable(spark, url, table, candidate, path, partitions, password, bulkLoadMode))
       return
@@ -1185,7 +1288,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
                            , partitions: Int
                            , path: String
                            , password: String = ""
-                           , bulkLoadMode: BulkLoadMode = Stream
+                           , bulkLoadMode: BulkLoadMode = defaultBulkLoadStrategy
                           ): Unit = {
 
     if (loadEmptyTable(spark, url, table, candidate, path, partitions, password, bulkLoadMode))

@@ -136,6 +136,7 @@ class PostgresRelation(val parameters: Map[String, String]
     require(conf.getUser.nonEmpty || conf.getUrl.isDefined, "User cannot be empty")
     val bulkLoadMode = conf.getBulkLoadMode.getOrElse("") match {
       case "csv" => CSV
+      case "PgBulkInsert" => PgBulkInsert
       case _ => Stream
     }
 

@@ -434,7 +434,7 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
   }
 
   @Test
-  def verifyPostgresBulkLoadMode(): Unit = {
+  def verifyPostgresStreamBulkLoadMode(): Unit = {
     import spark.implicits._
     val data = ((1, "asdf", 1L) :: Nil).toDF("INT_COL", "STRING_COL", "LONG_COL")
     val schema = data.schema
@@ -448,7 +448,7 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
   }
 
   @Test
-  def verifyPostgresBulkLoadModeError(): Unit = {
+  def verifyPostgresStreamBulkLoadModeError(): Unit = {
     import spark.implicits._
     val fakeData = ((1, "asdf", 1L) :: Nil).toDF("INT_COL", "STRING_COL", "LONG_COL")
     val schema = fakeData.schema
@@ -462,6 +462,57 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
         .option("type", "full")
         .option("table", "TEST_STREAM_BULK_LOAD")
         .option("bulkLoadMode", "stream")
+        .save
+    )
+
+  }
+
+  @Test
+  def verifyPostgresPgBulkInsertLoadMode(): Unit = {
+    import spark.implicits._
+    val data = ((1, "asdf", 1L) :: Nil).toDF("INT_COL", "STRING_COL", "LONG_COL")
+    val schema = data.schema
+    getPgTool().tableCreate("TEST_PG_BULK_INSERT_LOAD", schema, isUnlogged = true)
+    data.write.format("io.frama.parisni.spark.postgres")
+      .option("url", getPgUrl)
+      .option("type", "full")
+      .option("table", "TEST_PG_BULK_INSERT_LOAD")
+      .option("bulkLoadMode", "PgBulkInsert")
+      .save
+  }
+
+
+  @Test
+  def verifyPostgresPgBulkInsertCreateSpecialTable(): Unit = {
+    import spark.implicits._
+    val data = ((1, "asdf", 1L, Array(1, 2, 3), Array("bob"), Array(1L, 2L)) :: Nil)
+      .toDF("INT_COL", "STRING_COL", "LONG_COL", "ARRAY_INT_COL", "ARRAY_STRING_COL", "ARRAY_BIGINT_COL")
+    val schema = data.schema
+    getPgTool().tableCreate("TEST_ARRAY", schema, isUnlogged = true)
+    data.write.format("io.frama.parisni.spark.postgres")
+      .option("url", getPgUrl)
+      .option("type", "full")
+      .option("table", "TEST_ARRAY")
+      .option("bulkLoadMode", "PgBulkInsert")
+      .save
+  }
+
+
+  @Test
+  def verifyPgBulkInsertLoadModeError(): Unit = {
+    import spark.implicits._
+    val fakeData = ((1, "asdf", 1L) :: Nil).toDF("INT_COL", "STRING_COL", "LONG_COL")
+    val schema = fakeData.schema
+    val data = ((1, "asdf", 1L, "err") :: Nil).toDF("INT_COL", "STRING_COL", "LONG_COL", "ERR_COL")
+
+    getPgTool().tableCreate("TEST_PG_BULK_INSERT_LOAD", schema, isUnlogged = true)
+
+    assertThrows[RuntimeException](
+      data.write.format("io.frama.parisni.spark.postgres")
+        .option("url", getPgUrl)
+        .option("type", "full")
+        .option("table", "TEST_PG_BULK_INSERT_LOAD")
+        .option("bulkLoadMode", "PgBulkInsert")
         .save
     )
 

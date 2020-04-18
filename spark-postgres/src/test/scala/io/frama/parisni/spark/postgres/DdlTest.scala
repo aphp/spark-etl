@@ -1,5 +1,9 @@
 package io.frama.parisni.spark.postgres
 
+import java.sql.Timestamp
+import java.sql.Date
+import java.util
+
 import org.apache.spark.sql.QueryTest
 import org.junit.Test
 import org.postgresql.util.PSQLException
@@ -515,6 +519,165 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
         .option("bulkLoadMode", "PgBulkInsert")
         .save
     )
+
+  }
+
+  val testDate = new Date(9)
+  val testTimestamp = new Timestamp(10L)
+
+  @Test
+  def verifyPgBulkInsertLoadPrimitiveTypes(): Unit = {
+    import spark.implicits._
+
+    val data = Seq(
+      (
+        true,
+        2.toByte,
+        3.toShort,
+        4,
+        5L,
+        6.0f,
+        7.0d,
+        "8",
+        testDate,
+        testTimestamp,
+        "11".getBytes()
+      )
+    ).toDF("BOOL_COL", "BYTE_COL", "SHORT_COL", "INT_COL", "LONG_COL", "FLOAT_COL",
+           "DOUBLE_COL", "STRING_COL", "DATE_COL", "TIMESTAMP_COL", "BYTEA_COL")
+
+    val schema = data.schema
+
+    getPgTool().tableCreate("TEST_PG_BULK_INSERT_LOAD_PRIMITIVES", schema, isUnlogged = true)
+
+    data.write.format("io.frama.parisni.spark.postgres")
+      .option("url", getPgUrl)
+      .option("type", "full")
+      .option("table", "TEST_PG_BULK_INSERT_LOAD_PRIMITIVES")
+      .option("bulkLoadMode", "PgBulkInsert")
+      .save
+
+    val db = pg.getEmbeddedPostgres.getPostgresDatabase
+    val conn = db.getConnection()
+    val rs = conn.createStatement().executeQuery("SELECT * FROM \"TEST_PG_BULK_INSERT_LOAD_PRIMITIVES\"")
+    rs.next()
+    assert(rs.getBoolean(1))
+    assert(rs.getByte(2) == 2)
+    assert(rs.getShort(3) == 3)
+    assert(rs.getInt(4) == 4)
+    assert(rs.getLong(5) == 5L)
+    assert(rs.getFloat(6) == 6.0f)
+    assert(rs.getDouble(7) == 7.0d)
+    assert(rs.getString(8) == "8")
+    assert(rs.getDate(9).toLocalDate.equals(testDate.toLocalDate))
+    assert(rs.getTimestamp(10).equals(testTimestamp))
+    assert(util.Arrays.equals(rs.getBytes(11), "11".getBytes()))
+  }
+
+  @Test
+  def verifyPgBulkInsertLoadNullPrimitives(): Unit = {
+    import spark.implicits._
+
+    val data = Seq(
+      (
+        None.asInstanceOf[Option[Boolean]],
+        None.asInstanceOf[Option[Byte]],
+        None.asInstanceOf[Option[Short]],
+        None.asInstanceOf[Option[Int]],
+        None.asInstanceOf[Option[Long]],
+        None.asInstanceOf[Option[Float]],
+        None.asInstanceOf[Option[Double]],
+        None.asInstanceOf[Option[String]],
+        None.asInstanceOf[Option[Date]],
+        None.asInstanceOf[Option[Timestamp]],
+        None.asInstanceOf[Option[Array[Byte]]]
+        )
+    ).toDF("BOOL_COL", "BYTE_COL", "SHORT_COL", "INT_COL", "LONG_COL", "FLOAT_COL",
+           "DOUBLE_COL", "STRING_COL", "DATE_COL", "TIMESTAMP_COL", "BYTEA_COL")
+
+    val schema = data.schema
+
+    getPgTool().tableCreate("TEST_PG_BULK_INSERT_LOAD_NULL", schema, isUnlogged = true)
+
+    data.write.format("io.frama.parisni.spark.postgres")
+      .option("url", getPgUrl)
+      .option("type", "full")
+      .option("table", "TEST_PG_BULK_INSERT_LOAD_NULL")
+      .option("bulkLoadMode", "PgBulkInsert")
+      .save
+
+    val db = pg.getEmbeddedPostgres.getPostgresDatabase
+    val conn = db.getConnection()
+    val rs = conn.createStatement().executeQuery("SELECT * FROM \"TEST_PG_BULK_INSERT_LOAD_NULL\"")
+    rs.next()
+    (1 to 11).foreach(i => assert(rs.getString(i) == null))
+
+  }
+
+  @Test
+  def verifyPgBulkInsertLoadNullInArrays(): Unit = {
+    import spark.implicits._
+
+    val colNames = Seq("BOOL_COL", "BYTE_COL", "SHORT_COL", "INT_COL", "LONG_COL", "FLOAT_COL",
+                       "DOUBLE_COL", "STRING_COL"
+                       //"DATE_COL", "TIMESTAMP_COL", "BYTEA_COL"
+                      )
+
+    val data = Seq(
+      (
+        Array(Some(true), None),
+        Array(Some(2.toByte), None),
+        Array(Some(3.toShort), None),
+        Array(Some(4), None),
+        Array(Some(5L), None),
+        Array(Some(6.0f), None),
+        Array(Some(7.0d), None),
+        Array(Some("8"), None)
+        //Array(Some(testDate), None),
+        //Array(Some(testTimestamp), None)
+        //Array(Some("11".getBytes), None)
+        )
+    ).toDF(colNames: _* )
+
+    val schema = data.schema
+
+    getPgTool().tableCreate("TEST_PG_BULK_INSERT_LOAD_NULL_IN_ARRAYS", schema, isUnlogged = true)
+
+    data.write.format("io.frama.parisni.spark.postgres")
+      .option("url", getPgUrl)
+      .option("type", "full")
+      .option("table", "TEST_PG_BULK_INSERT_LOAD_NULL_IN_ARRAYS")
+      .option("bulkLoadMode", "PgBulkInsert")
+      .save
+
+    val db = pg.getEmbeddedPostgres.getPostgresDatabase
+    val conn = db.getConnection()
+
+    val selectFirstValues = colNames.map(n => PGTool.sanP(n) + "[1]").mkString(", ")
+    val selectSecondValues = colNames.map(n => PGTool.sanP(n) + "[2]").mkString(", ")
+    val rs = conn.createStatement().executeQuery(
+      s"""
+        |SELECT
+        |  $selectFirstValues,
+        |  $selectSecondValues
+        |FROM "TEST_PG_BULK_INSERT_LOAD_NULL_IN_ARRAYS"
+      """.stripMargin)
+    rs.next()
+
+    assert(rs.getBoolean(1))
+    assert(rs.getShort(2) == 2)
+    assert(rs.getShort(3) == 3)
+    assert(rs.getInt(4) == 4)
+    assert(rs.getLong(5) == 5L)
+    assert(rs.getFloat(6) == 6.0f)
+    assert(rs.getDouble(7) == 7.0d)
+    assert(rs.getString(8) == "8")
+    //assert(rs.getDate(9) == testDate)
+    //assert(rs.getTimestamp(10) == testTimestamp)
+    //assert(Arrays.equals(rs.getBytes(11), "11".getBytes))
+
+    (9 to 16).foreach(i => assert(rs.getString(i) == null))
+    //(12 to 22).foreach(i => assert(rs.getString(i) == null))
 
   }
 

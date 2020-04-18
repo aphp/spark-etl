@@ -28,7 +28,7 @@ object HiveToPostgresYaml extends DefaultYamlProtocol {
                     , reindex: Option[Boolean]
                     , format: Option[String]
                   ) {
-    require(numThread.isDefined && (numThread.get < 9 && numThread.get > 0), "Thread number should be between 1 and 8")
+    require(numThread.isDefined && (numThread.get < 20 && numThread.get > 0), "Thread number should be between 1 and 19")
     require(typeLoad.isEmpty || (Array("full", "megafull","scd1", "scd2").contains(typeLoad.get)), "When update a date field should be specified")
     require(joinTable.isEmpty && joinPostgresColumn.isEmpty && joinFetchColumns.isEmpty && joinHiveColumn.isEmpty && joinKeepColumn.isEmpty ||
       joinTable.isDefined && joinPostgresColumn.isDefined && joinFetchColumns.isDefined && joinHiveColumn.isDefined && joinKeepColumn.isDefined,

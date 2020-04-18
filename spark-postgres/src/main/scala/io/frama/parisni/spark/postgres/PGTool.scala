@@ -185,7 +185,7 @@ class PGTool(spark: SparkSession
 
 object PGTool extends java.io.Serializable with LazyLogging {
 
-  private val defaultBulkLoadStrategy = Stream
+  private val defaultBulkLoadStrategy = CSV
 
   def apply(spark: SparkSession, url: String, tmpPath: String, bulkLoadMode: BulkLoadMode = defaultBulkLoadStrategy): PGTool = {
     new PGTool(spark, url, tmpPath + "/spark-postgres-" + randomUUID.toString, bulkLoadMode).setPassword("")

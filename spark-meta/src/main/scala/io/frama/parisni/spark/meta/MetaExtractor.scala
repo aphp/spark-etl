@@ -19,7 +19,7 @@ class MetaExtractor(extractor: FeatureExtractTrait, spark: SparkSession, host: S
   }
 
   def fetchTable(sql: String): DataFrame = {
-    logger.warn(s"$host, $database, $schema, $sql")
+    logger.info(s"$host, $database, $schema, $sql")
     spark.read.format("postgres")
       .option("query", sql)
       .option("host", host)

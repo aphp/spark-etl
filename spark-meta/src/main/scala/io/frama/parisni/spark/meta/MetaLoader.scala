@@ -43,7 +43,7 @@ class MetaLoader(host: String, database: String, schema: String, user: String) e
    * SCD1 writing type means "add new or update"
    */
   def writeScd1(df: DataFrame, table: String, joinKey: String, filter: String, deleteSet: String): Unit = {
-    logger.warn("loading scd1 with %d rows".format(df.count))
+    logger.info("loading scd1 with %d rows".format(df.count))
     df.write.format("io.frama.parisni.spark.postgres")
       .option("type", "scd1")
       .option("partitions", 4)

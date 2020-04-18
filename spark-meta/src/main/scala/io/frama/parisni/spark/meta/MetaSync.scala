@@ -30,6 +30,12 @@ object MetaSync extends App with LazyLogging {
       // for each datasource
       for (source <- database.schemas.getOrElse(Nil)) {
         if (source.isActive.getOrElse(true)) {
+          logger.warn(
+            s"""Extracting meta for:
+               |- db name: ${source.dbName}
+               |- db type: ${source.dbType}
+               |- strategy: ${source.extractor.get.featureExtractImplClass.get}
+               |""".stripMargin)
 
           // get the information
           val extract = new MetaExtractor(source,spark)

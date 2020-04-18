@@ -14,8 +14,7 @@ class OmopFeatureExtractImpl extends FeatureExtractTrait {
 
   def extractPrimaryKey(df: DataFrame): DataFrame = {
     df.withColumn("is_pk", when((
-      col("lib_schema").rlike("omop")
-        && col("lib_column").rlike("_id$")
+      col("lib_column").rlike("_id$")
         && col("order_column") === lit(1)
       ), lit(true))
       .otherwise(lit(false)))
@@ -24,8 +23,7 @@ class OmopFeatureExtractImpl extends FeatureExtractTrait {
   def extractForeignKey(df: DataFrame): DataFrame = {
     df.withColumn("is_fk"
       , when((
-        col("lib_schema").rlike("omop")
-          && col("lib_column").rlike("_id$|_id_[0-9]$")
+        col("lib_column").rlike("_id$|_id_[0-9]$")
           && col("order_column") =!= lit(1)
         ), lit(true))
         .otherwise(lit(false)))

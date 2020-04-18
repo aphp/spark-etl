@@ -1,4 +1,4 @@
-package io.frama.parisni.spark.postgres.convert
+package io.frama.parisni.spark.postgres.rowconverters
 
 import java.nio.charset.StandardCharsets
 import java.sql.{Date, Timestamp}

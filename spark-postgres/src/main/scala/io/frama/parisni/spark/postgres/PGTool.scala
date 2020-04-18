@@ -10,7 +10,7 @@ import java.util.{Properties, TimeZone}
 import com.typesafe.scalalogging.LazyLogging
 import de.bytefish.pgbulkinsert.row.{SimpleRow, SimpleRowWriter}
 import de.bytefish.pgbulkinsert.util.PostgreSqlUtils
-import io.frama.parisni.spark.postgres.convert.{CSVOptions, UnivocityGenerator}
+import io.frama.parisni.spark.postgres.rowconverters.{UnivocityGenerator, CSVOptions, PgBulkInsertConverter}
 import org.apache.commons.io.input.ReaderInputStream
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
@@ -23,7 +23,6 @@ import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
 import org.postgresql.copy.{CopyManager, PGCopyInputStream}
 import org.postgresql.core.BaseConnection
 
-import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Promise, TimeoutException}
 import scala.util.{Failure, Success, Try}
@@ -580,18 +579,32 @@ object PGTool extends java.io.Serializable with LazyLogging {
 
   def toPostgresDdl(s: String): String = {
     s match {
-      case "string" => "text"
-      case "double" => "double precision"
-      case "float" => "float"
-      case "decimal(38,18)" => "double precision"
-      case "bigint" => "bigint"
+      case "boolean" => "boolean"
+      // No tinyint in postgres - using smallint instead
+      case "tinyint" => "smallint"
+      case "smallint" => "smallint"
       case "int" => "integer"
+      case "bigint" => "bigint"
+      case "float" => "float4"
+      case "double" => "double precision"
+      case "string" => "text"
+      case "decimal(38,18)" => "double precision"
       case "date" => "date"
       case "timestamp" => "timestamp"
-      case "boolean" => "boolean"
+      case "binary" => "bytea"
+
+      case "array<boolean>" => "boolean[]"
+      case "array<tinyint>" => "smallint[]"
+      case "array<smallint>" => "smallint[]"
       case "array<int>" => "integer[]"
       case "array<bigint>" => "bigint[]"
+      case "array<float>" => "float4[]"
+      case "array<double>" => "double precision[]"
       case "array<string>" => "text[]"
+      case "array<date>" => "date[]"
+      case "array<timestamp>" => "timestamp[]"
+      case "array<binary>" => "bytea[]"
+
       case _ => throw new Exception("data type not handled yet:%s".format(s))
     }
   }
@@ -675,7 +688,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
     bulkLoadMode match  {
       case CSV => outputBulkCsv(spark, url, table, df, path, numPartitions, password, reindex)
       case Stream => outputBulkStream(spark, url, table, df, numPartitions, password, reindex)
-      case PgBulkInsert => outputBulkInsert(spark, url, table, df, numPartitions, password, reindex)
+      case PgBulkInsert => outputPgBulkInsert(spark, url, table, df, numPartitions, password, reindex)
     }
   }
 
@@ -849,55 +862,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
     }
   }
 
-  def makePgBulkInsertRowConverter(t: DataType, idx: Int): ((Row, SimpleRow) => Unit) = {
-    (r: Row, s: SimpleRow) => {
-      t match {
-        case BooleanType => s.setBoolean(idx, r.getBoolean(idx))
-        case ByteType => s.setByte(idx, r.getByte(idx))
-        case ShortType => s.setShort(idx, r.getShort(idx))
-        case IntegerType => s.setInteger(idx, r.getInt(idx))
-        case LongType => s.setLong(idx, r.getLong(idx))
-        case FloatType => s.setFloat(idx, r.getFloat(idx))
-        case DoubleType => s.setDouble(idx, r.getDouble(idx))
-        case DecimalType() => s.setNumeric(idx, r.getDecimal(idx))
-
-        case StringType => s.setText(idx, r.getString(idx))
-        case BinaryType => s.setByteArray(idx, r.get(idx).asInstanceOf[Array[Byte]])
-
-        case DateType => s.setDate(idx, r.getDate(idx).toLocalDate)
-        case TimestampType => s.setTimeStamp(idx, r.getTimestamp(idx).toLocalDateTime)
-        // TODO: Check if we prefer the following in comparison to toLocalDate
-        //case TimestampType => s.setTimeStampTz(idx, ZonedDateTime.ofInstant(r.getTimestamp(idx).toInstant, ZoneId.of("UTC")))
-
-
-        case ArrayType(BooleanType, _) => s.setBooleanArray(idx, r.getSeq[Boolean](idx).map(b => Boolean.box(b)).asJava)
-        case ArrayType(ByteType, _) => s.setByteArray(idx, r.getSeq[Byte](idx).toArray)
-        case ArrayType(ShortType, _) => s.setShortArray(idx, r.getSeq[Short](idx).map(s => Short.box(s)).asJava)
-        case ArrayType(IntegerType, _) => s.setIntegerArray(idx, r.getSeq[Int](idx).map(i => Int.box(i)).asJava)
-        case ArrayType(LongType, _) => s.setLongArray(idx, r.getSeq[Long](idx).map(i => Long.box(i)).asJava)
-        case ArrayType(FloatType, _) => s.setFloatArray(idx, r.getSeq[Float](idx).map(i => Float.box(i)).asJava)
-        case ArrayType(DoubleType, _) => s.setDoubleArray(idx, r.getSeq[Double](idx).map(i => Double.box(i)).asJava)
-        case ArrayType(DecimalType(), _) => s.setNumericArray(idx, r.getSeq[BigDecimal](idx).asJava)
-        case ArrayType(StringType, _) => s.setTextArray(idx, r.getSeq[String](idx).asJava)
-
-        // TODO Convert to hstore/jsonb?
-        case ArrayType(_, _) => throw new UnsupportedOperationException("Trying to insert an Array not supported by PgBulkInsert")
-        case MapType(_, _, _) => throw new UnsupportedOperationException("Trying to insert a spark Map into postgres - Not yet supported")
-        case StructType(_) => throw new UnsupportedOperationException("Trying to insert a spark Struct into postgres - Not yet supported")
-      }
-    }
-  }
-
-  def makePgBulkInsertRowConverter(schema: StructType): ((Row, SimpleRow) => Unit) = {
-    val converters = schema.fields.toSeq.zipWithIndex.map {case (sf: StructField, idx: Int) =>
-      makePgBulkInsertRowConverter(sf.dataType, idx)
-    }
-
-    (r: Row, s: SimpleRow) => converters.foreach(c => c(r, s))
-
-  }
-
-  def outputBulkInsert(spark: SparkSession
+  def outputPgBulkInsert(spark: SparkSession
     , url: String
     , table: String
     , df: Dataset[Row]
@@ -918,7 +883,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
 
       rddToWrite.foreachPartition((p: Iterator[(Long, Row)]) => {
 
-        val rowConverter = makePgBulkInsertRowConverter(schema)
+        val rowConverter = PgBulkInsertConverter.makePgBulkInsertRowConverter(schema)
         val pgBulkInsertRowConsumer = (sparkRow: Row) => new Consumer[SimpleRow]() {
           override def accept(pgBulkInsertRow: SimpleRow): Unit = rowConverter(sparkRow, pgBulkInsertRow)
         }

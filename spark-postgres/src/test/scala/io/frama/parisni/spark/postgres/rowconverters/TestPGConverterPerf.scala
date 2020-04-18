@@ -3,7 +3,7 @@
  * writing at least some amount of data, meaning tests are long.
  */
 /*
-package io.frama.parisni.spark.postgres.convert
+package io.frama.parisni.spark.postgres.rowconverters
 
 import java.io.StringWriter
 import java.sql.Timestamp
@@ -13,7 +13,7 @@ import java.util.function.Consumer
 
 import de.bytefish.pgbulkinsert.pgsql.handlers.ValueHandlerProvider
 import de.bytefish.pgbulkinsert.row.SimpleRow
-import io.frama.parisni.spark.postgres.{PGTool, SparkSessionTestWrapper}
+import io.frama.parisni.spark.postgres.SparkSessionTestWrapper
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{QueryTest, Row}
@@ -113,7 +113,7 @@ class TestPGConverterPerf extends QueryTest with SparkSessionTestWrapper {
 
   @Test def convertRowsPgBulkImport(): Unit = {
 
-    val rowConverter = PGTool.makePgBulkInsertRowConverter(schema)
+    val rowConverter = PgBulkInsertConverter.makePgBulkInsertRowConverter(schema)
     val pgBulkInsertRowConsumer = (sparkRow: Row) => new Consumer[SimpleRow]() {
       override def accept(pgBulkInsertRow: SimpleRow): Unit = rowConverter(sparkRow, pgBulkInsertRow)
     }

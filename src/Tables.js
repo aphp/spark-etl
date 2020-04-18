@@ -7,7 +7,6 @@ import Toolbar from '@material-ui/core/Toolbar';
 import Tabs from '@material-ui/core/Tabs';
 import Tab from '@material-ui/core/Tab';
 import Typography from '@material-ui/core/Typography';
-import Box from '@material-ui/core/Box';
 import SimpleModal from './helpers/Modal.js'
 import Diagram from './diagram/Diagram.js';
 import Select from './helpers/Select.js'
@@ -28,7 +27,7 @@ function TabPanel(props) {
       aria-labelledby={`simple-tab-${index}`}
       {...other}
     >
-      <Box p={3}>{children}</Box>
+      {children}
     </Typography>
   );
 }

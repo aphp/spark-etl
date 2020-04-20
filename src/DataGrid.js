@@ -74,6 +74,7 @@ class TextHightlighter extends React.PureComponent {
         ref={this.contentEditable}
         type="text"
         rows="5"
+        style={{width: "100%"}}
         value={this.state.text}
         onChange={this.onChange}
         onBlur={this.save}/>

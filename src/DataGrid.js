@@ -8,14 +8,17 @@ import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Paper from '@material-ui/core/Paper';
 import Editable from './helpers/Editable.js';
-
-const StyledHeader = withStyles(theme => ({
-  head: {
-    backgroundColor: '#1976d2',
-    color: theme.palette.common.white,
-    fontSize: 18,
-  },
-}))(TableCell);
+import Typography from '@material-ui/core/Typography';
+import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
+import Box from '@material-ui/core/Box';
+import BoxLine from "./helpers/BoxLine.js";
+import Card from '@material-ui/core/Card';
+import CardActions from '@material-ui/core/CardActions';
+import CardContent from '@material-ui/core/CardContent';
+import CardActionArea from '@material-ui/core/CardActionArea';
+import clsx from 'clsx';
+import Collapse from '@material-ui/core/Collapse';
+import IconButton from '@material-ui/core/IconButton';
 
 
 class TextHightlighter extends React.PureComponent {
@@ -60,7 +63,7 @@ class TextHightlighter extends React.PureComponent {
     }
 
     if (!editable || !this.props.updateText) {
-      return <span dangerouslySetInnerHTML={{ __html: displayText}}></span>;
+      return <Typography variant="body2" display="inline" dangerouslySetInnerHTML={{ __html: displayText}}/>;
     }
 
     return <Editable
@@ -116,82 +119,130 @@ class AttributeTable extends React.Component {
   }
 
   render() {
-    const {table, columns, attributeCols, searchText} = this.props;
+    const {table, attributeCols, searchText} = this.props;
     if (!table._hasColumnDisplay) {
       return null;
     }
 
     return (
-      <TableRow hover={true}>
-        <TableCell colSpan={columns.length}>
-          <Table aria-label="table">
-            <TableHead>
+      <TableContainer component={Paper}>
+        <Table aria-label="table">
+          <TableHead>
+            <DataRow
+              key={table._key + '-attributes-head'}
+              row={table}
+              useName={false}
+              cells={attributeCols}
+              searchText={searchText}
+              canEdit={this.props.canEdit}/>
+          </TableHead>
+          <TableBody>
+            {table.columns.map(tableColumn => (
               <DataRow
-                key={table._key + '-attributes-head'}
-                row={table}
-                useName={false}
+                row={tableColumn}
+                useName={true}
                 cells={attributeCols}
+                key={table._key + '-attributes-' + tableColumn.name}
                 searchText={searchText}
+                updateText={this.props.updateText}
                 canEdit={this.props.canEdit}/>
-            </TableHead>
-            <TableBody>
-              {table.columns.map(tableColumn => (
-                <DataRow
-                  row={tableColumn}
-                  useName={true}
-                  cells={attributeCols}
-                  key={table._key + '-attributes-' + tableColumn.name}
-                  searchText={searchText}
-                  updateText={this.props.updateText}
-                  canEdit={this.props.canEdit}/>
-              ))}
-            </TableBody>
-          </Table>
-        </TableCell>
-      </TableRow>);
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>);
   }
 }
 
-class TableData extends React.Component {
+
+class CardData extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      expanded: props.expandedColumns || false
+    }
+  }
+
   shouldComponentUpdate(nextProps, nextState) {
-    return (nextProps.table._forceUpdate || this.props.canEdit !== nextProps.canEdit);
+    return (nextProps.table._forceUpdate ||
+      this.props.canEdit !== nextProps.canEdit ||
+      this.state.expanded !== nextState.expanded);
+  }
+
+  setExpanded = (e) => {
+    this.setState({expanded: e});
+  };
+
+  handleExpandClick = () => {
+    this.setExpanded(!this.state.expanded);
+  };
+
+  selectTableId = id => {
+    this.props.selectTableId && this.props.selectTableId(this.props.table.id);
   }
 
   render() {
-    const {table, columns, attributeCols, classes, searchText} = this.props;
+    const {table, canEdit, columns, attributeCols, searchText, classes} = this.props;
     if (!table._display) {
       return null;
     }
 
     return (
-      <React.Fragment>
-        <DataRow
-          className={classes.tableHead}
-          key={table._key + '-content'}
-          row={table} useName={true}
-          cells={columns}
-          searchText={searchText}
-          updateText={this.props.updateTables}
-          canEdit={this.props.canEdit}/>
-        <AttributeTable
-          table={table}
-          columns={columns}
-          attributeCols={attributeCols}
-          searchText={searchText}
-          updateText={this.props.updateColumns}
-          canEdit={this.props.canEdit}/>
-      </React.Fragment>
+      <Card>
+        <CardActionArea onClick={this.selectTableId}>
+          <BoxLine items={[{name: table.name, variant: "h5"}, table.columns_count + " columns", "type: " + table.typ_table]}/>
+        </CardActionArea>
+        <CardContent>
+          { columns.filter(e => e.name.startsWith('comment_')).map(col => {
+            return <div key={'cardcontent-' + table.name + '-' + col.name}>
+              <Typography variant="h6">{col.name}</Typography>
+              <TextHightlighter
+                text={table[col.name]}
+                highlight={searchText}
+                updateText={this.props.updateColumns ? (text => this.props.updateColumns(table, col.name, text)) : null}
+                editable={col.editable && canEdit}/>
+              </div>
+          })}
+        </CardContent>
+        <CardActions disableSpacing>
+            <IconButton
+              className={clsx(classes.expand, {
+                [classes.expandOpen]: this.state.expanded,
+              })}
+              onClick={this.handleExpandClick}
+              aria-expanded={this.state.expanded}
+              aria-label="show more"
+            >
+              <ExpandMoreIcon />
+            </IconButton>
+          </CardActions>
+          <Collapse in={this.state.expanded} timeout="auto" unmountOnExit>
+        <CardContent>
+          <AttributeTable
+           table={table}
+           columns={columns}
+           attributeCols={attributeCols}
+           searchText={searchText}
+           updateText={this.props.updateColumns}
+           canEdit={this.props.canEdit}/>
+        </CardContent>
+      </Collapse>
+      </Card>
     );
   }
 }
 
-
-const StyledTableData = withStyles(theme => ({
-  tableHead: {
-    backgroundColor: '#eeeeee',
-    fontSize: 16,
+const StyledCardData = withStyles(theme => ({
+  expand: {
+    transform: 'rotate(0deg)',
+    marginLeft: 'auto',
+    transition: theme.transitions.create('transform', {
+      duration: theme.transitions.duration.shortest,
+    }),
   },
-}))(TableData);
+  expandOpen: {
+    transform: 'rotate(180deg)',
+  },
+}))(CardData);
 
 class DataGrid extends React.Component {
   shouldComponentUpdate(nextProps, nextState) {
@@ -211,29 +262,21 @@ class DataGrid extends React.Component {
     const { tables, tableHeaders, attributeCols } = schema;
 
     return (
-      <TableContainer component={Paper}>
-        <Table aria-label="table">
-          <TableHead>
-            <TableRow>
-              {tableHeaders.map(col => (
-                <StyledHeader key={'col-' + col.name}>{col.name}</StyledHeader>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {tables.map(table => (
-              <StyledTableData
-                key={'tabledata-' + table._key}
-                table={table} columns={tableHeaders}
-                attributeCols={attributeCols}
-                searchText={searchText}
-                updateColumns={this.props.updateColumns}
-                updateTables={this.props.updateTables}
-                canEdit={this.props.canEdit}/>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <div style={{backgroundColor: "#eeeeee"}}>
+        {tables.map(table => (
+          <Box p={1} key={'card-' + table._key}>
+            <StyledCardData
+              selectTableId={this.props.selectTableId}
+              table={table} columns={tableHeaders}
+              attributeCols={attributeCols}
+              searchText={searchText}
+              updateColumns={this.props.updateColumns}
+              updateTables={this.props.updateTables}
+              expandedColumns={this.props.expandedColumns}
+              canEdit={this.props.canEdit}/>
+          </Box>
+        ))}
+      </div>
     );
   }
 }

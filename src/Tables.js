@@ -262,7 +262,9 @@ class Tables extends React.PureComponent {
   };
 
   setAuthToken = (v) => {
-    this.setState({authToken: v});
+    this.setState({authToken: v}, () => {
+      console.log('Set auth token to: ' + this.state.authToken);
+    });
   }
 
 
@@ -326,6 +328,7 @@ class Tables extends React.PureComponent {
             searchText={this.state.searchText}
             updateColumns={this.updateColumns}
             updateTables={this.updateTables}
+            selectTableId={this.selectByTableId}
             canEdit={this.state.authToken !== ''}/>
         </TabPanel>
         <TabPanel value={this.state.tabIndex} index={2}>
@@ -335,6 +338,7 @@ class Tables extends React.PureComponent {
             searchText={this.state.searchText}
             updateColumns={this.updateColumns}
             updateTables={this.updateTables}
+            expandedColumns={true}
             canEdit={this.state.authToken !== ''}/>
         </TabPanel>
       </div>

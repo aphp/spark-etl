@@ -1,6 +1,5 @@
 import React from 'react';
-import Box from '@material-ui/core/Box';
-import Typography from '@material-ui/core/Typography';
+import BoxLine from './helpers/BoxLine.js';
 
 class SchemaStats extends React.Component {
   shouldComponentUpdate(nextProps, nextState) {
@@ -27,20 +26,7 @@ class SchemaStats extends React.Component {
       columnsText = `${visibleColumns}/${columnsCount} columns shown`;
     }
 
-    return (
-      <Box display="flex" style={{ width: '100%' }}>
-        <Box m="auto">
-          <Typography component="div" display="inline" bgcolor="background.paper">
-            {tableText}
-          </Typography>
-        </Box>
-        <Box m="auto">
-          <Typography component="div" display="inline" bgcolor="background.paper">
-            {columnsText}
-          </Typography>
-        </Box>
-    </Box>
-    );
+    return <BoxLine items={[tableText, columnsText]}/>;
   }
 }
 

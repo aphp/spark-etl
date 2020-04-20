@@ -227,7 +227,7 @@ class Tables extends React.PureComponent {
       });
   }
 
-  selectByTableId = (tableId) => {
+  selectByTableId = (tableId, changeTab) => {
     if (!tableId) {
       this.setState({
         selectedTable: null
@@ -243,15 +243,19 @@ class Tables extends React.PureComponent {
     selectedTable.tables = table;
     selectedTable.tableHeaders = this.props.selectedSchema.tableHeaders;
     selectedTable.attributeCols = this.props.selectedSchema.attributeCols;
-    this.setState({ selectedTable });
+    if (changeTab) {
+      this.setState({ selectedTable }, () => this.changeTab(null, 2));
+    } else {
+      this.setState({ selectedTable });
+    }
   }
 
   changeTab = (event, newTabIndex) => {
     this.setState({tabIndex: newTabIndex});
   };
 
-  onSelectTable = (values) => {
-    this.selectByTableId(values && values.id);
+  onSelectTable = (values, changeTab) => {
+    this.selectByTableId(values && values.id, changeTab);
   }
 
   onSelectedDiagramTable = (e) => {
@@ -290,13 +294,13 @@ class Tables extends React.PureComponent {
     }
 
     const alltablesKey = 'alltables-' + this.state.updateId;
-    const singleTableKey = 'singletable-' + this.state.updateId;
     const selectedTable = this.state.selectedTable;
     const selectedTableValue = selectedTable ? selectedTable.tables[0] : null;
+    const singleTableKey = 'singletable-' + (selectedTableValue ? selectedTableValue.name : 'null') + '-' + this.state.updateId;
     return (
       <div className={classes.root}>
         <SchemaStats selectedSchema={selectedSchema}/>
-        <Select label="tables" options={selectedSchema.tables} onChange={this.onSelectTable} selectedValue={selectedTableValue}></Select>
+        <Select label="tables" options={selectedSchema.tables} onChange={(values) => { this.onSelectTable(values, true) }} selectedValue={selectedTableValue}></Select>
         <AppBar position="static">
         <Toolbar>
           <Tabs value={this.state.tabIndex} onChange={this.changeTab} aria-label="Tabs" className={classes.grow}>

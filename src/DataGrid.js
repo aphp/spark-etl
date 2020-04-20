@@ -160,7 +160,6 @@ class CardData extends React.Component {
     }
 
     const items = [
-      {name: table.name, variant: "h5"},
       table.columns_count + " columns",
       table.count_table + " lines",
       "type: " + table.typ_table]
@@ -168,6 +167,7 @@ class CardData extends React.Component {
     return (
       <Card>
         <CardActionArea onClick={this.selectTableId}>
+          <BoxLine items={[ {name: table.name, variant: "h4"}]}/>
           <BoxLine items={items}/>
         </CardActionArea>
         <CardContent>

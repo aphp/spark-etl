@@ -159,10 +159,16 @@ class CardData extends React.Component {
       return null;
     }
 
+    const items = [
+      {name: table.name, variant: "h5"},
+      table.columns_count + " columns",
+      table.count_table + " lines",
+      "type: " + table.typ_table]
+
     return (
       <Card>
         <CardActionArea onClick={this.selectTableId}>
-          <BoxLine items={[{name: table.name, variant: "h5"}, table.columns_count + " columns", "type: " + table.typ_table]}/>
+          <BoxLine items={items}/>
         </CardActionArea>
         <CardContent>
           { columns.filter(e => e.name.startsWith('comment_')).map(col => {

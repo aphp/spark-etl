@@ -120,7 +120,8 @@ app.get('/tables', (req, res) => {
             COALESCE(lib_table_m, lib_table) AS name, \
             COALESCE(comment_fonctionnel_m, comment_fonctionnel) AS comment_fonctionnel, \
             COALESCE(comment_technique_m, comment_technique) AS comment_technique, \
-            COALESCE(typ_table_m, typ_table) AS typ_table \
+            COALESCE(typ_table_m, typ_table) AS typ_table, \
+            count_table \
             FROM meta_table \
             WHERE ids_schema = $1 \
             AND COALESCE(is_active_m, is_active) \

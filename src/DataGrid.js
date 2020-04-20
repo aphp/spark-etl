@@ -150,7 +150,7 @@ class CardData extends React.Component {
   };
 
   selectTableId = id => {
-    this.props.selectTableId && this.props.selectTableId(this.props.table.id, true);
+    this.props.selectTableId && this.props.selectTableId(this.props.table.id, true, true);
   }
 
   render() {

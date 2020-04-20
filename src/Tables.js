@@ -134,6 +134,7 @@ async function postData(url = '', data = {}, authToken) {
 class Tables extends React.PureComponent {
   constructor(props) {
     super(props);
+    this.tableTabRref = React.createRef();
     this.state = {
       tables: [],
       tabIndex: 0,
@@ -231,7 +232,7 @@ class Tables extends React.PureComponent {
       });
   }
 
-  selectByTableId = (tableId, changeTab) => {
+  selectByTableId = (tableId, changeTab, scroll) => {
     if (!tableId) {
       this.setState({
         selectedTable: null
@@ -248,7 +249,15 @@ class Tables extends React.PureComponent {
     selectedTable.tableHeaders = this.props.selectedSchema.tableHeaders;
     selectedTable.attributeCols = this.props.selectedSchema.attributeCols;
     if (changeTab) {
-      this.setState({ selectedTable }, () => this.changeTab(null, 2));
+      this.setState({ selectedTable }, () => {
+        this.changeTab(null, 2);
+        if (scroll) {
+          this.tableTabRref.current.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+          });
+        }
+      });
     } else {
       this.setState({ selectedTable });
     }
@@ -259,14 +268,14 @@ class Tables extends React.PureComponent {
   };
 
   onSelectTable = (values, changeTab) => {
-    this.selectByTableId(values && values.id, changeTab);
+    this.selectByTableId(values && values.id, changeTab, false);
   }
 
   onSelectedDiagramTable = (e) => {
     if (!e.isSelected) {
       return;
     }
-    this.selectByTableId(e.entity.id);
+    this.selectByTableId(e.entity.id, false, false);
   };
 
   setAuthToken = (v) => {
@@ -305,6 +314,7 @@ class Tables extends React.PureComponent {
       <div className={classes.root}>
         <SchemaStats selectedSchema={selectedSchema}/>
         <Select label="tables" options={selectedSchema.tables} onChange={(values) => { this.onSelectTable(values, true) }} selectedValue={selectedTableValue}></Select>
+        <div ref={this.tableTabRref}></div>
         <AppBar position="static">
         <Toolbar>
           <Tabs value={this.state.tabIndex} onChange={this.changeTab} aria-label="Tabs" className={classes.grow}>

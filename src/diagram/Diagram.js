@@ -47,7 +47,7 @@ class EngineWidget extends React.Component {
 				marginx: engineMarginX,
         marginy: engineMarginY,
 			},
-			includeLinks: true
+			includeLinks: false
     });
 	}
 
@@ -219,7 +219,7 @@ class Diagram extends React.Component {
       registerDefaultZoomCanvasAction: false,
     });
     // Prevent modifying links by adding points
-    engine.maxNumberPointsPerLink = 0;
+    engine.setMaxNumberPointsPerLink(0);
 
     engine.getActionEventBus().registerAction(new ZoomAction());
 

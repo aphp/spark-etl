@@ -82,37 +82,6 @@ class TextHightlighter extends React.PureComponent {
   }
 }
 
-class DataRow extends React.Component {
-  shouldComponentUpdate(nextProps, nextState) {
-    return nextProps.row._forceUpdate || this.props.canEdit !== nextProps.canEdit;
-  }
-
-  updateText = (col, text) => {
-    this.props.updateText(this.props.row, col, text);
-  }
-
-  render() {
-    const {row, useName, cells, className, searchText, canEdit} = this.props;
-
-    if (!row._display) {
-      return null;
-    }
-
-    return (
-      <TableRow className={className} hover={true}>
-      {cells.map(col => (
-        <TableCell key={'table-cell-' + row._key + '-' + col.name} style={{ verticalAlign: 'top' }}>
-          <TextHightlighter
-            text={useName ? row[col.name] : col.name}
-            highlight={searchText}
-            updateText={this.props.updateText ? (text => this.updateText(col.name, text)) : null}
-            editable={col.editable && canEdit}/>
-        </TableCell>
-      ))}
-    </TableRow>
-    );
-  }
-}
 
 class AttributeTable extends React.Component {
   shouldComponentUpdate(nextProps, nextState) {
@@ -120,7 +89,7 @@ class AttributeTable extends React.Component {
   }
 
   render() {
-    const {table, attributeCols, searchText} = this.props;
+    const {table, attributeCols, searchText, canEdit} = this.props;
     if (!table._hasColumnDisplay) {
       return null;
     }
@@ -129,25 +98,28 @@ class AttributeTable extends React.Component {
       <TableContainer component={Paper}>
         <Table aria-label="table">
           <TableHead>
-            <DataRow
-              key={table._key + '-attributes-head'}
-              row={table}
-              useName={false}
-              cells={attributeCols}
-              searchText={searchText}
-              canEdit={this.props.canEdit}/>
+            <TableRow>
+              {attributeCols.map(col => (
+                <TableCell key={'table-head-' + table._key + '-' + col.name}>
+                  {col.name}
+                </TableCell>
+              ))}
+            </TableRow>
           </TableHead>
           <TableBody>
             {table.columns.map(tableColumn => (
-              <DataRow
-                row={tableColumn}
-                useName={true}
-                cells={attributeCols}
-                key={table._key + '-attributes-' + tableColumn.name}
-                searchText={searchText}
-                updateText={this.props.updateText}
-                canEdit={this.props.canEdit}/>
-            ))}
+              <TableRow key={'table-row-' + table._key + '-' + tableColumn._key}>
+                { attributeCols.map(col => (
+                  <TableCell key={'table-cell-' + tableColumn._key + '-' + col.name}>
+                    <TextHightlighter
+                      text={tableColumn[col.name]}
+                      highlight={searchText}
+                      updateText={this.props.updateText ? (text => this.updateText(col.name, text)) : null}
+                      editable={col.editable && canEdit}/>
+                  </TableCell>
+                ))}
+              </TableRow>)
+            )}
           </TableBody>
         </Table>
       </TableContainer>);

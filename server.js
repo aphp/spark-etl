@@ -200,7 +200,8 @@ app.get('/', function (req, res) {
 });
 
 
-function checkAuth({ authorization }) {
+function checkAuth(headers) {
+  const authorization = headers['x-authorization'];
   if (!authorization) {
     return false;
   }

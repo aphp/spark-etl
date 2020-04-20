@@ -114,7 +114,7 @@ async function postData(url = '', data = {}, authToken) {
   };
 
   if (authToken) {
-    headers['Authorization'] = 'Bearer ' + authToken;
+    headers['X-Authorization'] = 'Bearer ' + authToken;
   }
 
   // Default options are marked with *

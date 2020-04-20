@@ -216,8 +216,11 @@ class Diagram extends React.Component {
     // model.setLocked(true);
     let engine = createEngine({
       registerDefaultDeleteItemsAction: false,
-      registerDefaultZoomCanvasAction: false
+      registerDefaultZoomCanvasAction: false,
     });
+    // Prevent modifying links by adding points
+    engine.maxNumberPointsPerLink = 0;
+
     engine.getActionEventBus().registerAction(new ZoomAction());
 
     engine.setModel(model);

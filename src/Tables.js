@@ -311,10 +311,7 @@ class Tables extends React.PureComponent {
             <Tab label="Diagram" {...a11yProps(0)} />
             <Tab label="All tables" {...a11yProps(1)} />
             { selectedTable && <Tab
-              label={<div>
-                  <div>{'Table: ' + selectedTableValue.name}</div>
-                  <div>{'(' + selectedTableValue.columns.length + ' columns)'}</div>
-                </div> }
+              label={'Table: ' + selectedTableValue.name}
               {...a11yProps(2)} /> }
           </Tabs>
             <SearchInput updateSearchText={this.updateSearchText} searchText={this.state.searchText}/>

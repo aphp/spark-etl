@@ -210,6 +210,7 @@ function checkAuth({ authorization }) {
 
 app.post('/columns', function (req, res) {
   if (!checkAuth(req.headers)) {
+    console.log(`Unauthorized access updating columns for token: ${req.headers.authorization}`);
     res.status(403).send({message: 'Unauthorized'});
     return;
   }
@@ -233,6 +234,7 @@ app.post('/columns', function (req, res) {
 
 app.post('/tables', function (req, res) {
   if (!checkAuth(req.headers)) {
+    console.log(`Unauthorized access updating tables for token: ${req.headers.authorization}`);
     res.status(403).send({message: 'Unauthorized'});
     return;
   }
@@ -256,5 +258,5 @@ app.post('/tables', function (req, res) {
 });
 
 const serverPort = process.env.PORT || 8080;
-console.log('server running on port: ' + serverPort);
+console.log(`server running on port: ${serverPort} with auth token: "${authToken}"`);
 app.listen(serverPort);

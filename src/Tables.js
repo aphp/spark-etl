@@ -199,6 +199,8 @@ class Tables extends React.PureComponent {
         if (res.status !== 200) {
           res.json().then(err => {
             console.error(`error updating row table: ${row.id}, name: ${col} with value: ${text}: ${err}`); // JSON data parsed by `response.json()` call
+          }).catch(err => {
+            console.error(`error (2) updating row column: ${row.id}, name: ${col} with value: ${text}: ${err.message}`); // JSON data parsed by `response.json()` call
           });
           return;
         }
@@ -216,6 +218,8 @@ class Tables extends React.PureComponent {
         if (res.status !== 200) {
           res.json().then(err => {
             console.error(`error updating row column: ${row.id}, name: ${col} with value: ${text}: ${err.message}`); // JSON data parsed by `response.json()` call
+          }).catch(err => {
+            console.error(`error (2) updating row column: ${row.id}, name: ${col} with value: ${text}: ${err.message}`); // JSON data parsed by `response.json()` call
           });
           return;
         }

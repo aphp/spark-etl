@@ -136,16 +136,24 @@ class PostgresRelation(val parameters: Map[String, String]
     require(conf.getUser.nonEmpty || conf.getUrl.isDefined, "User cannot be empty")
     val bulkLoadMode = conf.getBulkLoadMode.getOrElse("") match {
       case "csv" => CSV
+      case "stream" => Stream
       case "PgBulkInsert" => PgBulkInsert
-      case _ => Stream
+      case _ => PGTool.defaultBulkLoadStrategy
     }
+    val bulkLoadBufferSize = conf.getBulkLoadBufferSize.getOrElse(PGTool.defaultBulkLoadBufferSize)
 
     val url = getUrl(conf.getUrl, conf.getHost, conf.getPort, conf.getDatabase, conf.getUser, conf.getSchema)
-    pgTool(url, conf.getTemp, conf.getPassword, bulkLoadMode)
+    pgTool(url, conf.getTemp, conf.getPassword, bulkLoadMode, bulkLoadBufferSize)
   }
 
-  def pgTool(url: String, tempFolder: Option[String], password: Option[String], bulkLoadMode: BulkLoadMode) = {
-    val pg = PGTool(sparkSession, url, tempFolder.getOrElse("/tmp"), bulkLoadMode)
+  def pgTool(
+             url: String
+             , tempFolder: Option[String]
+             , password: Option[String]
+             , bulkLoadMode: BulkLoadMode
+             , bulkLoadBufferSize: Int
+            ) = {
+    val pg = PGTool(sparkSession, url, tempFolder.getOrElse("/tmp"), bulkLoadMode, bulkLoadBufferSize)
     if (password.isDefined)
       pg.setPassword(password.get)
     pg

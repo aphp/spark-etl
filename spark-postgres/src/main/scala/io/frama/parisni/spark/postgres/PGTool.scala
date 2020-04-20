@@ -8,10 +8,9 @@ import java.util.function.Consumer
 import java.util.{Properties, TimeZone}
 
 import com.typesafe.scalalogging.LazyLogging
-import de.bytefish.pgbulkinsert.row.{SimpleRow, SimpleRowWriter}
+import de.bytefish.pgbulkinsert.row.SimpleRow
 import de.bytefish.pgbulkinsert.util.PostgreSqlUtils
-import io.frama.parisni.spark.postgres.rowconverters.{UnivocityGenerator, CSVOptions, PgBulkInsertConverter}
-import org.apache.commons.io.input.ReaderInputStream
+import io.frama.parisni.spark.postgres.rowconverters.{CSVOptions, PgBulkInsertConverter, UnivocityGenerator}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.Partitioner
@@ -38,6 +37,7 @@ class PGTool(spark: SparkSession
              , url: String
              , tmpPath: String
              , bulkLoadMode: BulkLoadMode
+             , bulkLoadBufferSize: Int
             ) {
 
   private var password: String = ""
@@ -148,7 +148,7 @@ class PGTool(spark: SparkSession
    *
    */
   def outputBulk(table: String, df: Dataset[Row], numPartitions: Int = 8, reindex: Boolean = false): PGTool = {
-    PGTool.outputBulk(spark, url, table, df, genPath, numPartitions, password, reindex, bulkLoadMode)
+    PGTool.outputBulk(spark, url, table, df, genPath, numPartitions, password, reindex, bulkLoadMode, bulkLoadBufferSize)
     this
   }
 
@@ -163,12 +163,12 @@ class PGTool(spark: SparkSession
 
   def outputScd2Hash(table: String, df: DataFrame, pk: String, key: List[String], endDatetimeCol: String, partitions: Option[Int] = None, multiline: Option[Boolean] = None): Unit = {
 
-    PGTool.outputBulkDfScd2Hash(spark, url, table, df, pk, key, endDatetimeCol, partitions.getOrElse(4), genPath, password)
+    PGTool.outputBulkDfScd2Hash(spark, url, table, df, pk, key, endDatetimeCol, partitions.getOrElse(4), genPath, password, bulkLoadMode, bulkLoadBufferSize)
   }
 
   def outputScd1Hash(table: String, key: List[String], df: Dataset[Row], numPartitions: Option[Int] = None, filter: Option[String] = None, deleteSet: Option[String] = None): PGTool = {
 
-    PGTool.outputBulkDfScd1Hash(spark, url, table, df, key, numPartitions.getOrElse(4), genPath, filter, deleteSet, password)
+    PGTool.outputBulkDfScd1Hash(spark, url, table, df, key, numPartitions.getOrElse(4), genPath, filter, deleteSet, password, bulkLoadMode, bulkLoadBufferSize)
     this
   }
 
@@ -185,10 +185,18 @@ class PGTool(spark: SparkSession
 
 object PGTool extends java.io.Serializable with LazyLogging {
 
-  private val defaultBulkLoadStrategy = CSV
+  val defaultBulkLoadStrategy = CSV
+  val defaultBulkLoadBufferSize = 64 * 1024
+  val defaultStreamBulkLoadTimeoutMs = 10 * 64 * 1000
 
-  def apply(spark: SparkSession, url: String, tmpPath: String, bulkLoadMode: BulkLoadMode = defaultBulkLoadStrategy): PGTool = {
-    new PGTool(spark, url, tmpPath + "/spark-postgres-" + randomUUID.toString, bulkLoadMode).setPassword("")
+  def apply(
+            spark: SparkSession
+            , url: String
+            , tmpPath: String
+            , bulkLoadMode: BulkLoadMode = defaultBulkLoadStrategy
+            , bulkLoadBufferSize: Int = defaultBulkLoadBufferSize
+           ): PGTool = {
+    new PGTool(spark, url, tmpPath + "/spark-postgres-" + randomUUID.toString, bulkLoadMode, bulkLoadBufferSize).setPassword("")
   }
 
   private def dbPassword(hostname: String, port: String, database: String, username: String): String = {
@@ -684,11 +692,12 @@ object PGTool extends java.io.Serializable with LazyLogging {
                  , password: String = ""
                  , reindex: Boolean = false
                  , bulkLoadMode: BulkLoadMode = defaultBulkLoadStrategy
+                 , bulkLoadBufferSize: Int = defaultBulkLoadBufferSize
   ) = {
     bulkLoadMode match  {
-      case CSV => outputBulkCsv(spark, url, table, df, path, numPartitions, password, reindex)
-      case Stream => outputBulkStream(spark, url, table, df, numPartitions, password, reindex)
-      case PgBulkInsert => outputPgBulkInsert(spark, url, table, df, numPartitions, password, reindex)
+      case CSV => outputBulkCsv(spark, url, table, df, path, numPartitions, password, reindex, bulkLoadBufferSize)
+      case Stream => outputBulkStream(spark, url, table, df, numPartitions, password, reindex, bulkLoadBufferSize)
+      case PgBulkInsert => outputPgBulkInsert(spark, url, table, df, numPartitions, password, reindex, bulkLoadBufferSize)
     }
   }
 
@@ -700,6 +709,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
                     , numPartitions: Int = 8
                     , password: String = ""
                     , reindex: Boolean = false
+                    , bulkLoadBufferSize: Int = defaultBulkLoadBufferSize
                    ) = {
     logger.warn("using CSV strategy")
     try {
@@ -720,7 +730,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
         .option("ignoreTrailingWhiteSpace", "false")
         .mode(org.apache.spark.sql.SaveMode.Overwrite)
         .save(path)
-      outputBulkCsvLow(spark, url, table, columns, path, numPartitions, ",", ".*.csv", password)
+      outputBulkCsvLow(spark, url, table, columns, path, numPartitions, ",", ".*.csv", password, bulkLoadBufferSize)
     } finally {
       if (reindex)
         indexReactivate(url, table, password)
@@ -736,6 +746,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
                        , delimiter: String = ","
                        , csvPattern: String = ".*.csv"
                        , password: String = ""
+                       , bulkLoadBufferSize: Int = defaultBulkLoadBufferSize
                       ) = {
 
     // load the csv files from hdfs in parallel
@@ -751,9 +762,9 @@ object PGTool extends java.io.Serializable with LazyLogging {
         val conn = connOpen(url, password)
         x.foreach {
           s => {
-            val stream = FileSystem.get(new Configuration()).open(new Path(s._2)).getWrappedStream
+            val stream: InputStream = FileSystem.get(new Configuration()).open(new Path(s._2)).getWrappedStream
             val copyManager: CopyManager = new CopyManager(conn.asInstanceOf[BaseConnection])
-            copyManager.copyIn( s"""COPY "$table" ($columns) FROM STDIN WITH CSV DELIMITER '$delimiter'  NULL '' ESCAPE '"' QUOTE '"' """, stream)
+            copyManager.copyIn( s"""COPY "$table" ($columns) FROM STDIN WITH CSV DELIMITER '$delimiter'  NULL '' ESCAPE '"' QUOTE '"' """, stream, bulkLoadBufferSize)
           }
         }
         conn.close()
@@ -768,7 +779,8 @@ object PGTool extends java.io.Serializable with LazyLogging {
                        , numPartitions: Int = 8
                        , password: String = ""
                        , reindex: Boolean = false
-                       , copyTimeoutMs: Long = 1000 * 60 * 10
+                       , bulkLoadBufferSize: Int = defaultBulkLoadBufferSize
+                       , copyTimeoutMs: Long = defaultStreamBulkLoadTimeoutMs
   ) = {
     logger.warn("using STREAM strategy")
     try {
@@ -800,7 +812,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
         val csvOptions = new CSVOptions(csvOptionsMap, columnPruning=true, TimeZone.getDefault.getID)
 
         val outputWriter = new PipedWriter()
-        val inputStream = new ReaderInputStream(new PipedReader(outputWriter))
+        val inputReader = new PipedReader(outputWriter, bulkLoadBufferSize)
 
         val univocityGenerator = new UnivocityGenerator(dfTmpSchema, outputWriter, csvOptions)
         val rowEncoder = RowEncoder.apply(dfTmpSchema)
@@ -811,7 +823,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
         val conn = connOpen(url, password)
         val copyManager: CopyManager = new CopyManager(conn.asInstanceOf[BaseConnection])
         val copyThread = new Thread("copy-to-pg-thread") {
-          override def run(): Unit = promisedCopy.complete(Try(copyManager.copyIn(sql, inputStream)))
+          override def run(): Unit = promisedCopy.complete(Try(copyManager.copyIn(sql, inputReader, bulkLoadBufferSize)))
         }
 
         try {
@@ -851,7 +863,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
           // Finalize
           copyThread.interrupt()
           copyThread.join()
-          inputStream.close()
+          inputReader.close()
           conn.close()
         }
       })
@@ -869,7 +881,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
     , numPartitions: Int = 8
     , password: String = ""
     , reindex: Boolean = false
-    , copyTimeoutMs: Long = 1000 * 60 * 10
+    , bulkLoadBufferSize: Int = defaultBulkLoadBufferSize
   ) = {
     logger.warn("using PgBulkInsert strategy")
     try {
@@ -889,8 +901,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
         }
 
         val conn = PostgreSqlUtils.getPGConnection(connOpen(url, password))
-        val pgBulkInsertTable = new SimpleRowWriter.Table(null, table, columns:_*)
-        val pgBulkInsertWriter = new SimpleRowWriter(pgBulkInsertTable, true)
+        val pgBulkInsertWriter = new PgBulkInserter(table, columns, usePostgresQuoting = true, bufferSize = bulkLoadBufferSize)
         pgBulkInsertWriter.enableNullCharacterHandler()
         pgBulkInsertWriter.open(conn)
 
@@ -1133,6 +1144,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
                            , deleteSet: Option[String] = None
                            , password: String = ""
                            , bulkLoadMode: BulkLoadMode = defaultBulkLoadStrategy
+                           , bulkLoadBufferSize: Int = defaultBulkLoadBufferSize
                           ): Unit = {
     if (loadEmptyTable(spark, url, table, candidate, path, partitions, password, bulkLoadMode))
       return
@@ -1161,11 +1173,11 @@ object PGTool extends java.io.Serializable with LazyLogging {
       // 3. load tmp tables
       tableCreate(url, insertTmp, insert.schema, password)
 
-      outputBulk(spark, url, insertTmp, insert, path + "ins", partitions, password, bulkLoadMode = bulkLoadMode)
+      outputBulk(spark, url, insertTmp, insert, path + "ins", partitions, password, bulkLoadMode = bulkLoadMode, bulkLoadBufferSize = bulkLoadBufferSize)
       insert.unpersist()
 
       tableCreate(url, updateTmp, update.schema, password)
-      outputBulk(spark, url, updateTmp, update, path + "upd", partitions, password, bulkLoadMode = bulkLoadMode)
+      outputBulk(spark, url, updateTmp, update, path + "upd", partitions, password, bulkLoadMode = bulkLoadMode, bulkLoadBufferSize = bulkLoadBufferSize)
       update.unpersist()
 
       // 4. load postgres
@@ -1176,7 +1188,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
         val delete = fetch1.as("f").join(candidate.as("c"), expr(joinCol), "left_anti")
           .selectExpr(key.mkString("`", "`,`", "`").split(","): _*)
         tableCreate(url, deleteTmp, delete.schema, password)
-        outputBulk(spark, url, deleteTmp, delete, path + "del", partitions, password, bulkLoadMode = bulkLoadMode)
+        outputBulk(spark, url, deleteTmp, delete, path + "del", partitions, password, bulkLoadMode = bulkLoadMode, bulkLoadBufferSize = bulkLoadBufferSize)
         sqlExec(url, applyScd1Delete(table, deleteTmp, key, deleteSet.get), password)
       }
 
@@ -1254,6 +1266,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
                            , path: String
                            , password: String = ""
                            , bulkLoadMode: BulkLoadMode = defaultBulkLoadStrategy
+                           , bulkLoadBufferSize: Int = defaultBulkLoadBufferSize
                           ): Unit = {
 
     if (loadEmptyTable(spark, url, table, candidate, path, partitions, password, bulkLoadMode))
@@ -1275,10 +1288,10 @@ object PGTool extends java.io.Serializable with LazyLogging {
 
       // 3. load tmp tables
       tableCreate(url, insertTmp, insert.schema, password)
-      outputBulk(spark, url, insertTmp, insert, path + "ins", partitions, password, bulkLoadMode = bulkLoadMode)
+      outputBulk(spark, url, insertTmp, insert, path + "ins", partitions, password, bulkLoadMode = bulkLoadMode, bulkLoadBufferSize = bulkLoadBufferSize)
 
       tableCreate(url, updateTmp, update.schema, password)
-      outputBulk(spark, url, updateTmp, update, path + "upd", partitions, password, bulkLoadMode = bulkLoadMode)
+      outputBulk(spark, url, updateTmp, update, path + "upd", partitions, password, bulkLoadMode = bulkLoadMode, bulkLoadBufferSize = bulkLoadBufferSize)
 
       // 4. load postgres
       sqlExec(url, applyScd2(table, insertTmp, updateTmp, pk, endDatetimeCol, insert.schema), password)

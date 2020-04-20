@@ -101,7 +101,7 @@ class DataRow extends React.Component {
     return (
       <TableRow className={className} hover={true}>
       {cells.map(col => (
-        <TableCell key={'table-cell-' + row._key + '-' + col.name}>
+        <TableCell key={'table-cell-' + row._key + '-' + col.name} style={{ verticalAlign: 'top' }}>
           <TextHightlighter
             text={useName ? row[col.name] : col.name}
             highlight={searchText}

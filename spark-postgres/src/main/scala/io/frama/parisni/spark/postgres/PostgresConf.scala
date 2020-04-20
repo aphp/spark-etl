@@ -28,6 +28,7 @@ class PostgresConf(config: Map[String, String]) extends Serializable with LazyLo
   val PG_KILL_LOCKS: String = "kill-locks"
   val PG_SWAP_LOAD: String = "swap-load"
   val PG_BULK_LOAD_MODE: String = "bulkLoadMode"
+  val PG_BULK_LOAD_BUFFER_SIZE: String = "bulkLoadBufferSize"
 
   require(config != null, "Config cannot be null")
   require(config.nonEmpty, "Config cannot be empty")
@@ -90,6 +91,9 @@ class PostgresConf(config: Map[String, String]) extends Serializable with LazyLo
     if (config.get(PG_SWAP_LOAD).isDefined) Some(config(PG_SWAP_LOAD).toBoolean) else Some(false)
 
   def getBulkLoadMode: Option[String] = config.get(PG_BULK_LOAD_MODE)
+
+  def getBulkLoadBufferSize: Option[Int] =
+    if (config.get(PG_BULK_LOAD_BUFFER_SIZE).isDefined) Some(config(PG_BULK_LOAD_BUFFER_SIZE).toInt) else None
 
 }
 

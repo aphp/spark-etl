@@ -2,7 +2,7 @@
  * Commenting this class as the performance gain is only visible when
  * writing at least some amount of data, meaning tests are long.
  */
-/*
+
 package io.frama.parisni.spark.postgres.rowconverters
 
 import java.io.StringWriter
@@ -111,7 +111,7 @@ class TestPGConverterPerf extends QueryTest with SparkSessionTestWrapper {
 
   }
 
-  @Test def convertRowsPgBulkImport(): Unit = {
+  @Test def convertRowsPgBulkInsert(): Unit = {
 
     val rowConverter = PgBulkInsertConverter.makePgBulkInsertRowConverter(schema)
     val pgBulkInsertRowConsumer = (sparkRow: Row) => new Consumer[SimpleRow]() {
@@ -132,4 +132,3 @@ class TestPGConverterPerf extends QueryTest with SparkSessionTestWrapper {
   }
 
 }
-*/

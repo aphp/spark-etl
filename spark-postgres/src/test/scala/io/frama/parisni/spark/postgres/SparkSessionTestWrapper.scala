@@ -19,9 +19,9 @@ trait SparkSessionTestWrapper {
   lazy val spark: SparkSession = {
     SparkSession
       .builder()
-      .master("local[1]")
+      .master("local[2]")
       .appName("spark session")
-      .config("spark.sql.shuffle.partitions", "1")
+      .config("spark.sql.shuffle.partitions", "4")
       .getOrCreate()
   }
 

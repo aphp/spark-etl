@@ -541,10 +541,11 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
         "8",
         testDate,
         testTimestamp,
-        "11".getBytes()
+        "11".getBytes(),
+        BigDecimal(12.0)
       )
     ).toDF("BOOL_COL", "BYTE_COL", "SHORT_COL", "INT_COL", "LONG_COL", "FLOAT_COL",
-           "DOUBLE_COL", "STRING_COL", "DATE_COL", "TIMESTAMP_COL", "BYTEA_COL")
+           "DOUBLE_COL", "STRING_COL", "DATE_COL", "TIMESTAMP_COL", "BYTEA_COL", "BIGD_COL")
 
     val schema = data.schema
 
@@ -572,6 +573,7 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
     assert(rs.getDate(9).toLocalDate.equals(testDate.toLocalDate))
     assert(rs.getTimestamp(10).equals(testTimestamp))
     assert(util.Arrays.equals(rs.getBytes(11), "11".getBytes()))
+    assert(rs.getDouble(12) == 12.0d)
   }
 
   @Test
@@ -590,10 +592,11 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
         None.asInstanceOf[Option[String]],
         None.asInstanceOf[Option[Date]],
         None.asInstanceOf[Option[Timestamp]],
-        None.asInstanceOf[Option[Array[Byte]]]
+        None.asInstanceOf[Option[Array[Byte]]],
+        None.asInstanceOf[Option[BigDecimal]]
         )
     ).toDF("BOOL_COL", "BYTE_COL", "SHORT_COL", "INT_COL", "LONG_COL", "FLOAT_COL",
-           "DOUBLE_COL", "STRING_COL", "DATE_COL", "TIMESTAMP_COL", "BYTEA_COL")
+           "DOUBLE_COL", "STRING_COL", "DATE_COL", "TIMESTAMP_COL", "BYTEA_COL", "BIGD_COL")
 
     val schema = data.schema
 
@@ -610,7 +613,7 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
     val conn = db.getConnection()
     val rs = conn.createStatement().executeQuery("SELECT * FROM \"TEST_PG_BULK_INSERT_LOAD_NULL\"")
     rs.next()
-    (1 to 11).foreach(i => assert(rs.getString(i) == null))
+    (1 to 12).foreach(i => assert(rs.getString(i) == null))
 
   }
 
@@ -619,9 +622,7 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
     import spark.implicits._
 
     val colNames = Seq("BOOL_COL", "BYTE_COL", "SHORT_COL", "INT_COL", "LONG_COL", "FLOAT_COL",
-                       "DOUBLE_COL", "STRING_COL"
-                       //"DATE_COL", "TIMESTAMP_COL", "BYTEA_COL"
-                      )
+                       "DOUBLE_COL", "STRING_COL","DATE_COL", "TIMESTAMP_COL", "BYTEA_COL", "BIGD_COL")
 
     val data = Seq(
       (
@@ -632,10 +633,11 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
         Array(Some(5L), None),
         Array(Some(6.0f), None),
         Array(Some(7.0d), None),
-        Array(Some("8"), None)
-        //Array(Some(testDate), None),
-        //Array(Some(testTimestamp), None)
-        //Array(Some("11".getBytes), None)
+        Array(Some("8"), None),
+        Array(Some(testDate), None),
+        Array(Some(testTimestamp), None),
+        Array(Some("11".getBytes()), None),
+        Array(Some(BigDecimal(12)), None)
         )
     ).toDF(colNames: _* )
 
@@ -672,12 +674,12 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
     assert(rs.getFloat(6) == 6.0f)
     assert(rs.getDouble(7) == 7.0d)
     assert(rs.getString(8) == "8")
-    //assert(rs.getDate(9) == testDate)
-    //assert(rs.getTimestamp(10) == testTimestamp)
-    //assert(Arrays.equals(rs.getBytes(11), "11".getBytes))
+    assert(rs.getDate(9).toLocalDate.equals(testDate.toLocalDate))
+    assert(rs.getTimestamp(10).toLocalDateTime.equals(testTimestamp.toLocalDateTime))
+    assert(util.Arrays.equals(rs.getBytes(11), "11".getBytes))
+    assert(rs.getDouble(12) == 12.0d)
 
-    (9 to 16).foreach(i => assert(rs.getString(i) == null))
-    //(12 to 22).foreach(i => assert(rs.getString(i) == null))
+    (13 to 24).foreach(i => assert(rs.getString(i) == null))
 
   }
 

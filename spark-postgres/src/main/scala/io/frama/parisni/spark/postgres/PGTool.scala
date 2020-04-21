@@ -794,9 +794,9 @@ object PGTool extends java.io.Serializable with LazyLogging {
       val dfTmp = dataframeToPgCsv(spark, df, schema)
       val dfTmpSchema = dfTmp.schema
 
-      val rddToWrite: RDD[(Long, Row)] = dfTmp.rdd.zipWithIndex.map(_.swap).partitionBy(new ExactPartitioner(numPartitions))
+      val rddToWrite: RDD[Row] = if (dfTmp.rdd.getNumPartitions > numPartitions) dfTmp.rdd.coalesce(numPartitions) else dfTmp.rdd
 
-      rddToWrite.foreachPartition((p: Iterator[(Long, Row)]) => {
+      rddToWrite.foreachPartition((p: Iterator[Row]) => {
 
         val csvOptionsMap = Map(
           "delimiter" -> ",",
@@ -831,7 +831,9 @@ object PGTool extends java.io.Serializable with LazyLogging {
           copyThread.start()
           try {
             // Load the copy stream reading from the partition
-            p.foreach { case (idx, row) =>
+            var idx = 0L
+            p.foreach(row => {
+              idx += 1L
               // Check if the copying thread is still alive every thousand row to prevent the main
               // thread to produce unread data indefinitely
               if (idx % 1000 == 0 && promisedCopy.isCompleted) {
@@ -843,7 +845,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
                 }
               }
               univocityGenerator.write(rowEncoder.toRow(row))
-            }
+            })
             outputWriter.close()
             // Wait for the copy to have finished
             Await.result(promisedCopy.future, Duration(copyTimeoutMs, TimeUnit.MILLISECONDS))
@@ -874,15 +876,16 @@ object PGTool extends java.io.Serializable with LazyLogging {
     }
   }
 
-  def outputPgBulkInsert(spark: SparkSession
-    , url: String
-    , table: String
-    , df: Dataset[Row]
-    , numPartitions: Int = 8
-    , password: String = ""
-    , reindex: Boolean = false
-    , bulkLoadBufferSize: Int = defaultBulkLoadBufferSize
-  ) = {
+  def outputPgBulkInsert(
+                         spark: SparkSession
+                         , url: String
+                         , table: String
+                         , df: Dataset[Row]
+                         , numPartitions: Int = 8
+                         , password: String = ""
+                         , reindex: Boolean = false
+                         , bulkLoadBufferSize: Int = defaultBulkLoadBufferSize
+                        ) = {
     logger.warn("using PgBulkInsert strategy")
     try {
       if (reindex)
@@ -891,9 +894,9 @@ object PGTool extends java.io.Serializable with LazyLogging {
       val schema = df.schema
       val columns = schema.fields.map(x => s"${sanP(x.name)}")
 
-      val rddToWrite: RDD[(Long, Row)] = df.rdd.zipWithIndex.map(_.swap).partitionBy(new ExactPartitioner(numPartitions))
+      val rddToWrite: RDD[Row] = if (df.rdd.getNumPartitions > numPartitions) df.rdd.coalesce(numPartitions) else df.rdd
 
-      rddToWrite.foreachPartition((p: Iterator[(Long, Row)]) => {
+      rddToWrite.foreachPartition((p: Iterator[Row]) => {
 
         val rowConverter = PgBulkInsertConverter.makePgBulkInsertRowConverter(schema)
         val pgBulkInsertRowConsumer = (sparkRow: Row) => new Consumer[SimpleRow]() {
@@ -905,9 +908,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
         pgBulkInsertWriter.enableNullCharacterHandler()
         pgBulkInsertWriter.open(conn)
 
-        p.foreach { case (_, sparkRow) =>
-          pgBulkInsertWriter.startRow(pgBulkInsertRowConsumer(sparkRow))
-        }
+        p.foreach (sparkRow => pgBulkInsertWriter.startRow(pgBulkInsertRowConsumer(sparkRow)))
         pgBulkInsertWriter.close()
 
       })
@@ -917,7 +918,6 @@ object PGTool extends java.io.Serializable with LazyLogging {
         indexReactivate(url, table, password)
     }
   }
-
 
   def output(url: String, table: String, df: Dataset[Row], batchsize: Int = 50000, password: String = "") = {
     df.coalesce(8).write.mode(org.apache.spark.sql.SaveMode.Overwrite)

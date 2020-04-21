@@ -794,9 +794,9 @@ object PGTool extends java.io.Serializable with LazyLogging {
       val dfTmp = dataframeToPgCsv(spark, df, schema)
       val dfTmpSchema = dfTmp.schema
 
-      val rddToWrite: RDD[Row] = dfTmp.rdd.coalesce(numPartitions)
+      val rddToWrite: RDD[(Long, Row)] = dfTmp.rdd.zipWithIndex.map(_.swap).partitionBy(new ExactPartitioner(numPartitions))
 
-      rddToWrite.foreachPartition((p: Iterator[Row]) => {
+      rddToWrite.foreachPartition((p: Iterator[(Long, Row)]) => {
 
         val csvOptionsMap = Map(
           "delimiter" -> ",",
@@ -831,21 +831,19 @@ object PGTool extends java.io.Serializable with LazyLogging {
           copyThread.start()
           try {
             // Load the copy stream reading from the partition
-            var idx = 0L
-            p.foreach(row => {
-                idx += 1L
-                // Check if the copying thread is still alive every thousand row to prevent the main
-                // thread to produce unread data indefinitely
-                if (idx % 1000 == 0 && promisedCopy.isCompleted) {
-                  // No need to check for None, promise has completed
-                  promisedCopy.future.value match {
-                    case Some(Success(())) => throw new IllegalStateException(
-                      "The copying thread finished successfully but not all data had been copied. This is very much unexpected!")
-                    case Some(Failure(t)) =>  throw new IllegalStateException("The copying thread finished with an error.", t)
-                  }
-                univocityGenerator.write(rowEncoder.toRow(row))
+            p.foreach { case (idx, row) =>
+              // Check if the copying thread is still alive every thousand row to prevent the main
+              // thread to produce unread data indefinitely
+              if (idx % 1000 == 0 && promisedCopy.isCompleted) {
+                // No need to check for None, promise has completed
+                promisedCopy.future.value match {
+                  case Some(Success(())) => throw new IllegalStateException(
+                    "The copying thread finished successfully but not all data had been copied. This is very much unexpected!")
+                  case Some(Failure(t)) =>  throw new IllegalStateException("The copying thread finished with an error.", t)
+                }
               }
-            })
+              univocityGenerator.write(rowEncoder.toRow(row))
+            }
             outputWriter.close()
             // Wait for the copy to have finished
             Await.result(promisedCopy.future, Duration(copyTimeoutMs, TimeUnit.MILLISECONDS))
@@ -876,16 +874,15 @@ object PGTool extends java.io.Serializable with LazyLogging {
     }
   }
 
-  def outputPgBulkInsert(
-                         spark: SparkSession
-                         , url: String
-                         , table: String
-                         , df: Dataset[Row]
-                         , numPartitions: Int = 8
-                         , password: String = ""
-                         , reindex: Boolean = false
-                         , bulkLoadBufferSize: Int = defaultBulkLoadBufferSize
-                        ) = {
+  def outputPgBulkInsert(spark: SparkSession
+    , url: String
+    , table: String
+    , df: Dataset[Row]
+    , numPartitions: Int = 8
+    , password: String = ""
+    , reindex: Boolean = false
+    , bulkLoadBufferSize: Int = defaultBulkLoadBufferSize
+  ) = {
     logger.warn("using PgBulkInsert strategy")
     try {
       if (reindex)
@@ -894,9 +891,9 @@ object PGTool extends java.io.Serializable with LazyLogging {
       val schema = df.schema
       val columns = schema.fields.map(x => s"${sanP(x.name)}")
 
-      val rddToWrite: RDD[Row] = df.rdd.coalesce(numPartitions)
+      val rddToWrite: RDD[(Long, Row)] = df.rdd.zipWithIndex.map(_.swap).partitionBy(new ExactPartitioner(numPartitions))
 
-      rddToWrite.foreachPartition((p: Iterator[Row]) => {
+      rddToWrite.foreachPartition((p: Iterator[(Long, Row)]) => {
 
         val rowConverter = PgBulkInsertConverter.makePgBulkInsertRowConverter(schema)
         val pgBulkInsertRowConsumer = (sparkRow: Row) => new Consumer[SimpleRow]() {
@@ -908,7 +905,9 @@ object PGTool extends java.io.Serializable with LazyLogging {
         pgBulkInsertWriter.enableNullCharacterHandler()
         pgBulkInsertWriter.open(conn)
 
-        p.foreach (sparkRow => pgBulkInsertWriter.startRow(pgBulkInsertRowConsumer(sparkRow)))
+        p.foreach { case (_, sparkRow) =>
+          pgBulkInsertWriter.startRow(pgBulkInsertRowConsumer(sparkRow))
+        }
         pgBulkInsertWriter.close()
 
       })
@@ -918,6 +917,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
         indexReactivate(url, table, password)
     }
   }
+
 
   def output(url: String, table: String, df: Dataset[Row], batchsize: Int = 50000, password: String = "") = {
     df.coalesce(8).write.mode(org.apache.spark.sql.SaveMode.Overwrite)

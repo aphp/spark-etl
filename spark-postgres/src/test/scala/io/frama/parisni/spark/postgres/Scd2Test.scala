@@ -57,6 +57,8 @@ class Scd2Test extends QueryTest with SparkSessionTestWrapper {
   def verifyScd2Csv(): Unit = verifyScd2("csv")
   @Test
   def verifyScd2Stream(): Unit = verifyScd2("stream")
+  @Test
+  def verifyScd2PgBulkInsert(): Unit = verifyScd2("PgBulkInsert")
 
 
   def verifyScd2LowLevel(bulkLoadMode: BulkLoadMode): Unit = {
@@ -94,6 +96,8 @@ class Scd2Test extends QueryTest with SparkSessionTestWrapper {
   def verifyScd2LowLevelCSV(): Unit = verifyScd2LowLevel(CSV)
   @Test
   def verifyScd2LowLevelStream(): Unit = verifyScd2LowLevel(Stream)
+  @Test
+  def verifyScd2LowLevelPgBulkInsert(): Unit = verifyScd2LowLevel(PgBulkInsert)
 
 }
 

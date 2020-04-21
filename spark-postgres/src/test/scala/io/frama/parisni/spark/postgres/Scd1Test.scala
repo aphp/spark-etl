@@ -88,6 +88,8 @@ class Scd1Test extends QueryTest with SparkSessionTestWrapper {
   def verifyScd1LowLevelCSV(): Unit = verifyScd1LowLevel(CSV)
   @Test
   def verifyScd1LowLevelStream(): Unit = verifyScd1LowLevel(Stream)
+  @Test
+  def verifyScd1LowLevelPgBulkInsert(): Unit = verifyScd1LowLevel(PgBulkInsert)
 
 
   def verifyScd1WithFilter(bulkLoadMode: String): Unit = {
@@ -135,6 +137,8 @@ class Scd1Test extends QueryTest with SparkSessionTestWrapper {
   def verifyScd1WithFilterCSV(): Unit = verifyScd1WithFilter("csv")
   @Test
   def verifyScd1WithFilterStream(): Unit = verifyScd1WithFilter("stream")
+  @Test
+  def verifyScd1WithFilterPgBulkInsert(): Unit = verifyScd1WithFilter("PgBulkInsert")
 
 
   def verifyScd1WithFilterAndDelete(bulkLoadMode: String): Unit = {
@@ -182,6 +186,8 @@ class Scd1Test extends QueryTest with SparkSessionTestWrapper {
   def verifyScd1WithFilterAndDeleteCSV(): Unit = verifyScd1WithFilterAndDelete("csv")
   @Test
   def verifyScd1WithFilterAndDeleteStream(): Unit = verifyScd1WithFilterAndDelete("stream")
+  @Test
+  def verifyScd1WithFilterAndDeletePgBulkInsert(): Unit = verifyScd1WithFilterAndDelete("PgBulkInsert")
 
 }
 

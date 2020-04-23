@@ -4,13 +4,12 @@ import java.io._
 import java.sql.{Connection, DriverManager, PreparedStatement, ResultSetMetaData}
 import java.util.UUID.randomUUID
 import java.util.concurrent.TimeUnit
-import java.util.function.Consumer
 import java.util.{Properties, TimeZone}
 
 import com.typesafe.scalalogging.LazyLogging
-import de.bytefish.pgbulkinsert.row.SimpleRow
 import de.bytefish.pgbulkinsert.util.PostgreSqlUtils
-import io.frama.parisni.spark.postgres.rowconverters.{CSVOptions, PgBulkInsertConverter, UnivocityGenerator}
+import io.frama.parisni.spark.postgres.rowconverters.{CSVOptions, PgBinaryConverter, PgBulkInsertConverter, UnivocityGenerator}
+import org.apache.commons.codec.Charsets
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.Partitioner
@@ -19,7 +18,7 @@ import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.functions.{col, expr}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
-import org.postgresql.copy.{CopyManager, PGCopyInputStream}
+import org.postgresql.copy.{CopyManager, PGCopyInputStream, PGCopyOutputStream}
 import org.postgresql.core.BaseConnection
 
 import scala.concurrent.duration.Duration
@@ -595,8 +594,8 @@ object PGTool extends java.io.Serializable with LazyLogging {
       case "bigint" => "bigint"
       case "float" => "float4"
       case "double" => "double precision"
-      case "string" => "text"
       case "decimal(38,18)" => "double precision"
+      case "string" => "text"
       case "date" => "date"
       case "timestamp" => "timestamp"
       case "binary" => "bytea"
@@ -608,6 +607,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
       case "array<bigint>" => "bigint[]"
       case "array<float>" => "float4[]"
       case "array<double>" => "double precision[]"
+      case "array<decimal(38,18)>" => "double precision[]"
       case "array<string>" => "text[]"
       case "array<date>" => "date[]"
       case "array<timestamp>" => "timestamp[]"
@@ -877,15 +877,15 @@ object PGTool extends java.io.Serializable with LazyLogging {
   }
 
   def outputPgBulkInsert(
-                         spark: SparkSession
-                         , url: String
-                         , table: String
-                         , df: Dataset[Row]
-                         , numPartitions: Int = 8
-                         , password: String = ""
-                         , reindex: Boolean = false
-                         , bulkLoadBufferSize: Int = defaultBulkLoadBufferSize
-                        ) = {
+    spark: SparkSession
+    , url: String
+    , table: String
+    , df: Dataset[Row]
+    , numPartitions: Int = 8
+    , password: String = ""
+    , reindex: Boolean = false
+    , bulkLoadBufferSize: Int = defaultBulkLoadBufferSize
+  ) = {
     logger.warn("using PgBulkInsert strategy")
     try {
       if (reindex)
@@ -894,23 +894,43 @@ object PGTool extends java.io.Serializable with LazyLogging {
       val schema = df.schema
       val columns = schema.fields.map(x => s"${sanP(x.name)}")
 
-      val rddToWrite: RDD[Row] = if (df.rdd.getNumPartitions > numPartitions) df.rdd.coalesce(numPartitions) else df.rdd
+      // First convert spark Rows to binary
+      val rddToStream: RDD[Array[Byte]] = df.rdd.mapPartitions((p: Iterator[Row]) => {
+        val rowWriter = PgBulkInsertConverter.makeRowWriter(schema)
 
-      rddToWrite.foreachPartition((p: Iterator[Row]) => {
+        val pgBinaryConverter = new PgBinaryConverter(rowWriter)
 
-        val rowConverter = PgBulkInsertConverter.makePgBulkInsertRowConverter(schema)
-        val pgBulkInsertRowConsumer = (sparkRow: Row) => new Consumer[SimpleRow]() {
-          override def accept(pgBulkInsertRow: SimpleRow): Unit = rowConverter(sparkRow, pgBulkInsertRow)
-        }
+        val it = p.map(sparkRow => {
+          pgBinaryConverter.convertRow(sparkRow)
+        })
+        pgBinaryConverter.close()
+        it
+      })
 
+      // Then write binary after coalescing
+      val rddToStreamCoalesced = if (rddToStream.getNumPartitions > numPartitions) rddToStream.coalesce(numPartitions) else rddToStream
+
+      rddToStreamCoalesced.foreachPartition((p: Iterator[Array[Byte]]) => {
         val conn = PostgreSqlUtils.getPGConnection(connOpen(url, password))
-        val pgBulkInsertWriter = new PgBulkInserter(table, columns, usePostgresQuoting = true, bufferSize = bulkLoadBufferSize)
-        pgBulkInsertWriter.enableNullCharacterHandler()
-        pgBulkInsertWriter.open(conn)
 
-        p.foreach (sparkRow => pgBulkInsertWriter.startRow(pgBulkInsertRowConsumer(sparkRow)))
-        pgBulkInsertWriter.close()
+        val fullyQualifiedTableName = PostgreSqlUtils.getFullyQualifiedTableName(null, table, true)
+        val commaSeparatedColumns = columns.map(c => PostgreSqlUtils.quoteIdentifier(c)).mkString(", ")
+        val copyCommand = s"COPY $fullyQualifiedTableName($commaSeparatedColumns) FROM STDIN BINARY"
 
+        val pgCopyOutputStream = new DataOutputStream(new PGCopyOutputStream(conn, copyCommand, bulkLoadBufferSize))
+
+        // PG binary header
+        pgCopyOutputStream.write("PGCOPY\nÿ\r\n\u0000".getBytes(Charsets.ISO_8859_1))
+        pgCopyOutputStream.writeInt(0)
+        pgCopyOutputStream.writeInt(0)
+
+        var idx = 0
+        p.foreach (binaryRow => {
+          pgCopyOutputStream.write(binaryRow)
+        })
+
+        pgCopyOutputStream.writeShort(-1)
+        pgCopyOutputStream.close()
       })
 
     } finally {

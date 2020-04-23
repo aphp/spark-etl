@@ -2,7 +2,6 @@
  * Commenting this class as the performance gain is only visible when
  * writing at least some amount of data, meaning tests are long.
  */
-
 /*
 package io.frama.parisni.spark.postgres
 
@@ -15,7 +14,7 @@ import org.junit.Test
 
 class TestPGBulkLoadPerf extends QueryTest with SparkSessionTestWrapper {
 
-  val rowNumber = 50000
+  val rowNumber = 1000000
 
   val schema = StructType(Seq(
     StructField("f1", LongType, nullable=true),
@@ -37,7 +36,7 @@ class TestPGBulkLoadPerf extends QueryTest with SparkSessionTestWrapper {
     "second string value",
     "q'odkjdfvlkmsdvmlkxscl metgh]lkmndm089223ri8pio12mv,qefl,,l;w;flwetg,,,wegkl;w,wergmk",
     "q'odkjdfvlkmsdvmlkxscl metgh]lkmndm089223ri8pio12mv,qefl,,l;w;flwetg,,,wegkl;w,wergmk",
-    "q'odkjdfvlkmsdvmlkxscl metgh]lkmndm089223ri8pio12mv,qefl,,l;w;flwetg,,,wegkl;w,wergmk",
+    null,
     "lwmjolfdWRgjokj234]09tip9iueomvmKLWemf/\\/\\wekf,kwemk'm,qkaAETAKLKwiljlaj",
     "lwmjolfdWRgjokj234]09tip9iueomvmKLWemf/\\/\\wekf,kwemk'm,qkaAETAKLKwiljlaj",
     new Timestamp(System.currentTimeMillis())
@@ -58,6 +57,7 @@ class TestPGBulkLoadPerf extends QueryTest with SparkSessionTestWrapper {
       .option("database", "postgres")
       .option("user", "postgres")
       .option("table", tableName)
+      .option("partitions", "4")
       .option("bulkLoadMode", s"$loadType")
       .option("bulkLoadBufferSize", bulkLoadBufferSize)
       .mode(org.apache.spark.sql.SaveMode.Overwrite)
@@ -71,32 +71,8 @@ class TestPGBulkLoadPerf extends QueryTest with SparkSessionTestWrapper {
     println(s"$loadType($bulkLoadBufferSize): $duration")
   }
 
-  @Test def writeRowsCSVSmallBuffer(): Unit = {
-    abstractTest("csv", "4096")
-  }
-
   @Test def writeRowsCSVUsualBuffer(): Unit = {
     abstractTest("csv", "65536")
-  }
-
-  @Test def writeRowsCSVBigBuffer(): Unit = {
-    abstractTest("csv", "1048576")
-  }
-
-  @Test def writeRowsStreamSmallBuffer(): Unit = {
-    abstractTest("stream", "4096")
-  }
-
-  @Test def writeRowsStreamUsualBuffer(): Unit = {
-    abstractTest("stream", "65536")
-  }
-
-  @Test def writeRowsStreamBigBuffer(): Unit = {
-    abstractTest("stream", "1048576")
-  }
-
-  @Test def writeRowsPgBulkInsertSmallBuffer(): Unit = {
-    abstractTest("PgBulkInsert", "4096")
   }
 
   @Test def writeRowsPgBulkInsertUsualBuffer(): Unit = {

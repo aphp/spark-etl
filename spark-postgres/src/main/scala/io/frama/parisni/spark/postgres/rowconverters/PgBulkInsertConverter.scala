@@ -17,65 +17,66 @@
 
 package io.frama.parisni.spark.postgres.rowconverters
 
+import java.io.DataOutputStream
+import java.sql.{Date, Timestamp}
 import java.util
 
-import de.bytefish.pgbulkinsert.row.SimpleRow
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.types._
+import de.bytefish.pgbulkinsert.pgsql.constants.{DataType, ObjectIdentifier}
+import de.bytefish.pgbulkinsert.pgsql.handlers.{CollectionValueHandler, ValueHandlerProvider}
+import de.bytefish.pgbulkinsert.util.StringUtils
+import org.apache.spark.sql.types.{DataType => _, _}
+import org.apache.spark.sql.{Row, types}
 
 import scala.collection.JavaConverters._
 
 
 object PgBulkInsertConverter {
 
-  def handleNullInArray[T, U](array: Seq[Any], box: (T => U)): util.Collection[U] = {
+  val provider = new ValueHandlerProvider()
+  
+  def makeCollectionValueHandler[T, U <: util.Collection[T]](datatype: de.bytefish.pgbulkinsert.pgsql.constants.DataType): CollectionValueHandler[T, U] = {
+    new CollectionValueHandler(ObjectIdentifier.mapFrom(datatype), provider.resolve(datatype))
+  }
+
+  def handleArray[T, U](array: Seq[Any], box: (T => U)): util.Collection[U] = {
     array.map((v: Any) => {
       if (v == null) v else box(v.asInstanceOf[T])
     }).asJava.asInstanceOf[util.Collection[U]]
   }
 
-  val pgBulkInsertBytea = de.bytefish.pgbulkinsert.pgsql.constants.DataType.Bytea
-  val pgBulkInsertDate = de.bytefish.pgbulkinsert.pgsql.constants.DataType.Date
-  val pgBulkInsertTimestamp = de.bytefish.pgbulkinsert.pgsql.constants.DataType.Timestamp
-
-  def makePgBulkInsertRowConverter(t: DataType, idx: Int): ((Row, SimpleRow) => Unit) = {
-    (r: Row, s: SimpleRow) => {
-      // Write data only if it is not null
-      if (!r.isNullAt(idx)) {
+  def makeFieldWriter(t: types.DataType, idx: Int): ((Row, DataOutputStream) => Unit) = {
+    (r: Row, buffer: DataOutputStream) => {
+      if (r.isNullAt(idx)) {
+        provider.resolve(DataType.Text).handle(buffer, null)
+      } else {
         t match {
-          case BooleanType => s.setBoolean(idx, r.getBoolean(idx))
+          case BooleanType => provider.resolve(DataType.Boolean).handle(buffer, r.getBoolean(idx))
           // No tinyint in postgres, converting to smallint instead
-          case ByteType => s.setShort(idx, r.getByte(idx).toShort)
-          case ShortType => s.setShort(idx, r.getShort(idx))
-          case IntegerType => s.setInteger(idx, r.getInt(idx))
-          case LongType => s.setLong(idx, r.getLong(idx))
-          case FloatType => s.setFloat(idx, r.getFloat(idx))
-          case DoubleType => s.setDouble(idx, r.getDouble(idx))
-          case DecimalType() => s.setNumeric(idx, r.getDecimal(idx))
+          case ByteType => provider.resolve(DataType.Int2).handle(buffer, r.getByte(idx).toShort)
+          case ShortType => provider.resolve(DataType.Int2).handle(buffer, r.getShort(idx))
+          case IntegerType => provider.resolve(DataType.Int4).handle(buffer, r.getInt(idx))
+          case LongType => provider.resolve(DataType.Int8).handle(buffer, r.getLong(idx))
+          case FloatType => provider.resolve(DataType.SinglePrecision).handle(buffer, r.getFloat(idx))
+          case DoubleType => provider.resolve(DataType.DoublePrecision).handle(buffer, r.getDouble(idx))
+          case DecimalType() => provider.resolve(DataType.DoublePrecision).handle(buffer, r.getDecimal(idx))
+          case StringType => provider.resolve(DataType.Text).handle(buffer, StringUtils.removeNullCharacter(r.getString(idx)))
+          case BinaryType => provider.resolve(DataType.Bytea).handle(buffer, r.get(idx).asInstanceOf[Array[Byte]])
+          case DateType => provider.resolve(DataType.Date).handle(buffer, r.getDate(idx).toLocalDate)
+          case TimestampType => provider.resolve(DataType.Timestamp).handle(buffer, r.getTimestamp(idx).toLocalDateTime)
 
-          case StringType => s.setText(idx, r.getString(idx))
-          case BinaryType => s.setByteArray(idx, r.get(idx).asInstanceOf[Array[Byte]])
-
-          case DateType => s.setDate(idx, r.getDate(idx).toLocalDate)
-          case TimestampType => s.setTimeStamp(idx, r.getTimestamp(idx).toLocalDateTime)
-          // TODO: Check if we prefer the following in comparison to toLocalDate
-          //case TimestampType => s.setTimeStampTz(idx, ZonedDateTime.ofInstant(r.getTimestamp(idx).toInstant, ZoneId.of("UTC")))
-
-          case ArrayType(BooleanType, _) => s.setBooleanArray(idx, handleNullInArray(r.getSeq[Boolean](idx), Boolean.box))
-          // // No tinyint in postgres, converting to smallint instead
-          case ArrayType(ByteType, _) => s.setShortArray(idx, handleNullInArray(r.getSeq[Byte](idx), (b: Byte) => Short.box(b.toShort)))
-          case ArrayType(ShortType, _) => s.setShortArray(idx, handleNullInArray(r.getSeq[Short](idx), Short.box))
-          case ArrayType(IntegerType, _) => s.setIntegerArray(idx, handleNullInArray(r.getSeq[Int](idx), Int.box))
-          case ArrayType(LongType, _) => s.setLongArray(idx, handleNullInArray(r.getSeq[Long](idx), Long.box))
-          case ArrayType(FloatType, _) => s.setFloatArray(idx, handleNullInArray(r.getSeq[Float](idx), Float.box))
-          case ArrayType(DoubleType, _) => s.setDoubleArray(idx, handleNullInArray(r.getSeq[Double](idx), Double.box))
-          case ArrayType(DecimalType(), _) => s.setNumericArray(idx, handleNullInArray(r.getSeq[BigDecimal](idx), (v: BigDecimal) => v))
-          // No need of specific null handling, String does it by default
-          case ArrayType(StringType, _) => s.setTextArray(idx, r.getSeq[String](idx).asJava)
-          // TODO: Use setCollection instead of predefined functions
-          //case ArrayType(BinaryType, _) => s.setCollection(idx, pgBulkInsertBytea, r.get(idx).asInstanceOf[Array[Byte]])
-          //case ArrayType(DateType, _) => s.setCollection(idx, pgBulkInsertDate, r.getDate(idx))
-          //case ArrayType(TimestampType, _) => s.setCollection(idx, pgBulkInsertTimestamp, r.getTimestamp(idx))
+          case ArrayType(BooleanType, _) => makeCollectionValueHandler[java.lang.Boolean, util.Collection[java.lang.Boolean]](DataType.Boolean).handle(buffer, handleArray(r.getSeq[Boolean](idx), Boolean.box))
+          // No tinyint in postgres, converting to smallint instead
+          case ArrayType(ByteType, _) => makeCollectionValueHandler[java.lang.Short, util.Collection[java.lang.Short]](DataType.Int2).handle(buffer, handleArray(r.getSeq[Byte](idx), (b: Byte) => Short.box(b.toShort)))
+          case ArrayType(ShortType, _) => makeCollectionValueHandler[java.lang.Short, util.Collection[java.lang.Short]](DataType.Int2).handle(buffer, handleArray(r.getSeq[Short](idx), Short.box))
+          case ArrayType(IntegerType, _) => makeCollectionValueHandler[java.lang.Integer, util.Collection[java.lang.Integer]](DataType.Int4).handle(buffer, handleArray(r.getSeq[Int](idx), Int.box))
+          case ArrayType(LongType, _) => makeCollectionValueHandler[java.lang.Long, util.Collection[java.lang.Long]](DataType.Int8).handle(buffer, handleArray(r.getSeq[Long](idx), Long.box))
+          case ArrayType(FloatType, _) => makeCollectionValueHandler[java.lang.Float, util.Collection[java.lang.Float]](DataType.SinglePrecision).handle(buffer, handleArray(r.getSeq[Float](idx), Float.box))
+          case ArrayType(DoubleType, _) => makeCollectionValueHandler[java.lang.Double, util.Collection[java.lang.Double]](DataType.DoublePrecision).handle(buffer, handleArray(r.getSeq[Double](idx), Double.box))
+          case ArrayType(DecimalType(), _) => makeCollectionValueHandler[java.math.BigDecimal, util.Collection[java.math.BigDecimal]](DataType.DoublePrecision).handle(buffer, handleArray(r.getSeq[java.math.BigDecimal](idx), (v: java.math.BigDecimal) => v))
+          case ArrayType(StringType, _) => makeCollectionValueHandler[java.lang.String, util.Collection[java.lang.String]](DataType.Text).handle(buffer, handleArray(r.getSeq[String](idx), StringUtils.removeNullCharacter))
+          case ArrayType(BinaryType, _) => makeCollectionValueHandler[Array[Byte], util.Collection[Array[Byte]]](DataType.Bytea).handle(buffer, handleArray(r.getSeq[Array[Byte]](idx), (v: Array[Byte]) => v))
+          case ArrayType(DateType, _) => makeCollectionValueHandler[java.time.LocalDate, util.Collection[java.time.LocalDate]](DataType.Date).handle(buffer, handleArray(r.getSeq[Date](idx), (v: Date) => v.toLocalDate))
+          case ArrayType(TimestampType, _) => makeCollectionValueHandler[java.time.LocalDateTime, util.Collection[java.time.LocalDateTime]](DataType.Timestamp).handle(buffer, handleArray(r.getSeq[Timestamp](idx), (t: Timestamp) => t.toLocalDateTime))
 
           // TODO -- Add multidimensional arrays
           case ArrayType(_, _) => throw new UnsupportedOperationException("Trying to insert an Array not supported by PgBulkInsert")
@@ -90,13 +91,10 @@ object PgBulkInsertConverter {
     }
   }
 
-  def makePgBulkInsertRowConverter(schema: StructType): ((Row, SimpleRow) => Unit) = {
-    val converters = schema.fields.toSeq.zipWithIndex.map {case (sf: StructField, idx: Int) =>
-      makePgBulkInsertRowConverter(sf.dataType, idx)
-    }
-
-    (r: Row, s: SimpleRow) => converters.foreach(c => c(r, s))
-
+  def makeRowWriter(schema: StructType): Map[Int, ((Row, DataOutputStream) => Unit)] = {
+    schema.fields.toSeq.zipWithIndex.map {case (sf: StructField, idx: Int) =>
+      idx -> makeFieldWriter(sf.dataType, idx)
+    }.toMap
   }
 
 }

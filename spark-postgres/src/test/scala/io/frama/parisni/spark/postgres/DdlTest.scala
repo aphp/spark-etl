@@ -471,62 +471,73 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
 
   }
 
-  @Test
-  def verifyPostgresPgBulkInsertLoadMode(): Unit = {
+
+  def verifyPostgresPgBinaryLoadMode(loadMode: String): Unit = {
     import spark.implicits._
     val data = ((1, "asdf", 1L) :: Nil).toDF("INT_COL", "STRING_COL", "LONG_COL")
     val schema = data.schema
-    getPgTool().tableCreate("TEST_PG_BULK_INSERT_LOAD", schema, isUnlogged = true)
+    val tableName = s"TEST_PG_BINARY_LOAD_$loadMode"
+    getPgTool().tableCreate(tableName, schema, isUnlogged = true)
     data.write.format("io.frama.parisni.spark.postgres")
       .option("url", getPgUrl)
       .option("type", "full")
-      .option("table", "TEST_PG_BULK_INSERT_LOAD")
-      .option("bulkLoadMode", "PgBulkInsert")
+      .option("table", tableName)
+      .option("bulkLoadMode", loadMode)
       .save
   }
-
-
   @Test
-  def verifyPostgresPgBulkInsertCreateSpecialTable(): Unit = {
+  def verifyPostgresPgBinaryLoadStream() = verifyPostgresPgBinaryLoadMode("PgBinaryStream")
+  @Test
+  def verifyPostgresPgBinaryLoadFiles() = verifyPostgresPgBinaryLoadMode("PgBinaryFiles")
+
+
+  def verifyPostgresPgBinaryCreateSpecialTable(loadMode: String): Unit = {
     import spark.implicits._
     val data = ((1, "asdf", 1L, Array(1, 2, 3), Array("bob"), Array(1L, 2L)) :: Nil)
       .toDF("INT_COL", "STRING_COL", "LONG_COL", "ARRAY_INT_COL", "ARRAY_STRING_COL", "ARRAY_BIGINT_COL")
     val schema = data.schema
-    getPgTool().tableCreate("TEST_ARRAY", schema, isUnlogged = true)
+    val tableName = s"TEST_ARRAY_$loadMode"
+    getPgTool().tableCreate(tableName, schema, isUnlogged = true)
     data.write.format("io.frama.parisni.spark.postgres")
       .option("url", getPgUrl)
       .option("type", "full")
-      .option("table", "TEST_ARRAY")
-      .option("bulkLoadMode", "PgBulkInsert")
+      .option("table", tableName)
+      .option("bulkLoadMode", loadMode)
       .save
   }
-
-
   @Test
-  def verifyPgBulkInsertLoadModeError(): Unit = {
+  def verifyPostgresPgBinaryStreamCreateSpecialTable() = verifyPostgresPgBinaryCreateSpecialTable("PgBinaryStream")
+  @Test
+  def verifyPostgresPgBinaryFilesCreateSpecialTable() = verifyPostgresPgBinaryCreateSpecialTable("PgBinaryFiles")
+
+
+  def verifyPgBinaryLoadModeError(loadMode: String): Unit = {
     import spark.implicits._
     val fakeData = ((1, "asdf", 1L) :: Nil).toDF("INT_COL", "STRING_COL", "LONG_COL")
     val schema = fakeData.schema
     val data = ((1, "asdf", 1L, "err") :: Nil).toDF("INT_COL", "STRING_COL", "LONG_COL", "ERR_COL")
-
-    getPgTool().tableCreate("TEST_PG_BULK_INSERT_LOAD", schema, isUnlogged = true)
+    val tableName = s"TEST_PG_BINARY_ERR_$loadMode"
+    getPgTool().tableCreate(tableName, schema, isUnlogged = true)
 
     assertThrows[RuntimeException](
       data.write.format("io.frama.parisni.spark.postgres")
         .option("url", getPgUrl)
         .option("type", "full")
-        .option("table", "TEST_PG_BULK_INSERT_LOAD")
-        .option("bulkLoadMode", "PgBulkInsert")
+        .option("table", tableName)
+        .option("bulkLoadMode", loadMode)
         .save
     )
-
   }
+  @Test
+  def verifyPgBinaryLoadStreamModeError() = verifyPgBinaryLoadModeError("PgBinaryStream")
+  @Test
+  def verifyPgBinaryLoadFilesModeError() = verifyPgBinaryLoadModeError("PgBinaryFiles")
 
   val testDate = new Date(9)
   val testTimestamp = new Timestamp(10L)
 
-  @Test
-  def verifyPgBulkInsertLoadPrimitiveTypes(): Unit = {
+
+  def verifyPgBinaryLoadPrimitiveTypes(loadMode: String): Unit = {
     import spark.implicits._
 
     val data = Seq(
@@ -548,19 +559,20 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
            "DOUBLE_COL", "STRING_COL", "DATE_COL", "TIMESTAMP_COL", "BYTEA_COL", "BIGD_COL")
 
     val schema = data.schema
+    val tableName = s"TEST_PG_BINARY_LOAD_PRIMITIVES_$loadMode"
 
-    getPgTool().tableCreate("TEST_PG_BULK_INSERT_LOAD_PRIMITIVES", schema, isUnlogged = true)
+    getPgTool().tableCreate(tableName, schema, isUnlogged = true)
 
     data.write.format("io.frama.parisni.spark.postgres")
       .option("url", getPgUrl)
       .option("type", "full")
-      .option("table", "TEST_PG_BULK_INSERT_LOAD_PRIMITIVES")
-      .option("bulkLoadMode", "PgBulkInsert")
+      .option("table", tableName)
+      .option("bulkLoadMode", loadMode)
       .save
 
     val db = pg.getEmbeddedPostgres.getPostgresDatabase
     val conn = db.getConnection()
-    val rs = conn.createStatement().executeQuery("SELECT * FROM \"TEST_PG_BULK_INSERT_LOAD_PRIMITIVES\"")
+    val rs = conn.createStatement().executeQuery(s"""SELECT * FROM "$tableName" """)
     rs.next()
     assert(rs.getBoolean(1))
     assert(rs.getByte(2) == 2)
@@ -575,9 +587,13 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
     assert(util.Arrays.equals(rs.getBytes(11), "11".getBytes()))
     assert(rs.getDouble(12) == 12.0d)
   }
-
   @Test
-  def verifyPgBulkInsertLoadNullPrimitives(): Unit = {
+  def verifyPgBinaryStreamLoadPrimitiveTypes() = verifyPgBinaryLoadPrimitiveTypes("PgBinaryStream")
+  @Test
+  def verifyPgBinaryFilesLoadPrimitiveTypes() = verifyPgBinaryLoadPrimitiveTypes("PgBinaryFiles")
+
+
+  def verifyPgBinaryLoadNullPrimitives(loadMode: String): Unit = {
     import spark.implicits._
 
     val data = Seq(
@@ -599,26 +615,30 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
            "DOUBLE_COL", "STRING_COL", "DATE_COL", "TIMESTAMP_COL", "BYTEA_COL", "BIGD_COL")
 
     val schema = data.schema
+    val tableName = s"TEST_PG_BINARY_LOAD_NULL_PRIMITIVES_$loadMode"
 
-    getPgTool().tableCreate("TEST_PG_BULK_INSERT_LOAD_NULL", schema, isUnlogged = true)
+    getPgTool().tableCreate(tableName, schema, isUnlogged = true)
 
     data.write.format("io.frama.parisni.spark.postgres")
       .option("url", getPgUrl)
       .option("type", "full")
-      .option("table", "TEST_PG_BULK_INSERT_LOAD_NULL")
-      .option("bulkLoadMode", "PgBulkInsert")
+      .option("table", tableName)
+      .option("bulkLoadMode", loadMode)
       .save
 
     val db = pg.getEmbeddedPostgres.getPostgresDatabase
     val conn = db.getConnection()
-    val rs = conn.createStatement().executeQuery("SELECT * FROM \"TEST_PG_BULK_INSERT_LOAD_NULL\"")
+    val rs = conn.createStatement().executeQuery(s"""SELECT * FROM "$tableName" """)
     rs.next()
     (1 to 12).foreach(i => assert(rs.getString(i) == null))
 
   }
-
   @Test
-  def verifyPgBulkInsertLoadNullInArrays(): Unit = {
+  def verifyPgBinaryStreamLoadNullPrimitives() = verifyPgBinaryLoadNullPrimitives("PgBinaryStream")
+  @Test
+  def verifyPgBinaryFilesLoadNullPrimitives() = verifyPgBinaryLoadNullPrimitives("PgBinaryFiles")
+
+  def verifyPgBinaryLoadNullInArrays(loadMode: String): Unit = {
     import spark.implicits._
 
     val colNames = Seq("BOOL_COL", "BYTE_COL", "SHORT_COL", "INT_COL", "LONG_COL", "FLOAT_COL",
@@ -642,14 +662,15 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
     ).toDF(colNames: _* )
 
     val schema = data.schema
+    val tableName = s"TEST_PG_BULK_INSERT_LOAD_NULL_IN_ARRAYS_$loadMode"
 
-    getPgTool().tableCreate("TEST_PG_BULK_INSERT_LOAD_NULL_IN_ARRAYS", schema, isUnlogged = true)
+    getPgTool().tableCreate(tableName, schema, isUnlogged = true)
 
     data.write.format("io.frama.parisni.spark.postgres")
       .option("url", getPgUrl)
       .option("type", "full")
-      .option("table", "TEST_PG_BULK_INSERT_LOAD_NULL_IN_ARRAYS")
-      .option("bulkLoadMode", "PgBulkInsert")
+      .option("table", tableName)
+      .option("bulkLoadMode", loadMode)
       .save
 
     val db = pg.getEmbeddedPostgres.getPostgresDatabase
@@ -662,7 +683,7 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
         |SELECT
         |  $selectFirstValues,
         |  $selectSecondValues
-        |FROM "TEST_PG_BULK_INSERT_LOAD_NULL_IN_ARRAYS"
+        |FROM "$tableName"
       """.stripMargin)
     rs.next()
 
@@ -682,5 +703,9 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
     (13 to 24).foreach(i => assert(rs.getString(i) == null))
 
   }
+  @Test
+  def verifyPgBinaryStreamLoadNullInArrays() = verifyPgBinaryLoadNullInArrays("PgBinaryStream")
+  @Test
+  def verifyPgBinaryFilesLoadNullInArrays() = verifyPgBinaryLoadNullInArrays("PgBinaryFiles")
 
 }

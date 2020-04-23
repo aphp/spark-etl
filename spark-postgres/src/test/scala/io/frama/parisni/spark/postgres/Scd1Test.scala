@@ -89,7 +89,9 @@ class Scd1Test extends QueryTest with SparkSessionTestWrapper {
   @Test
   def verifyScd1LowLevelStream(): Unit = verifyScd1LowLevel(Stream)
   @Test
-  def verifyScd1LowLevelPgBulkInsert(): Unit = verifyScd1LowLevel(PgBulkInsert)
+  def verifyScd1LowLevelPgBinaryStream(): Unit = verifyScd1LowLevel(PgBinaryStream)
+  @Test
+  def verifyScd1LowLevelPgBinaryFiles(): Unit = verifyScd1LowLevel(PgBinaryFiles)
 
 
   def verifyScd1WithFilter(bulkLoadMode: String): Unit = {
@@ -138,7 +140,9 @@ class Scd1Test extends QueryTest with SparkSessionTestWrapper {
   @Test
   def verifyScd1WithFilterStream(): Unit = verifyScd1WithFilter("stream")
   @Test
-  def verifyScd1WithFilterPgBulkInsert(): Unit = verifyScd1WithFilter("PgBulkInsert")
+  def verifyScd1WithFilterPgBinaryStream(): Unit = verifyScd1WithFilter("PgBinaryStream")
+  @Test
+  def verifyScd1WithFilterPgBinaryFiles(): Unit = verifyScd1WithFilterAndDelete("PgBinaryFiles")
 
 
   def verifyScd1WithFilterAndDelete(bulkLoadMode: String): Unit = {
@@ -187,7 +191,9 @@ class Scd1Test extends QueryTest with SparkSessionTestWrapper {
   @Test
   def verifyScd1WithFilterAndDeleteStream(): Unit = verifyScd1WithFilterAndDelete("stream")
   @Test
-  def verifyScd1WithFilterAndDeletePgBulkInsert(): Unit = verifyScd1WithFilterAndDelete("PgBulkInsert")
+  def verifyScd1WithFilterAndDeletePgBinaryStream(): Unit = verifyScd1WithFilterAndDelete("PgBinaryStream")
+  @Test
+  def verifyScd1WithFilterAndDeletePgBinaryFiles(): Unit = verifyScd1WithFilterAndDelete("PgBinaryFiles")
 
 }
 

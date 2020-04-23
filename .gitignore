@@ -44,7 +44,7 @@ build.log
 
 #SHITTY output not in target directory
 build.log
-**/info.log
+**/info.log*
 metastore_db/
 spark-postgres-tmp/
 derby.log

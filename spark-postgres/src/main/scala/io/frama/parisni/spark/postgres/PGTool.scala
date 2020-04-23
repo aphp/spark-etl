@@ -8,7 +8,7 @@ import java.util.{Properties, TimeZone}
 
 import com.typesafe.scalalogging.LazyLogging
 import de.bytefish.pgbulkinsert.util.PostgreSqlUtils
-import io.frama.parisni.spark.postgres.rowconverters.{CSVOptions, PgBinaryConverter, PgBulkInsertConverter, UnivocityGenerator}
+import io.frama.parisni.spark.postgres.rowconverters._
 import org.apache.commons.codec.Charsets
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
@@ -29,7 +29,8 @@ import scala.util.{Failure, Success, Try}
 sealed trait BulkLoadMode
 object CSV extends BulkLoadMode
 object Stream extends BulkLoadMode
-object PgBulkInsert extends BulkLoadMode
+object PgBinaryStream extends BulkLoadMode
+object PgBinaryFiles extends BulkLoadMode
 
 
 class PGTool(spark: SparkSession
@@ -172,6 +173,7 @@ class PGTool(spark: SparkSession
   }
 
   def outputBulkCsv(table: String, columns: String, path: String, numPartitions: Int = 8, delimiter: String = ",", csvPattern: String = ".*.csv"): PGTool = {
+
     PGTool.outputBulkCsvLow(spark, url, table, columns, path, numPartitions, delimiter, csvPattern, password)
     this
   }
@@ -696,8 +698,9 @@ object PGTool extends java.io.Serializable with LazyLogging {
   ) = {
     bulkLoadMode match  {
       case CSV => outputBulkCsv(spark, url, table, df, path, numPartitions, password, reindex, bulkLoadBufferSize)
-      case Stream => outputBulkStream(spark, url, table, df, numPartitions, password, reindex, bulkLoadBufferSize)
-      case PgBulkInsert => outputPgBulkInsert(spark, url, table, df, numPartitions, password, reindex, bulkLoadBufferSize)
+      case Stream => outputCSVBulkStream(spark, url, table, df, numPartitions, password, reindex, bulkLoadBufferSize)
+      case PgBinaryStream => outputBinaryBulkStream(spark, url, table, df, numPartitions, password, reindex, bulkLoadBufferSize)
+      case PgBinaryFiles => outputBinaryBulkFiles(spark, url, table, df, path, numPartitions, password, reindex, bulkLoadBufferSize)
     }
   }
 
@@ -730,6 +733,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
         .option("ignoreTrailingWhiteSpace", "false")
         .mode(org.apache.spark.sql.SaveMode.Overwrite)
         .save(path)
+
       outputBulkCsvLow(spark, url, table, columns, path, numPartitions, ",", ".*.csv", password, bulkLoadBufferSize)
     } finally {
       if (reindex)
@@ -737,14 +741,12 @@ object PGTool extends java.io.Serializable with LazyLogging {
     }
   }
 
-  def outputBulkCsvLow(spark: SparkSession
+  def outputBulkFileLow(spark: SparkSession
                        , url: String
-                       , table: String
-                       , columns: String
                        , path: String
+                       , sqlCopy: String
+                       , extensionPattern: String
                        , numPartitions: Int = 8
-                       , delimiter: String = ","
-                       , csvPattern: String = ".*.csv"
                        , password: String = ""
                        , bulkLoadBufferSize: Int = defaultBulkLoadBufferSize
                       ) = {
@@ -753,7 +755,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
     val fs = FileSystem.get(new Configuration())
     import spark.implicits._
     val rdd = fs.listStatus(new Path(path))
-      .filter(x => x.getPath.toString.matches("^.*/" + csvPattern + "$"))
+      .filter(x => x.getPath.toString.matches("^.*/" + extensionPattern + "$"))
       .map(x => x.getPath.toString).toList.zipWithIndex.map(_.swap)
       .toDS.rdd.partitionBy(new ExactPartitioner(numPartitions))
 
@@ -764,7 +766,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
           s => {
             val stream: InputStream = FileSystem.get(new Configuration()).open(new Path(s._2)).getWrappedStream
             val copyManager: CopyManager = new CopyManager(conn.asInstanceOf[BaseConnection])
-            copyManager.copyIn( s"""COPY "$table" ($columns) FROM STDIN WITH CSV DELIMITER '$delimiter'  NULL '' ESCAPE '"' QUOTE '"' """, stream, bulkLoadBufferSize)
+            copyManager.copyIn(sqlCopy, stream, bulkLoadBufferSize)
           }
         }
         conn.close()
@@ -772,7 +774,24 @@ object PGTool extends java.io.Serializable with LazyLogging {
       })
   }
 
-  def outputBulkStream(spark: SparkSession
+  def outputBulkCsvLow(
+                       spark: SparkSession
+                       , url: String
+                       , table: String
+                       , columns: String
+                       , path: String
+                       , numPartitions: Int = 8
+                       , delimiter: String = ","
+                       , extensionPattern: String = ".*.csv"
+                       , password: String = ""
+                       , bulkLoadBufferSize: Int = defaultBulkLoadBufferSize
+                      ) = {
+    val csvSqlCopy = s"""COPY "$table" ($columns) FROM STDIN WITH CSV DELIMITER '$delimiter'  NULL '' ESCAPE '"' QUOTE '"' """
+    outputBulkFileLow(spark, url, path, csvSqlCopy, extensionPattern, numPartitions, password, bulkLoadBufferSize)
+  }
+
+
+    def outputCSVBulkStream(spark: SparkSession
                        , url: String
                        , table: String
                        , df: Dataset[Row]
@@ -876,7 +895,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
     }
   }
 
-  def outputPgBulkInsert(
+  def outputBinaryBulkStream(
     spark: SparkSession
     , url: String
     , table: String
@@ -886,7 +905,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
     , reindex: Boolean = false
     , bulkLoadBufferSize: Int = defaultBulkLoadBufferSize
   ) = {
-    logger.warn("using PgBulkInsert strategy")
+    logger.warn("using PG Binary stream strategy")
     try {
       if (reindex)
         indexDeactivate(url, table, password)
@@ -903,7 +922,6 @@ object PGTool extends java.io.Serializable with LazyLogging {
         val it = p.map(sparkRow => {
           pgBinaryConverter.convertRow(sparkRow)
         })
-        pgBinaryConverter.close()
         it
       })
 
@@ -924,7 +942,6 @@ object PGTool extends java.io.Serializable with LazyLogging {
         pgCopyOutputStream.writeInt(0)
         pgCopyOutputStream.writeInt(0)
 
-        var idx = 0
         p.foreach (binaryRow => {
           pgCopyOutputStream.write(binaryRow)
         })
@@ -932,6 +949,64 @@ object PGTool extends java.io.Serializable with LazyLogging {
         pgCopyOutputStream.writeShort(-1)
         pgCopyOutputStream.close()
       })
+
+    } finally {
+      if (reindex)
+        indexReactivate(url, table, password)
+    }
+  }
+
+  def outputBinaryBulkFiles(
+    spark: SparkSession
+    , url: String
+    , table: String
+    , df: Dataset[Row]
+    , path: String
+    , numPartitions: Int = 8
+    , password: String = ""
+    , reindex: Boolean = false
+    , bulkLoadBufferSize: Int = defaultBulkLoadBufferSize
+  ) = {
+    logger.warn("using PG-Binary files strategy")
+    try {
+      if (reindex)
+        indexDeactivate(url, table, password)
+
+      val schema = df.schema
+      val columns = schema.fields.map(x => s"${sanP(x.name)}")
+
+      //  Write spark Rows to binary
+      df.rdd.mapPartitionsWithIndex((partIdx: Int, p: Iterator[Row]) => {
+        val filePath = new Path(f"$path%s/part-$partIdx%05d.pgb")
+        val fs = FileSystem.get(new Configuration())
+
+        val outputStream = new DataOutputStream(fs.create(filePath))
+
+        val rowWriter = PgBulkInsertConverter.makeRowWriter(schema)
+        val pgBinaryWriter = new PgBinaryWriter(outputStream, rowWriter)
+
+        // PG binary header
+        outputStream.write("PGCOPY\nÿ\r\n\u0000".getBytes(Charsets.ISO_8859_1))
+        outputStream.writeInt(0)
+        outputStream.writeInt(0)
+
+        p.foreach (sparkRow => {
+          pgBinaryWriter.writeRow(sparkRow)
+        })
+
+        outputStream.writeShort(-1)
+        outputStream.close()
+
+        // No foreach with partition-index, faking returning data and force execution with take(1)
+        Seq.empty[Row].toIterator
+      }).take(1)
+
+      // Then write binary after coalescing
+      val fullyQualifiedTableName = PostgreSqlUtils.getFullyQualifiedTableName(null, table, true)
+      val commaSeparatedColumns = columns.map(c => PostgreSqlUtils.quoteIdentifier(c)).mkString(", ")
+      val copyCommand = s"COPY $fullyQualifiedTableName($commaSeparatedColumns) FROM STDIN BINARY"
+
+      outputBulkFileLow(spark, url, path, copyCommand, ".*.pgb", numPartitions, password, bulkLoadBufferSize)
 
     } finally {
       if (reindex)

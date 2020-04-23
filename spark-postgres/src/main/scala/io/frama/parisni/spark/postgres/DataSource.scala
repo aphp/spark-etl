@@ -38,6 +38,7 @@ class DefaultSource extends RelationProvider with CreatableRelationProvider with
   }
 
   override def shortName(): String = "postgres"
+  
 }
 
 class PostgresRelation(val parameters: Map[String, String]
@@ -137,7 +138,8 @@ class PostgresRelation(val parameters: Map[String, String]
     val bulkLoadMode = conf.getBulkLoadMode.getOrElse("") match {
       case "csv" => CSV
       case "stream" => Stream
-      case "PgBulkInsert" => PgBulkInsert
+      case "PgBinaryStream" => PgBinaryStream
+      case "PgBinaryFiles" => PgBinaryFiles
       case _ => PGTool.defaultBulkLoadStrategy
     }
     val bulkLoadBufferSize = conf.getBulkLoadBufferSize.getOrElse(PGTool.defaultBulkLoadBufferSize)

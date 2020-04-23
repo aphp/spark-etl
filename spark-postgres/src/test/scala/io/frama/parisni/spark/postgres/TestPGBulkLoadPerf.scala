@@ -14,7 +14,7 @@ import org.junit.Test
 
 class TestPGBulkLoadPerf extends QueryTest with SparkSessionTestWrapper {
 
-  val rowNumber = 1000000
+  val rowNumber = 100000
 
   val schema = StructType(Seq(
     StructField("f1", LongType, nullable=true),
@@ -75,12 +75,20 @@ class TestPGBulkLoadPerf extends QueryTest with SparkSessionTestWrapper {
     abstractTest("csv", "65536")
   }
 
-  @Test def writeRowsPgBulkInsertUsualBuffer(): Unit = {
-    abstractTest("PgBulkInsert", "65536")
+  @Test def writeRowsPgBinaryFilesUsualBuffer(): Unit = {
+    abstractTest("PgBinaryFiles", "65536")
   }
 
-  @Test def writeRowsPgBulkInsertBigBuffer(): Unit = {
-    abstractTest("PgBulkInsert", "1048576")
+  @Test def writeRowsPgBinaryStreamUsualBuffer(): Unit = {
+    abstractTest("PgBinaryStream", "65536")
+  }
+
+  @Test def writeRowsPgBinaryStreamBigBuffer(): Unit = {
+    abstractTest("PgBinaryStream", "1048576")
+  }
+
+  @Test def writeRowsPgBinaryStreamHugeBuffer(): Unit = {
+    abstractTest("PgBinaryStream", s"${16 * 1024 * 1024}")
   }
 }
 */

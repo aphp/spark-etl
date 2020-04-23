@@ -58,7 +58,9 @@ class Scd2Test extends QueryTest with SparkSessionTestWrapper {
   @Test
   def verifyScd2Stream(): Unit = verifyScd2("stream")
   @Test
-  def verifyScd2PgBulkInsert(): Unit = verifyScd2("PgBulkInsert")
+  def verifyScd2PgBinaryStream(): Unit = verifyScd2("PgBinaryStream")
+  @Test
+  def verifyScd2PgBinaryFiles(): Unit = verifyScd2("PgBinaryFiles")
 
 
   def verifyScd2LowLevel(bulkLoadMode: BulkLoadMode): Unit = {
@@ -97,7 +99,9 @@ class Scd2Test extends QueryTest with SparkSessionTestWrapper {
   @Test
   def verifyScd2LowLevelStream(): Unit = verifyScd2LowLevel(Stream)
   @Test
-  def verifyScd2LowLevelPgBulkInsert(): Unit = verifyScd2LowLevel(PgBulkInsert)
+  def verifyScd2LowLevelPgBinaryStream(): Unit = verifyScd2LowLevel(PgBinaryStream)
+  @Test
+  def verifyScd2LowLevelPgBinaryFiles(): Unit = verifyScd2LowLevel(PgBinaryFiles)
 
 }
 

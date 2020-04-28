@@ -24,6 +24,7 @@ https://dzone.com/articles/deploy-maven-central -->
     <version>9</version>
   </parent>
   <modules>
+    <module>spark-query</module>
     <module>spark-quality</module>
     <module>spark-dataframe</module>
     <module>spark-csv</module>

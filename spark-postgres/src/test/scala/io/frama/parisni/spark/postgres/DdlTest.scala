@@ -536,10 +536,12 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
   val testDate = new Date(9)
   val testTimestamp = new Timestamp(10L)
 
+  case class InnerStruct(fi1: Int, fi2: String)
 
   def verifyPgBinaryLoadPrimitiveTypes(loadMode: String): Unit = {
     import spark.implicits._
-
+    // Needed for the InnerStruct class to be converted to DataFrame through implicit
+    org.apache.spark.sql.catalyst.encoders.OuterScopes.addOuterScope(this)
     val data = Seq(
       (
         true,
@@ -553,10 +555,13 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
         testDate,
         testTimestamp,
         "11".getBytes(),
-        BigDecimal(12.0)
+        BigDecimal(12.0),
+        Map("test_key" -> 13L),
+        InnerStruct(14, "test_fi2")
       )
     ).toDF("BOOL_COL", "BYTE_COL", "SHORT_COL", "INT_COL", "LONG_COL", "FLOAT_COL",
-           "DOUBLE_COL", "STRING_COL", "DATE_COL", "TIMESTAMP_COL", "BYTEA_COL", "BIGD_COL")
+           "DOUBLE_COL", "STRING_COL", "DATE_COL", "TIMESTAMP_COL", "BYTEA_COL",
+           "BIGD_COL", "MAP_COL", "STRUCT_COL")
 
     val schema = data.schema
     val tableName = s"TEST_PG_BINARY_LOAD_PRIMITIVES_$loadMode"
@@ -586,6 +591,8 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
     assert(rs.getTimestamp(10).equals(testTimestamp))
     assert(util.Arrays.equals(rs.getBytes(11), "11".getBytes()))
     assert(rs.getDouble(12) == 12.0d)
+    assert(rs.getString(13) == "{\"test_key\": 13}")
+    assert(rs.getString(14) == "{\"fi1\": 14, \"fi2\": \"test_fi2\"}")
   }
   @Test
   def verifyPgBinaryStreamLoadPrimitiveTypes() = verifyPgBinaryLoadPrimitiveTypes("PgBinaryStream")
@@ -595,7 +602,8 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
 
   def verifyPgBinaryLoadNullPrimitives(loadMode: String): Unit = {
     import spark.implicits._
-
+    // Needed for the InnerStruct class to be converted to DataFrame through implicit
+    org.apache.spark.sql.catalyst.encoders.OuterScopes.addOuterScope(this)
     val data = Seq(
       (
         None.asInstanceOf[Option[Boolean]],
@@ -609,10 +617,13 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
         None.asInstanceOf[Option[Date]],
         None.asInstanceOf[Option[Timestamp]],
         None.asInstanceOf[Option[Array[Byte]]],
-        None.asInstanceOf[Option[BigDecimal]]
-        )
+        None.asInstanceOf[Option[BigDecimal]],
+        None.asInstanceOf[Option[Map[String, Long]]],
+        None.asInstanceOf[Option[InnerStruct]]
+      )
     ).toDF("BOOL_COL", "BYTE_COL", "SHORT_COL", "INT_COL", "LONG_COL", "FLOAT_COL",
-           "DOUBLE_COL", "STRING_COL", "DATE_COL", "TIMESTAMP_COL", "BYTEA_COL", "BIGD_COL")
+           "DOUBLE_COL", "STRING_COL", "DATE_COL", "TIMESTAMP_COL", "BYTEA_COL",
+           "BIGD_COL", "MAP_COL", "STRUCT_COL")
 
     val schema = data.schema
     val tableName = s"TEST_PG_BINARY_LOAD_NULL_PRIMITIVES_$loadMode"
@@ -630,7 +641,7 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
     val conn = db.getConnection()
     val rs = conn.createStatement().executeQuery(s"""SELECT * FROM "$tableName" """)
     rs.next()
-    (1 to 12).foreach(i => assert(rs.getString(i) == null))
+    (1 to 14).foreach(i => assert(rs.getString(i) == null))
 
   }
   @Test
@@ -638,11 +649,14 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
   @Test
   def verifyPgBinaryFilesLoadNullPrimitives() = verifyPgBinaryLoadNullPrimitives("PgBinaryFiles")
 
+
   def verifyPgBinaryLoadNullInArrays(loadMode: String): Unit = {
     import spark.implicits._
-
+    // Needed for the InnerStruct class to be converted to DataFrame through implicit
+    org.apache.spark.sql.catalyst.encoders.OuterScopes.addOuterScope(this)
     val colNames = Seq("BOOL_COL", "BYTE_COL", "SHORT_COL", "INT_COL", "LONG_COL", "FLOAT_COL",
-                       "DOUBLE_COL", "STRING_COL","DATE_COL", "TIMESTAMP_COL", "BYTEA_COL", "BIGD_COL")
+                       "DOUBLE_COL", "STRING_COL","DATE_COL", "TIMESTAMP_COL", "BYTEA_COL",
+                       "BIGD_COL")
 
     val data = Seq(
       (
@@ -658,7 +672,7 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
         Array(Some(testTimestamp), None),
         Array(Some("11".getBytes()), None),
         Array(Some(BigDecimal(12)), None)
-        )
+      )
     ).toDF(colNames: _* )
 
     val schema = data.schema

@@ -186,7 +186,7 @@ class PGTool(spark: SparkSession
 
 object PGTool extends java.io.Serializable with LazyLogging {
 
-  val defaultBulkLoadStrategy = CSV
+  val defaultBulkLoadStrategy:BulkLoadMode = PgBinaryFiles
   val defaultBulkLoadBufferSize = 64 * 1024
   val defaultStreamBulkLoadTimeoutMs = 10 * 64 * 1000
 

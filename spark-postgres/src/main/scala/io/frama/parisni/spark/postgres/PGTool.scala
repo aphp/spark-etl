@@ -15,9 +15,9 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.Partitioner
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.functions.{col, expr}
+import org.apache.spark.sql.functions.{col, expr, to_json, regexp_replace, lit}
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{DataFrame, Dataset, Row, SparkSession}
+import org.apache.spark.sql._
 import org.postgresql.copy.{CopyManager, PGCopyInputStream, PGCopyOutputStream}
 import org.postgresql.core.BaseConnection
 
@@ -587,6 +587,8 @@ object PGTool extends java.io.Serializable with LazyLogging {
   }
 
   def toPostgresDdl(s: String): String = {
+    val mapStructPattern = "^(map|struct)<(.*)>$".r
+
     s match {
       case "boolean" => "boolean"
       // No tinyint in postgres - using smallint instead
@@ -614,6 +616,8 @@ object PGTool extends java.io.Serializable with LazyLogging {
       case "array<date>" => "date[]"
       case "array<timestamp>" => "timestamp[]"
       case "array<binary>" => "bytea[]"
+
+      case mapStructPattern(_, _) => "jsonb"
 
       case _ => throw new Exception("data type not handled yet:%s".format(s))
     }
@@ -720,7 +724,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
         indexDeactivate(url, table, password)
       val columns = df.schema.fields.map(x => s"${sanP(x.name)}").mkString(",")
       //transform arrays to string
-      val dfTmp = dataframeToPgCsv(spark, df, df.schema)
+      val dfTmp = dataframeToPgCsv(spark, df)
       //write a csv folder
       dfTmp.write.format("csv")
         .option("delimiter", ",")
@@ -810,7 +814,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
       val schema = df.schema
       val columns = schema.fields.map(x => s"${sanP(x.name)}").mkString(",")
       //transform arrays to string
-      val dfTmp = dataframeToPgCsv(spark, df, schema)
+      val dfTmp = dataframeToPgCsv(spark, df)
       val dfTmpSchema = dfTmp.schema
 
       val rddToWrite: RDD[Row] = if (dfTmp.rdd.getNumPartitions > numPartitions) dfTmp.rdd.coalesce(numPartitions) else dfTmp.rdd
@@ -914,7 +918,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
       val columns = schema.fields.map(x => s"${sanP(x.name)}")
 
       // First convert spark Rows to binary
-      val rddToStream: RDD[Array[Byte]] = df.rdd.mapPartitions((p: Iterator[Row]) => {
+      val rddToStream: RDD[Array[Byte]] = dataframeMapsAndStructsToJson(spark, df).rdd.mapPartitions((p: Iterator[Row]) => {
         val rowWriter = PgBulkInsertConverter.makeRowWriter(schema)
 
         val pgBinaryConverter = new PgBinaryConverter(rowWriter)
@@ -976,7 +980,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
       val columns = schema.fields.map(x => s"${sanP(x.name)}")
 
       //  Write spark Rows to binary
-      df.rdd.mapPartitionsWithIndex((partIdx: Int, p: Iterator[Row]) => {
+      dataframeMapsAndStructsToJson(spark, df).rdd.mapPartitionsWithIndex((partIdx: Int, p: Iterator[Row]) => {
         val filePath = new Path(f"$path%s/part-$partIdx%05d.pgb")
         val fs = FileSystem.get(new Configuration())
 
@@ -1195,21 +1199,30 @@ object PGTool extends java.io.Serializable with LazyLogging {
     spark.sql(sqlQuery)
   }
 
-  def dataframeToPgCsv(spark: SparkSession, dfSimple: Dataset[Row], schemaQueryComplex: StructType): DataFrame = {
-    val tableTmp = "table_" + randomUUID.toString.replaceAll(".*-", "")
-    dfSimple.createOrReplaceTempView(tableTmp)
-    val sqlQuery = "SELECT " + schemaQueryComplex.map(a => {
-      if (a.dataType.simpleString.indexOf("array") == 0) {
-        "REGEXP_REPLACE(REGEXP_REPLACE(CAST(" + sanS(a.name) + " AS string), '^.', '{'), '.$', '}') AS " + sanS(a.name)
-      } else if (a.dataType.simpleString.indexOf("string") == 0) {
-        "REGEXP_REPLACE(REGEXP_REPLACE(" + sanS(a.name) + ", '\\u0000', ''),'\r\n|\r','\n') AS " + sanS(a.name) // this character breaks postgresql parser
+  def dataframeToPgCsv(spark: SparkSession, df: Dataset[Row]): DataFrame = {
+    val newCols = df.schema.fields.map(c => {
+      val colName = c.name
+      if (c.dataType.simpleString.indexOf("array") == 0) {
+        regexp_replace(regexp_replace(col(colName).cast("string"), lit("^."), lit("{")), lit(".$"), lit("}")).as(colName)
+      } else if (c.dataType.simpleString.indexOf("string") == 0) {
+        regexp_replace(regexp_replace(col(colName), lit("\\u0000"), lit("")), lit("\r\n|\r"), lit("\n")).as(colName)
       } else {
-        sanS(a.name)
+        col(colName)
       }
-
     })
-      .mkString(", ") + " FROM " + sanS(tableTmp)
-    spark.sql(sqlQuery)
+    df.select(newCols: _*)
+  }
+
+  def dataframeMapsAndStructsToJson(spark: SparkSession, df: Dataset[Row]): DataFrame = {
+    val newCols = df.schema.fields.map(c => {
+      val colName = c.name
+      if (c.dataType.isInstanceOf[MapType] || c.dataType.isInstanceOf[StructType]) {
+        to_json(col(colName)).as(colName)
+      } else {
+        col(colName)
+      }
+    })
+    df.select(newCols: _*)
   }
 
 

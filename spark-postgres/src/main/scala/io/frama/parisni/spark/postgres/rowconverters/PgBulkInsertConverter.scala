@@ -18,7 +18,7 @@
 package io.frama.parisni.spark.postgres.rowconverters
 
 import java.io.DataOutputStream
-import java.sql.{Date, Timestamp}
+import java.sql.{Timestamp, Date}
 import java.util
 
 import de.bytefish.pgbulkinsert.pgsql.constants.{DataType, ObjectIdentifier}
@@ -64,6 +64,10 @@ object PgBulkInsertConverter {
           case DateType => provider.resolve(DataType.Date).handle(buffer, r.getDate(idx).toLocalDate)
           case TimestampType => provider.resolve(DataType.Timestamp).handle(buffer, r.getTimestamp(idx).toLocalDateTime)
 
+          // Using json for maps and structs
+          case MapType(_, _, _) => provider.resolve(DataType.Jsonb).handle(buffer, StringUtils.removeNullCharacter(r.getString(idx)))
+          case StructType(_) => provider.resolve(DataType.Jsonb).handle(buffer, StringUtils.removeNullCharacter(r.getString(idx)))
+
           case ArrayType(BooleanType, _) => makeCollectionValueHandler[java.lang.Boolean, util.Collection[java.lang.Boolean]](DataType.Boolean).handle(buffer, handleArray(r.getSeq[Boolean](idx), Boolean.box))
           // No tinyint in postgres, converting to smallint instead
           case ArrayType(ByteType, _) => makeCollectionValueHandler[java.lang.Short, util.Collection[java.lang.Short]](DataType.Int2).handle(buffer, handleArray(r.getSeq[Byte](idx), (b: Byte) => Short.box(b.toShort)))
@@ -78,12 +82,7 @@ object PgBulkInsertConverter {
           case ArrayType(DateType, _) => makeCollectionValueHandler[java.time.LocalDate, util.Collection[java.time.LocalDate]](DataType.Date).handle(buffer, handleArray(r.getSeq[Date](idx), (v: Date) => v.toLocalDate))
           case ArrayType(TimestampType, _) => makeCollectionValueHandler[java.time.LocalDateTime, util.Collection[java.time.LocalDateTime]](DataType.Timestamp).handle(buffer, handleArray(r.getSeq[Timestamp](idx), (t: Timestamp) => t.toLocalDateTime))
 
-          // TODO -- Add multidimensional arrays
-          case ArrayType(_, _) => throw new UnsupportedOperationException("Trying to insert an Array not supported by PgBulkInsert")
-          // TODO Convert to json (hstore is an extension) - Don't forget to add the schema change
-          case MapType(_, _, _) => throw new UnsupportedOperationException("Trying to insert a spark Map into postgres - Not yet supported")
-          case StructType(_) => throw new UnsupportedOperationException("Trying to insert a spark Struct into postgres - Not yet supported")
-
+          // TODO -- Add multidimensional arrays ?
           // Not treated: CalendarIntervalType, ObjectType (JVM object), NullType (NULL values type), HiveStringType (internal), UserDefinedType (internal), AnyType
           case _ => throw new UnsupportedOperationException("Trying to insert a datatype not supported by PgBulkInsert")
         }

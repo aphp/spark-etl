@@ -25,8 +25,8 @@ class PostgresConf(config: Map[String, String]) extends Serializable with LazyLo
   val PG_PK: String = "pk"
   val PG_FILTER: String = "filter"
   val PG_DELETE_SET: String = "deleteSet"
-  val PG_KILL_LOCKS: String = "kill-locks"
-  val PG_SWAP_LOAD: String = "swap-load"
+  val PG_KILL_LOCKS: String = "killLocks"
+  val PG_SWAP_LOAD: String = "swapLoad"
   val PG_BULK_LOAD_MODE: String = "bulkLoadMode"
   val PG_BULK_LOAD_BUFFER_SIZE: String = "bulkLoadBufferSize"
 
@@ -45,8 +45,8 @@ class PostgresConf(config: Map[String, String]) extends Serializable with LazyLo
 
   def getPrimaryKey: Option[String] = config.get(PG_PK)
 
-  def getJoinKey: Option[Array[String]] =
-    if (config.get(PG_JOIN_KEY).isDefined) Some(config(PG_JOIN_KEY).split(",")) else None
+  def getJoinKey: Option[Seq[String]] =
+    if (config.get(PG_JOIN_KEY).isDefined) Some(config(PG_JOIN_KEY).split(",").toSeq) else None
 
   def getPartitionColumn: Option[String] = config.get(PG_PARTITION_COLUMN)
 

@@ -55,6 +55,104 @@ class PostgresRelation(val parameters: Map[String, String]
 
   override val sqlContext: SQLContext = sparkSession.sqlContext
 
+  private def loadByType(
+                         loadType: String
+                         , tableToLoad: String
+                         , data: DataFrame
+                         , numPartitions: Option[Int]
+                         , reindex: Boolean
+                         , joinKey: Option[Seq[String]] = None
+                         , filter: Option[String] = None
+                         , deleteSet: Option[String] = None
+                         , pk: Option[String] = None
+                         , endCol: Option[String] = None
+                        ): Unit = {
+    loadType match {
+      case "full" => _pg.outputBulk(tableToLoad, data, numPartitions, reindex)
+      case "megafull" => _pg.outputBulk(tableToLoad, data, numPartitions, reindex)
+      case "scd1" => _pg.outputScd1Hash(tableToLoad, joinKey.get, DFTool.dfAddHash(data), numPartitions, filter, deleteSet)
+      case "scd2" => _pg.outputScd2Hash(tableToLoad, DFTool.dfAddHash(data), pk.get, joinKey.get, endCol.get, numPartitions)
+    }
+  }
+
+  private def swapLoad(
+                       table : String
+                       , killLocks: Boolean
+                       , loadType: String
+                       , data: DataFrame
+                       , numPartitions: Option[Int]
+                       , reindex: Boolean
+                       , joinKey: Option[Seq[String]] = None
+                       , filter: Option[String] = None
+                       , deleteSet: Option[String] = None
+                       , pk: Option[String] = None
+                       , endCol: Option[String] = None
+                      ): Unit = {
+    logger.warn("overwrite + swap loading")
+
+    // Overwrite-Swap bulk-loading strategy:
+    // Copy a temporary table  frgom the original table,
+    // Bulk-load the data into it and when done
+    // drop existing and rename newly loaded
+    val tmpTable = "table_" + randomUUID.toString.replaceAll(".*-", "")
+    _pg.tableCopy(table
+                  , tmpTable
+                  , isUnlogged = false
+                  , copyConstraints = true
+                  , copyIndexes = true
+                  , copyStorage = true
+                  , copyComments = true
+                  , copyOwner = true
+                  , copyPermissions = true
+    )
+
+    loadByType(loadType, tmpTable, data, numPartitions, reindex, joinKey, filter, deleteSet, pk, endCol)
+
+    _pg.purgeTmp()
+
+    if (killLocks)
+      _pg.killLocks(table)
+    _pg.tableDrop(table)
+    _pg.tableRename(tmpTable, table)
+  }
+
+  private def inPlaceLoad(
+                          table : String
+                          , overwrite: Boolean
+                          , killLocks: Boolean
+                          , loadType: String
+                          , data: DataFrame
+                          , numPartitions: Option[Int]
+                          , reindex: Boolean
+                          , joinKey: Option[Seq[String]] = None
+                          , filter: Option[String] = None
+                          , deleteSet: Option[String] = None
+                          , pk: Option[String] = None
+                          , endCol: Option[String] = None
+                         ): Unit = {
+    logger.warn("in-place loading")
+    logger.warn("is_overwrite " + overwrite)
+
+    // Kill locks before dropping in case of overwrite
+    if (overwrite) {
+      if (killLocks)
+        _pg.killLocks(table)
+      _pg.tableDrop(table)
+    }
+
+    // Create table in any case: whether dropped because of overwrite, new table, or existing (noop)
+    _pg.tableCreate(table, data.schema, isUnlogged = false)
+
+    // Kill locks just before loading if not overwrite
+    if ((!overwrite) && killLocks)
+      _pg.killLocks(table)
+
+    loadByType(loadType, table, data, numPartitions, reindex, joinKey, filter, deleteSet, pk, endCol)
+
+    _pg.purgeTmp()
+
+  }
+
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
     require(conf.getTable.nonEmpty, "Table cannot be empty")
     val loadType = conf.getType.getOrElse("full")
@@ -64,6 +162,7 @@ class PostgresRelation(val parameters: Map[String, String]
       case _ =>
     }
 
+    val table = conf.getTable.get
     val reindex = conf.getIsReindex.get
     val numPartitions = conf.getNumPartition
     val joinKey = conf.getJoinKey
@@ -72,44 +171,13 @@ class PostgresRelation(val parameters: Map[String, String]
     val filter = conf.getFilter
     val deleteSet = conf.getDeleteSet
     val killLocks = conf.getKillLocks.get
-    val swapLoad = conf.getSwapLoad.get
+    val swapLoadParam = conf.getSwapLoad.get
 
-    logger.warn("is_overwrite " + overwrite)
-
-    // Overwrite bulk-loading strategy:
-    // Bulk-load a temporary table and when done
-    // drop existing and rename newly loaded
-    val table = conf.getTable.get
-    val tmpTable = "table_" + randomUUID.toString.replaceAll(".*-", "")
-    val tableToLoad = if (overwrite && swapLoad) tmpTable else table
-
-    if (overwrite && !swapLoad) {
-      // tmpTable loaded, kill locks before drop old and renaming
-      if (killLocks)
-        _pg.killLocks(table)
-      _pg.tableDrop(table)
-    }
-
-    _pg.tableCreate(tableToLoad, data.schema, isUnlogged = false)
-
-    // If loading the real table, kill locks first if conf says so
-    if ((!overwrite) && killLocks)
-      _pg.killLocks(tableToLoad)
-
-    loadType match {
-      case "full" => _pg.outputBulk(tableToLoad, data, numPartitions.get, reindex)
-      case "megafull" => _pg.outputBulk(tableToLoad, data, numPartitions.get, reindex)
-      case "scd1" => _pg.outputScd1Hash(tableToLoad, joinKey.get.toList, DFTool.dfAddHash(data), numPartitions, filter, deleteSet)
-      case "scd2" => _pg.outputScd2Hash(tableToLoad, DFTool.dfAddHash(data), pk.get, joinKey.get.toList, endCol.get, numPartitions)
-    }
-    _pg.purgeTmp()
-
-    if (overwrite && swapLoad) {
-      // tmpTable loaded, kill locks before drop old and renaming
-      if (killLocks)
-        _pg.killLocks(table)
-      _pg.tableDrop(table)
-      _pg.tableRename(tableToLoad, table)
+    // Swap can only be applied if the original table exists
+    if (overwrite && swapLoadParam && _pg.tableExists(table)) {
+      swapLoad(table, killLocks, loadType, data, numPartitions, reindex, joinKey, filter, deleteSet, pk, endCol)
+    } else {
+      inPlaceLoad(table, overwrite, killLocks, loadType, data, numPartitions, reindex, joinKey, filter, deleteSet, pk, endCol)
     }
   }
 

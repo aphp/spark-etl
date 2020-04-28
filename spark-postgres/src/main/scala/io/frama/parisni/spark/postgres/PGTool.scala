@@ -68,6 +68,10 @@ class PGTool(spark: SparkSession
     fs.deleteOnExit(new Path(tmpPath)) // delete file when spark quits
   }
 
+  def tableExists(table: String): Boolean = {
+    PGTool.tableExists(url, table)
+  }
+
   /**
    * Copy a table from an other table excluding data
    *
@@ -147,8 +151,8 @@ class PGTool(spark: SparkSession
    * the built-in COPY
    *
    */
-  def outputBulk(table: String, df: Dataset[Row], numPartitions: Int = 8, reindex: Boolean = false): PGTool = {
-    PGTool.outputBulk(spark, url, table, df, genPath, numPartitions, password, reindex, bulkLoadMode, bulkLoadBufferSize)
+  def outputBulk(table: String, df: Dataset[Row], numPartitions: Option[Int] = None, reindex: Boolean = false): PGTool = {
+    PGTool.outputBulk(spark, url, table, df, genPath, numPartitions.getOrElse(8), password, reindex, bulkLoadMode, bulkLoadBufferSize)
     this
   }
 
@@ -161,12 +165,12 @@ class PGTool(spark: SparkSession
     this
   }
 
-  def outputScd2Hash(table: String, df: DataFrame, pk: String, key: List[String], endDatetimeCol: String, partitions: Option[Int] = None, multiline: Option[Boolean] = None): Unit = {
+  def outputScd2Hash(table: String, df: DataFrame, pk: String, key: Seq[String], endDatetimeCol: String, numPartitions: Option[Int] = None, multiline: Option[Boolean] = None): Unit = {
 
-    PGTool.outputBulkDfScd2Hash(spark, url, table, df, pk, key, endDatetimeCol, partitions.getOrElse(4), genPath, password, bulkLoadMode, bulkLoadBufferSize)
+    PGTool.outputBulkDfScd2Hash(spark, url, table, df, pk, key, endDatetimeCol, numPartitions.getOrElse(4), genPath, password, bulkLoadMode, bulkLoadBufferSize)
   }
 
-  def outputScd1Hash(table: String, key: List[String], df: Dataset[Row], numPartitions: Option[Int] = None, filter: Option[String] = None, deleteSet: Option[String] = None): PGTool = {
+  def outputScd1Hash(table: String, key: Seq[String], df: Dataset[Row], numPartitions: Option[Int] = None, filter: Option[String] = None, deleteSet: Option[String] = None): PGTool = {
 
     PGTool.outputBulkDfScd1Hash(spark, url, table, df, key, numPartitions.getOrElse(4), genPath, filter, deleteSet, password, bulkLoadMode, bulkLoadBufferSize)
     this
@@ -246,6 +250,22 @@ object PGTool extends java.io.Serializable with LazyLogging {
       .option("driver", "org.postgresql.Driver")
       .option("dbtable", queryStr)
       .load.schema
+  }
+
+  def tableExists(url: String, table: String, password: String = ""): Boolean = {
+    val conn = connOpen(url, password)
+    val st: PreparedStatement = conn.prepareStatement(
+      s"""
+         |SELECT EXISTS (
+         |  SELECT 1
+         |  FROM information_schema.tables
+         |	WHERE table_name = '$table'
+         |)""".stripMargin)
+    val rs = st.executeQuery()
+    rs.next()
+    val res = rs.getBoolean(1)
+    conn.close()
+    res
   }
 
   def tableTruncate(url: String, table: String, password: String = ""): Unit = {
@@ -426,18 +446,21 @@ object PGTool extends java.io.Serializable with LazyLogging {
                                        , column: Option[String]
                                       ): Seq[String] = {
     val permsPattern = "^\\{(\\S*=([arwdDxt]\\\\*?)+/\\S*)+\\}$".r
-
-    permissions match {
-      case permsPattern(_*) =>
-        val permissionsSplit = permissions.drop(1).dropRight(1).split(",")
-        permissionsSplit.flatMap(rolePerms => {
-          val Array(role, perms) = rolePerms.split("/")(0).split("=")
-          val matches = "([arwdDxt]\\*?)".r.findAllIn(perms)
-          matches.map(perm => {
-            postgresPermissionToGrant(perm, role, tableTarg, column)
+    if (permissions != null) {
+      permissions match {
+        case permsPattern(_*) =>
+          val permissionsSplit = permissions.drop(1).dropRight(1).split(",")
+          permissionsSplit.flatMap(rolePerms => {
+            val Array(role, perms) = rolePerms.split("/")(0).split("=")
+            val matches = "([arwdDxt]\\*?)".r.findAllIn(perms)
+            matches.map(perm => {
+              postgresPermissionToGrant(perm, role, tableTarg, column)
+            })
           })
-        })
-      case _ => throw new IllegalStateException(s"Incorrect permissions-array format for $permissions")
+        case _ => throw new IllegalStateException(s"Incorrect permissions-array format for $permissions")
+      }
+    } else {
+      Seq.empty
     }
   }
 
@@ -1245,7 +1268,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
                            , url: String
                            , table: String
                            , candidate: Dataset[Row]
-                           , key: List[String]
+                           , key: Seq[String]
                            , partitions: Int = 4
                            , path: String
                            , scdFilter: Option[String] = None
@@ -1309,7 +1332,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
     }
   }
 
-  def applyScd1Delete(table: String, deleteTmp: String, key: List[String], deleteSet: String): String = {
+  def applyScd1Delete(table: String, deleteTmp: String, key: Seq[String], deleteSet: String): String = {
     val joinColumns = key.map(k => s""" t."$k" = s."$k" """).mkString("AND")
     val query =
       s"""
@@ -1322,7 +1345,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
 
   }
 
-  def applyScd1(table: String, insertTmp: String, updateTmp: String, insertSchema: StructType, key: List[String]): String = {
+  def applyScd1(table: String, insertTmp: String, updateTmp: String, insertSchema: StructType, key: Seq[String]): String = {
     val insertCol = insertSchema.fields.map(f => f.name).mkString("\"", "\",\"", "\"")
     val updateCol = insertSchema.fields.map(f => s""" "${f.name}" = s."${f.name}" """).mkString(",")
     val joinColumns = key.map(k => s""" t."$k" = s."$k" """).mkString("AND")
@@ -1368,7 +1391,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
                            , table: String
                            , candidate: DataFrame
                            , pk: String
-                           , key: List[String]
+                           , key: Seq[String]
                            , endDatetimeCol: String
                            , partitions: Int
                            , path: String

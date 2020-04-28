@@ -8,11 +8,15 @@ abstract class JoinQuery extends Query {
   val right: Query
   val on: Column
   val joinType: String
+  val joinOp: String
   val as: String
 
   lazy val df: DataFrame =
     AliasQuery.getAliasedDataFrame(left).join(AliasQuery.getAliasedDataFrame(right), on, joinType)
+
   override def leaves: Seq[Query] = left.leaves ++ right.leaves
+
+  override def toString: String = s"""($left $joinOp $right.on$on)"""
 }
 
 object JoinQuery {
@@ -54,6 +58,7 @@ trait CanResolveJoinerTo[A] {
 // left + right
 case class InnerJoin(left: Query, right: Query, on: Column) extends JoinQuery {
   override val joinType: String = "inner"
+  override val joinOp: String = "+"
   override val as = s"${left.as}__w_${right.as}"
 }
 object InnerJoin extends CanResolveJoinerTo[InnerJoin]
@@ -62,6 +67,7 @@ object InnerJoin extends CanResolveJoinerTo[InnerJoin]
 // left % right
 case class LeftOuterJoin(left: Query, right: Query, on: Column) extends JoinQuery {
   override val joinType: String = "left_outer"
+  override val joinOp: String = "%"
   override val as = s"${left.as}__w_${right.as}"
 }
 object LeftOuterJoin extends CanResolveJoinerTo[LeftOuterJoin]
@@ -70,6 +76,7 @@ object LeftOuterJoin extends CanResolveJoinerTo[LeftOuterJoin]
 // left - right
 case class LeftAntiJoin(left: Query, right: Query, on: Column) extends JoinQuery {
   override val joinType: String = "left_anti"
+  override val joinOp: String = "-"
   override val as = s"${left.as}__wo_${right.as}"
 }
 object LeftAntiJoin extends CanResolveJoinerTo[LeftAntiJoin]
@@ -79,6 +86,7 @@ object LeftAntiJoin extends CanResolveJoinerTo[LeftAntiJoin]
 case class CrossJoin(left: Query, right: Query) extends JoinQuery {
   override val on: Column = null
   override val joinType: String = "cross"
+  override val joinOp: String = "*"
   override val as: String = s"${left.as}__by_${right.as}"
   override lazy val df: DataFrame = {
     import compat._ // auto-fill for older spark

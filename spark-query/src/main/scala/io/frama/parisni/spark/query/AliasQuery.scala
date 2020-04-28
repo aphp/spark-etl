@@ -14,6 +14,12 @@ case class AliasQuery(base: Query, as: String) extends QueryDecorator {
   override def apply(column: String): Column =
     if (df.columns.count(_ == column) == 1) col(as + "." + column)
     else                                    super.apply(column)
+
+  override def toString: String = {
+    val b = base.toString
+    if (b == as) b
+    else s"""$b.as("$as")"""
+  }
 }
 
 object AliasQuery {

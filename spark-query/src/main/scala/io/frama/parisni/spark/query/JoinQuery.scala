@@ -16,7 +16,11 @@ abstract class JoinQuery extends Query {
 
   override def leaves: Seq[Query] = left.leaves ++ right.leaves
 
+  override def nodes: Seq[Query] = List(this, left, right)
+
   override def toString: String = s"""($left $joinOp $right.on$on)"""
+
+  override def nodeString: String = super.nodeString + s" $on"
 }
 
 object JoinQuery {

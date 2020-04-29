@@ -8,17 +8,18 @@ import org.apache.spark.sql.{DataFrame, QueryTest, SparkSession}
 class QueryBaseTest extends QueryTest {
   protected lazy val spark: SparkSession = QueryBaseTest.spark
 
-  protected lazy val printExplanations: Boolean = true
+  protected lazy val printExplanations: Boolean = false
 
   protected def assertQuery(count: Long)(q: => Query) {
     assertResult(count){
       println(q)
+      println(q.treeString)
       val df = q.df
       if (printExplanations) {
-        df.explain(true)
+        df.explain(false)
         df.printSchema()
-        df.show()
       }
+      df.show()
       df.count()
     }
   }

@@ -64,18 +64,38 @@ trait Query {
 
   // Traversal
   def leaves: Seq[Query] = List(this)
+  def nodes: Seq[Query] = List(this)
+
   def apply(column: String): Column = df(column)
+
   override def toString: String = as
+
+  def nodeString: String = s"[${getClass.getSimpleName}] $as"
+  def treeString: String = {
+    val builder = new StringBuilder
+    Query.treeString(this, builder)
+    builder.mkString
+  }
 }
 
 object Query {
   def apply(df: DataFrame, as: String): Query = DataFrameQuery(df, as)
   def apply(df: DataFrame, as: String, joinAs: String): Query = DataFrameQuery(df, as, joinAs)
+
+  def treeString(q: Query, builder: StringBuilder, prefix: String = "") {
+    val Seq(head, tail @ _*) = q.nodes
+    if (builder.nonEmpty) {
+      builder.append('\n')
+    }
+    builder.append(prefix).append(head.nodeString)
+    tail.foreach(treeString(_, builder, if (prefix.isEmpty) "  |- " else s"  |  $prefix"))
+  }
 }
 
 
 trait QueryDecorator extends Query {
   val base: Query
   override def leaves: Seq[Query] = base.leaves
+  override def nodes: Seq[Query] = List(this, base)
   override def apply(column: String): Column = base.apply(column)
 }

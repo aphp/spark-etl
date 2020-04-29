@@ -38,26 +38,25 @@ trait Query {
   def on(columnNames: String *): ColumnNameJoiner = ColumnNameJoiner(this, columnNames :_*)
 
   // Column selection
-  protected def qualifiedColumns(qs: Query *): Seq[(String, String, Column)] =
-    for {
-      query <- if (qs.isEmpty) leaves else qs
-      column <- query.df.columns
-    } yield (query.as, column, query.df(column))
-
-  def select(qs: (Query, String) *): DataFrame =
+  def select(q: (Query, String), qs: (Query, String) *): DataFrame =
     df.select((for {
-      (as, name, column) <- qualifiedColumns(qs.map(_._1) :_*)
-      prefix = qs.find(_._1.as == as).get._2
+      (query, prefix) <- q +: qs
+      name <- query.df.columns
+      column = query.df(name)
       col = column.as(if (prefix.isEmpty) name else prefix + name)
     } yield col) :_*)
 
-  def select(q1: Query, qs: Query *): DataFrame = select((q1 +: qs).map(q => (q, q.as + "_")) :_*)
+  def select(qs: Query *): DataFrame = {
+    val Seq(head, tail @ _*) = if (qs.isEmpty) leaves else qs
+    select((head, head.as + "_"), tail.map(q => (q, q.as + "_")) :_*)
+  }
 
   def select(skipDuplicates: Boolean, qs: Query *): DataFrame = {
     val cols = collection.mutable.Set.empty[String]
     df.select((for {
-      (_, name, column) <- qualifiedColumns(qs :_*) if !skipDuplicates || cols.add(name)
-    } yield column.as(name)) :_*)
+      query <- if (qs.isEmpty) leaves else qs
+      name <- query.df.columns if !skipDuplicates || cols.add(name)
+    } yield query.df(name)) :_*)
   }
 
   def alias(as: String): AliasQuery = AliasQuery(as)(this)

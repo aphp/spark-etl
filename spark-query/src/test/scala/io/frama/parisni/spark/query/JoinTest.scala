@@ -151,6 +151,14 @@ test("select") {
     assertDF(5, _.sameElements(peopleDf.columns.map("person_" + _) ++ messagesDf.columns.map("message_" + _))) {
       (person + topic.on("person_id" -> "author_id") + message).select(person, message)
     }
+    // select all with automatic prefix
+    assertDF(messages, _.sameElements(peopleDf.columns.map("person_" + _) ++ messagesDf.columns.map("message_" + _))) {
+      (person + message).select()
+    }
+    // select with manual prefix
+    assertDF(messages, _.sameElements(peopleDf.columns.map("p_" + _) ++ messagesDf.columns.map("m_" + _))) {
+      (person + message).select(person -> "p_", message -> "m_")
+    }
     // select with no prefix, skipping duplicates
     assertDF(5, _.sorted.sameElements(Set(peopleDf, topicsDf, messagesDf).flatMap(_.columns).toSeq.sorted)) {
       (person + topic.on("person_id" -> "author_id") + message).select(skipDuplicates = true)

@@ -1,0 +1,14 @@
+<settings>
+  <servers>
+    <server>
+      <id>nexus-release</id>
+      <username>${nexus.user}</username>
+      <password>${nexus.password}</password>
+    </server>
+    <server>
+      <id>nexus-snapshot</id>
+      <username>${nexus.user}</username>
+      <password>${nexus.password}</password>
+    </server>
+  </servers>
+</settings>

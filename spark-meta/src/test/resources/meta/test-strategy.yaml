@@ -14,6 +14,14 @@ schemas:
     strategy:
       extractor:
         featureExtractImplClass: io.frama.parisni.spark.meta.TestFeatureExtractImpl
+      generator:
+        tableGeneratorImplClass: io.frama.parisni.spark.meta.TestTableGeneratorImpl
+  - dbName: pg-prod
+    dbType: postgresql
+    host: 0.0.0.0
+    db: edsr
+    user: nparis
+    isActive: true
   - dbName: pg-prod
     dbType: postgresql
     host: 0.0.0.0
@@ -22,10 +30,13 @@ schemas:
     isActive: true
     strategy:
       extractor:
-        featureExtractImplClass: io.frama.parisni.spark.meta.strategy.extractor.DefaultFeatureExtractImpl
-  - dbName: spark-prod
-    dbType: spark
+        featureExtractImplClass: io.frama.parisni.spark.meta.TestFeatureExtractImpl
+  - dbName: pg-prod
+    dbType: postgresql
     host: 0.0.0.0
-    db: hive
-    user: etl
-    isActive: false
+    db: edsr
+    user: nparis
+    isActive: true
+    strategy:
+      generator:
+        tableGeneratorImplClass: io.frama.parisni.spark.meta.TestTableGeneratorImpl

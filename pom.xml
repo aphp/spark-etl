@@ -107,9 +107,13 @@ https://dzone.com/articles/deploy-maven-central -->
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
     <encoding>UTF-8</encoding>
-    <spark-csv.version>0.0.1-SNAPSHOT</spark-csv.version>
+    <!-- begin module version -->
+    <spark-csv.version>0.0.1</spark-csv.version>
     <spark-dataframe.version>0.0.4</spark-dataframe.version>
+    <spark-hive.version>0.0.1</spark-hive.version>
+    <spark-meta.version>0.0.1-SNAPSHOT</spark-meta.version>
     <spark-postgres.version>0.0.1</spark-postgres.version>
+    <!-- end module version -->
     <scala.tools.version>2.11</scala.tools.version>
     <scala.version>2.11.11</scala.version>
     <spark.version>2.4.3</spark.version>

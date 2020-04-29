@@ -3,7 +3,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <artifactId>spark-hive</artifactId>
-  <version>0.0.1</version>
+  <version>${spark-hive.version}</version>
   <name>Spark ETL Hive</name>
   <url>https://framagit.org/parisni/spark-etl</url>
   <description/>

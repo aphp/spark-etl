@@ -1,0 +1,96 @@
+image: "$DOCKER_REGISTRY/$DOCKER_IMAGE_BUILD"
+
+services:
+  - docker:stable-dind
+
+variables:
+  DEBUG: "false"
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
+
+cache:
+  key: "rsareth-aphp"
+  paths:
+    - .m2/repository
+
+stages:
+  - test
+  - build
+  - deploy
+  - release
+
+job:start:
+  image: docker
+  tags:
+    - aphp
+    - cicd
+    - rsareth
+  stage: .pre
+  script:
+    - echo "Start the build"
+    - env | sort
+    - mount
+
+job:test:
+  tags:
+    - aphp
+    - cicd
+    - rsareth
+  stage: test
+  except:
+    refs:
+      - master
+      - tags
+  script:
+    - ./build.sh --test
+
+job:build:
+  tags:
+    - aphp
+    - cicd
+    - rsareth
+  stage: build
+  except:
+    refs:
+      - master
+  script:
+    - ./build.sh --package-artifact
+
+job:deploy_artifact:
+  tags:
+    - aphp
+    - cicd
+    - rsareth
+  stage: deploy
+  except:
+    refs:
+      - master
+  retry:
+    max: 2
+    when: script_failure
+  script:
+    - ./build.sh --deploy-artifact
+
+job:release:
+  tags:
+    - aphp
+    - cicd
+    - rsareth
+  stage: release
+  only:
+    refs:
+      - master
+  except:
+    variables:
+      - $CI_COMMIT_MESSAGE =~ /^\[CICD\]/
+  script:
+    - ./build.sh --prepare-release
+
+job:end:
+  tags:
+    - aphp
+    - cicd
+    - rsareth
+  stage: .post
+  script:
+    - echo "End"
+    - env | sort

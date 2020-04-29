@@ -1,21 +1,30 @@
 package io.frama.parisni.spark.meta
 
+
+import java.sql.{Connection, ResultSet}
 import com.typesafe.scalalogging.LazyLogging
 import io.frama.parisni.spark.dataframe.DFTool
-import io.frama.parisni.spark.meta.extractor.FeatureExtractTrait
+import io.frama.parisni.spark.meta.strategy.{MetaStrategy, MetaStrategyBuilder}
+import io.frama.parisni.spark.postgres.PGTool
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 
-class MetaExtractor(extractor: FeatureExtractTrait, spark: SparkSession, host: String, database: String, user: String, dbType: String, schema: String)
+class MetaExtractor(metaStrategy: MetaStrategy, spark: SparkSession
+                    , host: String, database: String, user: String, dbType: String, schema: String)
   extends GetTables with LazyLogging {
 
   /**
-   * Alternative constructor
-   */
+    * Alternative constructor
+    */
   def this(confSchema: ConfigMetaYaml.Schema, spark: SparkSession, schema: String = "public") {
 
-    this(io.frama.parisni.spark.meta.extractor.Utils.getFeatureExtractImplClass(confSchema.extractor)
-      , spark, confSchema.host, confSchema.db, confSchema.user, confSchema.dbType, schema)
+    this(MetaStrategyBuilder.build(confSchema.strategy), spark
+      , confSchema.host, confSchema.db, confSchema.user, confSchema.dbType, schema)
+  }
+
+  def getUrl(): String = {
+    //TODO parameterized port value to remove hardcoded 5432
+    f"jdbc:postgresql://${host}:5432/${database}?user=${user}&currentSchema=${schema}"
   }
 
   def fetchTable(sql: String): DataFrame = {
@@ -36,21 +45,20 @@ class MetaExtractor(extractor: FeatureExtractTrait, spark: SparkSession, host: S
       case "postgresql" => getPostgresTable(dbName)
       case "spark" => getSparkTable(dbName)
     }
-    var res = extractor.extractSource(result)
+    var res = metaStrategy.extractor.extractSource(result)
       .filter(col("lib_schema").rlike(schemaRegexFilter.getOrElse(".*")))
 
     // extraire la pk
-    res = extractor.extractPrimaryKey(res)
+    res = metaStrategy.extractor.extractPrimaryKey(res)
 
     // extraire les fk
-    res = extractor.extractForeignKey(res).cache
+    res = metaStrategy.extractor.extractForeignKey(res).cache
 
-
-    resdatabase = extractor.generateDatabase(res)
-    resschema = extractor.generateSchema(res)
-    restable = extractor.generateTable(res)
-    rescolumn = extractor.generateColumn(res)
-    resreference = extractor.inferForeignKey(res)
+    resdatabase = metaStrategy.generator.generateDatabase(res)
+    resschema = metaStrategy.generator.generateSchema(res)
+    restable = metaStrategy.generator.generateTable(res)
+    rescolumn = metaStrategy.generator.generateColumn(res)
+    resreference = metaStrategy.extractor.inferForeignKey(res)
   }
 
   var resdatabase: DataFrame = _
@@ -95,16 +103,70 @@ class MetaExtractor(extractor: FeatureExtractTrait, spark: SparkSession, host: S
   }
 
   protected def getSparkTable(dbName: String): DataFrame = {
-    val regularTable = DFTool.trimAll(fetchTable(SQL_HIVE_TABLE.format(dbName)))
-    val externalTable = extractJson(DFTool.trimAll(fetchTable(SQL_HIVE_TABLE_EXT.format(dbName))))
+    val regularTable = DFTool.trimAll(fetchTable(GetTables.SQL_HIVE_TABLE.format(dbName)))
+    val externalTable = extractJson(DFTool.trimAll(fetchTable(GetTables.SQL_HIVE_TABLE_EXT.format(dbName))))
     DFTool.unionDataFrame(regularTable, externalTable)
   }
 
   protected def getPostgresTable(dbName: String): DataFrame = {
-    val tbl = fetchTable(SQL_PG_TABLE.format(dbName))
-    val view = fetchTable(SQL_PG_VIEW.format(dbName))
+
+    val tbl = addLastCommitTimestampColumn(fetchTable(GetTables.SQL_PG_TABLE.format(dbName)), "last_commit_timestampz")
+    val view = fetchTable(GetTables.SQL_PG_VIEW.format(dbName))
     val res = DFTool.trimAll(DFTool.unionDataFrame(tbl, view))
+
     res
   }
 
+  /**
+    * Reads the postgres configuration status of parameter "track_commit_timestamp".
+    * This parameter needs to be set to "on" to be able to extract the last commit timestamp.
+    *
+    * @return 'true' if "track_commit_timestamp" is on, 'false' otherwise
+    */
+  def is_track_commit_timestamp_activate(): Boolean = {
+    val conn: Connection = PGTool.connOpen(getUrl())
+    val resultSet: ResultSet = conn.createStatement().executeQuery("show track_commit_timestamp")
+    resultSet.next()
+    val res: Boolean = resultSet.getString("track_commit_timestamp").equals("on")
+    conn.close()
+    res
+  }
+
+  /**
+    * Returns new dataset by adding new column 'last_commit_timestampz' of type 'timestamp' as the per table last commit timestamp.
+    *
+    * @param dataFrame Input dataframe. It should contain at least theses three columns : "lib_database", "lib_schema" and "lib_table"
+    * @param colName Name to give to the added column
+    * @return returns a new dataframe with the newColum if 'track_commit_timestamp' is activated ,
+    *         otherwise it returns the input dataframe without any transformation
+    */
+  def addLastCommitTimestampColumn(dataFrame: DataFrame, colName: String): DataFrame = {
+
+    //first of all we check if track_commit_timestamp is activated
+    if (!is_track_commit_timestamp_activate()) {
+      logger.warn("postgres parameter : track_commit_timestamp = off")
+      return dataFrame.withColumn(colName, expr("cast(null as timestamp)"))
+    }
+    logger.info("postgres parameter : track_commit_timestamp = on")
+
+    val timestamp_df: DataFrame = PGTool.sqlExecWithResult(spark, getUrl(), buildLastCommitTimestampQuery(dataFrame, colName))
+
+    //Add new column with last_commit_timestamp
+    dataFrame.join(timestamp_df, Seq("lib_database", "lib_schema", "lib_table"), "left_outer")
+  }
+
+  private def buildLastCommitTimestampQuery(df: DataFrame, colName: String): String = {
+    df.dropDuplicates("lib_database", "lib_schema", "lib_table")
+      .select("lib_database", "lib_schema", "lib_table")
+      .collect()
+      .map(row => s"""(SELECT * FROM (
+                      |  SELECT pg_xact_commit_timestamp(xmin)::timestamptz as $colName,
+                      |  '${row.getString(0)}'::text as lib_database,
+                      |  '${row.getString(1)}'::text as lib_schema,
+                      |  '${row.getString(2)}'::text as lib_table
+                      |  from ${row.getString(1)}.${row.getString(2)}) tmp_table
+                      |WHERE tmp_table.$colName is not null
+                      |order by tmp_table.$colName desc limit 1)""".stripMargin)
+      .mkString(" UNION ALL ")
+  }
 }

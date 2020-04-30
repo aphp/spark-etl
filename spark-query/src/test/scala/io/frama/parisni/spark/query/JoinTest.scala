@@ -25,6 +25,25 @@ class JoinTest extends QueryBaseTest {
     assertQuery(1) {
       person % message | ! message.happens
     }
+    // Make sure messages with no author don't count
+    assertQuery(0) {
+      person % message | ! person.happens
+    }
+  }
+
+  test("right outer join") {
+    // Messages and their authors, or not
+    assertQuery(messages + 1) {
+      person %> message
+    }
+    // One message has no author
+    assertQuery(1) {
+      person %> message | ! person.happens
+    }
+    // Make sure people with no messages don't count
+    assertQuery(0) {
+      person %> message | ! message.happens
+    }
   }
 
   test("full outer join") {

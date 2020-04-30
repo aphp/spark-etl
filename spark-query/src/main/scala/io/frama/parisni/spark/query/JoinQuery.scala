@@ -77,6 +77,15 @@ case class LeftOuterJoin(left: Query, right: Query, on: Column) extends JoinQuer
 object LeftOuterJoin extends CanResolveJoinerTo[LeftOuterJoin]
 
 
+// left %> right
+case class RightOuterJoin(left: Query, right: Query, on: Column) extends JoinQuery {
+  override val joinType: String = "right_outer"
+  override val joinOp: String = "%>"
+  override val as = s"${left.as}__w_${right.as}"
+}
+object RightOuterJoin extends CanResolveJoinerTo[RightOuterJoin]
+
+
 // left %% right
 case class FullOuterJoin(left: Query, right: Query, on: Column) extends JoinQuery {
   override val joinType: String = "full_outer"

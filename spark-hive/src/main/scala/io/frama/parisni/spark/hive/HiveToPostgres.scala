@@ -67,7 +67,7 @@ object HiveToPostgres extends App with LazyLogging {
         val df = DFTool.dfAddHash(dfHive)
         table.typeLoad.getOrElse("scd1") match {
           case "scd1" => pg.outputScd1Hash(table = table.tablePg, key = table.key, df = df, numPartitions = table.numThread, filter = table.filter, deleteSet = table.deleteSet)
-          case "scd2" => pg.outputScd2Hash(table = table.tablePg, key = table.key, pk = table.pk.get, df = df, endDatetimeCol = table.updateDatetime.get, partitions = Some(4), multiline = Some(true))
+          case "scd2" => pg.outputScd2Hash(table = table.tablePg, key = table.key, pk = table.pk.get, df = df, endDatetimeCol = table.updateDatetime.get, numPartitions = Some(4), multiline = Some(true))
           case "megafull" => {
             pg.killLocks(table.tablePg)
             df.write.format("postgres")
@@ -76,7 +76,7 @@ object HiveToPostgres extends App with LazyLogging {
               .option("type", "full")
               .option("table", table.tablePg)
               .option("partitions", table.numThread.getOrElse(4))
-              .option("bulkLoadMode", table.bulkLoadMode.getOrElse("csv"))
+              .option("bulkLoadMode", table.bulkLoadMode.getOrElse("PgBinaryFiles"))
               .option("kill-locks", true)
               .save
           }
@@ -91,7 +91,7 @@ object HiveToPostgres extends App with LazyLogging {
               .option("table", table.tablePg)
               .option("partitions", table.numThread.getOrElse(4))
               .option("reindex", table.reindex.getOrElse(false))
-              .option("bulkLoadMode", table.bulkLoadMode.getOrElse("csv"))
+              .option("bulkLoadMode", table.bulkLoadMode.getOrElse("PgBinaryFiles"))
               .option("kill-locks", true)
               .save
 

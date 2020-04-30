@@ -1,4 +1,4 @@
-package io.frama.parisni.spark.meta.extractor
+package io.frama.parisni.spark.meta.strategy.extractor
 
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.functions.{col, expr, lit, regexp_extract, regexp_replace, when}
@@ -13,10 +13,10 @@ class DefaultFeatureExtractImpl extends FeatureExtractTrait {
   }
 
 
-    def extractPrimaryKey(df: DataFrame): DataFrame = {
+  def extractPrimaryKey(df: DataFrame): DataFrame = {
     df.withColumn("is_pk", when((col("lib_column").rlike("^ids_")
       && col("order_column") === lit(1))
-      || (col("lib_schema"). rlike ("omop")
+      || (col("lib_schema").rlike("omop")
       && col("lib_column").rlike("_id$")
       && col("order_column") === lit(1))
       , lit(true))
@@ -69,43 +69,5 @@ class DefaultFeatureExtractImpl extends FeatureExtractTrait {
         , "t.lib_table as lib_table_target"
         , "t.lib_column as lib_column_target"
         , "'FK' as lib_reference")
-  }
-
-
-  def generateDatabase(df: DataFrame): DataFrame = {
-    df.dropDuplicates("lib_database")
-      .select("lib_database")
-  }
-
-    def generateSchema(df: DataFrame): DataFrame = {
-    df.dropDuplicates("lib_database", "lib_schema")
-      .withColumn("is_technical", when(expr(
-        """
-          (lib_database = 'pg-prod' AND lib_schema in ('eds'))
-          OR  (lib_database = 'pg-prod' AND lib_schema in ('eds'))
-          OR  (lib_database = 'eds-qua' AND lib_schema in ('eds'))
-          OR  (lib_database = 'edsp-prod' AND lib_schema in ('edsp'))
-          OR  (lib_database = 'spark-prod' AND lib_schema in ('edsprod', 'omop_prod', 'omop'))
-          OR  (lib_database = 'omop-prod' AND lib_schema rlike ('omop'))
-          """)
-        , lit(false))
-        .otherwise(lit(true)))
-      .select("lib_database", "lib_schema", "is_technical")
-  }
-
-
-  def generateTable(df: DataFrame): DataFrame = {
-    df.dropDuplicates("lib_database", "lib_schema", "lib_table")
-      .select("lib_database", "lib_schema", "lib_table", "outil_source", "count_table", "last_analyze", "typ_table")
-  }
-
-  def generateColumn(df: DataFrame): DataFrame = {
-    val result = df.dropDuplicates("lib_database", "lib_schema", "lib_table", "lib_column")
-      .selectExpr("lib_database", "lib_schema",
-        "lib_table", "lib_column", "typ_column", "order_column",
-        "is_mandatory", "is_pk", "is_fk", "is_index",
-        "null_ratio_column", "count_distinct_column",
-        "comment_fonctionnel_column as comment_fonctionnel")
-    result
   }
 }

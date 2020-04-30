@@ -132,6 +132,16 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
   }
 
   @Test
+  def verifyPostgresTableExists(): Unit = {
+    import spark.implicits._
+    val schema = ((1, "asdf", 1L, Array(1, 2, 3), Array("bob"), Array(1L, 2L)) :: Nil)
+      .toDF("int_col", "string_col", "long_col", "array_int_col", "array_string_col", "array_bigint_col").schema
+    assert(!getPgTool().tableExists("TEST_ARRAY"))
+    getPgTool().tableCreate("TEST_ARRAY", schema, isUnlogged = true)
+    assert(getPgTool().tableExists("TEST_ARRAY"))
+  }
+
+  @Test
   def verifyPostgresCopyTableConstraint(): Unit = {
     val db = pg.getEmbeddedPostgres.getPostgresDatabase
     val conn = db.getConnection()
@@ -721,5 +731,31 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
   def verifyPgBinaryStreamLoadNullInArrays() = verifyPgBinaryLoadNullInArrays("PgBinaryStream")
   @Test
   def verifyPgBinaryFilesLoadNullInArrays() = verifyPgBinaryLoadNullInArrays("PgBinaryFiles")
+
+  @Test
+  def verifyOverwriteSwapLoad(): Unit = {
+    import spark.implicits._
+    val data = ((1, "asdf", 1L, "err") :: Nil).toDF("INT_COL", "STRING_COL", "LONG_COL", "ERR_COL")
+    val schema = data.schema
+    val tableName = s"TEST_SWAP_BASE"
+    getPgTool().tableCreate(tableName, schema, isUnlogged = true)
+
+    data.write.format("io.frama.parisni.spark.postgres")
+        .option("url", getPgUrl)
+        .option("type", "full")
+        .option("table", tableName)
+        .option("bulkLoadMode", "PgBinaryStream")
+        .save
+
+    data.write.format("io.frama.parisni.spark.postgres")
+      .option("url", getPgUrl)
+      .option("type", "full")
+      .option("table", tableName)
+      .option("swapLoad", "true")
+      .option("bulkLoadMode", "PgBinaryStream")
+      .mode(org.apache.spark.sql.SaveMode.Overwrite)
+      .save
+
+  }
 
 }

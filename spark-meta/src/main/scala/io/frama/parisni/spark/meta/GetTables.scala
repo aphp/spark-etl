@@ -124,3 +124,5 @@ trait GetTables {
        ORDER BY lib_schema, lib_table, order_column
     """
 }
+
+object GetTables extends GetTables

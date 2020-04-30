@@ -65,6 +65,7 @@ trait Query {
   // Traversal
   def leaves: Seq[Query] = List(this)
   def apply(column: String): Column = df(column)
+  override def toString: String = as
 }
 
 object Query {

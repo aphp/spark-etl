@@ -7,5 +7,7 @@ case class FilterQuery(base: Query, filter: Column, as: String) extends QueryDec
   lazy val df: DataFrame = base.df.where(filter)
 
   override def |(c: Column): FilterQuery = FilterQuery(base, filter && c, as)
+
+  override def toString: String = s"""($base | $filter)"""
 }
 

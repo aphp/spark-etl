@@ -1,9 +1,10 @@
 package io.frama.parisni.spark.meta
 
-import ConfigMetaYaml.{Database, ExtractStrategy}
-import extractor.FeatureExtractTrait
+import ConfigMetaYaml.Database
+import io.frama.parisni.spark.meta.strategy.MetaStrategyBuilder
+import io.frama.parisni.spark.meta.strategy.extractor.FeatureExtractTrait
+import io.frama.parisni.spark.meta.strategy.generator.TableGeneratorTrait
 import net.jcazevedo.moultingyaml._
-import org.apache.spark.sql.functions.{col, expr, lit, regexp_extract, regexp_replace, when}
 import org.apache.spark.sql.{DataFrame, QueryTest}
 
 import scala.io.Source
@@ -25,16 +26,52 @@ class ConfigTest extends QueryTest
     println(palette.toYaml.prettyPrint)
   }
 
-  test("Instantiate default extract strategy from Yaml") {
-    val filename = getClass.getResource("/meta/testStrategyClassConfig.yaml").getPath
+  test("Build MetaStrategy from YAML") {
+    //Parse yaml file into ConfigMetaYaml.Database
+    val filename = getClass.getResource("/meta/test-strategy.yaml").getPath
     val ymlTxt = Source.fromFile(filename).mkString
     val yaml = ymlTxt.stripMargin.parseYaml
     val database = yaml.convertTo[ConfigMetaYaml.Database]
-    //    println(database)
-    for (schema <- database.schemas.get) {
-      assert(io.frama.parisni.spark.meta.extractor.Utils.getFeatureExtractImplClass(schema.extractor).toString
-      .equals("class TestFeatureExtractImpl extends FeatureExtractTrait"))
-    }
+
+    /**
+      * First test with test strategy class
+      */
+    var schema: ConfigMetaYaml.Schema = database.schemas.get.apply(0)
+    assert(MetaStrategyBuilder.build(schema.strategy).extractor.toString
+      .equals(new TestFeatureExtractImpl().toString))
+
+    assert(MetaStrategyBuilder.build(schema.strategy).generator.toString
+      .equals(new TestTableGeneratorImpl().toString))
+
+    /**
+      * Second test with empty strategy class -- we expect defaultStrategy
+      */
+    schema = database.schemas.get.apply(1)
+    assert(MetaStrategyBuilder.build(schema.strategy).extractor.toString
+      .equals(MetaStrategyBuilder.build().extractor.toString))
+
+    assert(MetaStrategyBuilder.build(schema.strategy).generator.toString
+      .equals(MetaStrategyBuilder.build().generator.toString))
+
+    /**
+      * Third test with test extractor strategy class only -- we expect default generator strategy class
+      */
+    schema = database.schemas.get.apply(2)
+    assert(MetaStrategyBuilder.build(schema.strategy).extractor.toString
+      .equals(new TestFeatureExtractImpl().toString))
+
+    assert(MetaStrategyBuilder.build(schema.strategy).generator.toString
+      .equals(MetaStrategyBuilder.build().generator.toString))
+
+    /**
+      * Fourth test with test generator strategy class only -- we expect default extractor strategy class
+      */
+    schema = database.schemas.get.apply(3)
+    assert(MetaStrategyBuilder.build(schema.strategy).extractor.toString
+      .equals(MetaStrategyBuilder.build().extractor.toString))
+
+    assert(MetaStrategyBuilder.build(schema.strategy).generator.toString
+      .equals(new TestTableGeneratorImpl().toString))
   }
 
 }
@@ -50,6 +87,11 @@ class TestFeatureExtractImpl extends FeatureExtractTrait {
   override def extractForeignKey(df: DataFrame): DataFrame = null
 
   override def inferForeignKey(df: DataFrame): DataFrame = null
+}
+
+class TestTableGeneratorImpl extends TableGeneratorTrait {
+
+  override def toString: String = "class TestTableGeneratorImpl extends TableGeneratorTrait"
 
   override def generateDatabase(df: DataFrame): DataFrame = null
 

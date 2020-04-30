@@ -12,6 +12,7 @@ class QueryBaseTest extends QueryTest {
 
   protected def assertQuery(count: Long)(q: => Query) {
     assertResult(count){
+      println(q)
       val df = q.df
       if (printExplanations) {
         df.explain(true)

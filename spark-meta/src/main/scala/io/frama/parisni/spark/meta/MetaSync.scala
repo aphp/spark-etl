@@ -34,7 +34,11 @@ object MetaSync extends App with LazyLogging {
             s"""Extracting meta for:
                |- db name: ${source.dbName}
                |- db type: ${source.dbType}
-               |- strategy: ${source.extractor.get.featureExtractImplClass.get}
+               |- strategy:
+               |    - extractor: ${source.strategy.getOrElse(ConfigMetaYaml.Strategy())
+              .extractor.getOrElse(ConfigMetaYaml.ExtractStrategy()).featureExtractImplClass}
+               |    - generator: ${source.strategy.getOrElse(ConfigMetaYaml.Strategy())
+              .generator.getOrElse(ConfigMetaYaml.TableGeneratorStrategy()).tableGeneratorImplClass}
                |""".stripMargin)
 
           // get the information
@@ -54,4 +58,3 @@ object MetaSync extends App with LazyLogging {
   }
 
 }
-

@@ -33,7 +33,10 @@ schemas:
     db: hive
     user: robin
     isActive: true
-    extractor:
-      featureExtractImplClass: io.frama.parisni.spark.meta.TestFeatureExtractImpl
+    strategy:
+        extractor:
+            featureExtractImplClass: io.frama.parisni.spark.meta.TestFeatureExtractImpl
+        generator:
+            tableGeneratorImplClass: io.frama.parisni.spark.meta.TestTableGeneratorImpl
     user: etl
 ```

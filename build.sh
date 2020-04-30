@@ -206,7 +206,7 @@ then
         break
         ;;
       --install)
-        mvn ${MAVEN_CLI_OPTS} install
+        mvn ${MAVEN_CLI_OPTS} -DskipTests install
         break
         ;;
       --package-artifact)

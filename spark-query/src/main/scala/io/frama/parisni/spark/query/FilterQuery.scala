@@ -9,5 +9,7 @@ case class FilterQuery(base: Query, filter: Column, as: String) extends QueryDec
   override def |(c: Column): FilterQuery = FilterQuery(base, filter && c, as)
 
   override def toString: String = s"""($base | $filter)"""
+
+  override def nodeString: String = super.nodeString + s" $filter"
 }
 

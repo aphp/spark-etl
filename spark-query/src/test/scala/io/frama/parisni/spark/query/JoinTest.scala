@@ -1,6 +1,6 @@
 package io.frama.parisni.spark.query
 
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.{AnalysisException, DataFrame}
 import org.apache.spark.sql.catalyst.expressions.NamedExpression
 import org.apache.spark.sql.functions.col
 
@@ -25,12 +25,63 @@ class JoinTest extends QueryBaseTest {
     assertQuery(1) {
       person % message | ! message.happens
     }
+    // Make sure messages with no author don't count
+    assertQuery(0) {
+      person % message | ! person.happens
+    }
+  }
+
+  test("right outer join") {
+    // Messages and their authors, or not
+    assertQuery(messages + 1) {
+      person %> message
+    }
+    // One message has no author
+    assertQuery(1) {
+      person %> message | ! person.happens
+    }
+    // Make sure people with no messages don't count
+    assertQuery(0) {
+      person %> message | ! message.happens
+    }
+  }
+
+  test("full outer join") {
+    // People and their messages, or not
+    assertQuery(messages + 2) {
+      person %% message
+    }
+    // Only Carlos didn't post any message
+    assertQuery(1) {
+      person %% message | ! message.happens
+    }
+    // One message has no author
+    assertQuery(1) {
+      person %% message | ! person.happens
+    }
   }
 
   test("left anti join") {
     // Only Carlos didn't post any message
     assertQuery(1) {
       person - message
+    }
+  }
+
+  test("left semi join") {
+    // Only Carlos didn't post any message, all others did
+    assertQuery(people - 1) {
+      person ^ message
+    }
+    // cannot use filter after, either filter right before or use .on() to filter on left columns
+    assertThrows[AnalysisException]((person ^ message | message.happens).df)
+    // right is not returned
+    assertDF(people - 1, _.sameElements(peopleDf.columns)) {
+      (person ^ message).df
+    }
+    // same goes for select
+    assertDF(people - 1, _.sameElements(peopleDf.columns.map("person_" + _))) {
+      (person ^ message).select()
     }
   }
 
@@ -150,6 +201,14 @@ test("select") {
     // select with automatic prefix
     assertDF(5, _.sameElements(peopleDf.columns.map("person_" + _) ++ messagesDf.columns.map("message_" + _))) {
       (person + topic.on("person_id" -> "author_id") + message).select(person, message)
+    }
+    // select all with automatic prefix
+    assertDF(messages, _.sameElements(peopleDf.columns.map("person_" + _) ++ messagesDf.columns.map("message_" + _))) {
+      (person + message).select()
+    }
+    // select with manual prefix
+    assertDF(messages, _.sameElements(peopleDf.columns.map("p_" + _) ++ messagesDf.columns.map("m_" + _))) {
+      (person + message).select(person -> "p_", message -> "m_")
     }
     // select with no prefix, skipping duplicates
     assertDF(5, _.sorted.sameElements(Set(peopleDf, topicsDf, messagesDf).flatMap(_.columns).toSeq.sorted)) {

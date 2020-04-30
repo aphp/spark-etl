@@ -16,6 +16,15 @@ InnerJoin(a, b)
 a % b
 LeftOuterJoin(a, b)
 
+a %> b
+RightOuterJoin(a, b)
+
+a %% b
+FullOuterJoin(a, b)
+
+a ^ b
+LeftSemiJoin(a, b)
+
 a - b
 LeftAntiJoin(a, b)
 

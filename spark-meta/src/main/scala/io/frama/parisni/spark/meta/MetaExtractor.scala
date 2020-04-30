@@ -2,20 +2,21 @@ package io.frama.parisni.spark.meta
 
 
 import java.sql.{Connection, ResultSet}
+
 import com.typesafe.scalalogging.LazyLogging
 import io.frama.parisni.spark.dataframe.DFTool
 import io.frama.parisni.spark.meta.strategy.{MetaStrategy, MetaStrategyBuilder}
 import io.frama.parisni.spark.postgres.PGTool
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.{DataFrame, Row, SparkSession}
+import org.apache.spark.sql.{DataFrame, SparkSession}
 
 class MetaExtractor(metaStrategy: MetaStrategy, spark: SparkSession
                     , host: String, database: String, user: String, dbType: String, schema: String)
   extends GetTables with LazyLogging {
 
   /**
-    * Alternative constructor
-    */
+   * Alternative constructor
+   */
   def this(confSchema: ConfigMetaYaml.Schema, spark: SparkSession, schema: String = "public") {
 
     this(MetaStrategyBuilder.build(confSchema.strategy), spark
@@ -106,6 +107,7 @@ class MetaExtractor(metaStrategy: MetaStrategy, spark: SparkSession
     val regularTable = DFTool.trimAll(fetchTable(GetTables.SQL_HIVE_TABLE.format(dbName)))
     val externalTable = extractJson(DFTool.trimAll(fetchTable(GetTables.SQL_HIVE_TABLE_EXT.format(dbName))))
     DFTool.unionDataFrame(regularTable, externalTable)
+      .withColumn("last_commit_timestampz", expr("cast(null as timestamp)"))
   }
 
   protected def getPostgresTable(dbName: String): DataFrame = {
@@ -118,11 +120,11 @@ class MetaExtractor(metaStrategy: MetaStrategy, spark: SparkSession
   }
 
   /**
-    * Reads the postgres configuration status of parameter "track_commit_timestamp".
-    * This parameter needs to be set to "on" to be able to extract the last commit timestamp.
-    *
-    * @return 'true' if "track_commit_timestamp" is on, 'false' otherwise
-    */
+   * Reads the postgres configuration status of parameter "track_commit_timestamp".
+   * This parameter needs to be set to "on" to be able to extract the last commit timestamp.
+   *
+   * @return 'true' if "track_commit_timestamp" is on, 'false' otherwise
+   */
   def is_track_commit_timestamp_activate(): Boolean = {
     val conn: Connection = PGTool.connOpen(getUrl())
     val resultSet: ResultSet = conn.createStatement().executeQuery("show track_commit_timestamp")
@@ -133,13 +135,13 @@ class MetaExtractor(metaStrategy: MetaStrategy, spark: SparkSession
   }
 
   /**
-    * Returns new dataset by adding new column 'last_commit_timestampz' of type 'timestamp' as the per table last commit timestamp.
-    *
-    * @param dataFrame Input dataframe. It should contain at least theses three columns : "lib_database", "lib_schema" and "lib_table"
-    * @param colName Name to give to the added column
-    * @return returns a new dataframe with the newColum if 'track_commit_timestamp' is activated ,
-    *         otherwise it returns the input dataframe without any transformation
-    */
+   * Returns new dataset by adding new column 'last_commit_timestampz' of type 'timestamp' as the per table last commit timestamp.
+   *
+   * @param dataFrame Input dataframe. It should contain at least theses three columns : "lib_database", "lib_schema" and "lib_table"
+   * @param colName   Name to give to the added column
+   * @return returns a new dataframe with the newColum if 'track_commit_timestamp' is activated ,
+   *         otherwise it returns the input dataframe without any transformation
+   */
   def addLastCommitTimestampColumn(dataFrame: DataFrame, colName: String): DataFrame = {
 
     //first of all we check if track_commit_timestamp is activated
@@ -159,14 +161,15 @@ class MetaExtractor(metaStrategy: MetaStrategy, spark: SparkSession
     df.dropDuplicates("lib_database", "lib_schema", "lib_table")
       .select("lib_database", "lib_schema", "lib_table")
       .collect()
-      .map(row => s"""(SELECT * FROM (
-                      |  SELECT pg_xact_commit_timestamp(xmin)::timestamptz as $colName,
-                      |  '${row.getString(0)}'::text as lib_database,
-                      |  '${row.getString(1)}'::text as lib_schema,
-                      |  '${row.getString(2)}'::text as lib_table
-                      |  from ${row.getString(1)}.${row.getString(2)}) tmp_table
-                      |WHERE tmp_table.$colName is not null
-                      |order by tmp_table.$colName desc limit 1)""".stripMargin)
+      .map(row =>
+        s"""(SELECT * FROM (
+           |  SELECT pg_xact_commit_timestamp(xmin)::timestamptz as $colName,
+           |  '${row.getString(0)}'::text as lib_database,
+           |  '${row.getString(1)}'::text as lib_schema,
+           |  '${row.getString(2)}'::text as lib_table
+           |  from ${row.getString(1)}.${row.getString(2)}) tmp_table
+           |WHERE tmp_table.$colName is not null
+           |order by tmp_table.$colName desc limit 1)""".stripMargin)
       .mkString(" UNION ALL ")
   }
 }

@@ -19,12 +19,15 @@ trait Query {
   def +(q: Query): InnerJoin = InnerJoin(this, q)
   def -(q: Query): LeftAntiJoin = LeftAntiJoin(this, q)
   def %(q: Query): LeftOuterJoin = LeftOuterJoin(this, q)
+  def ^(q: Query): LeftSemiJoin = LeftSemiJoin(this, q)
   def *(q: Query): CrossJoin = CrossJoin(this, q)
   def &(q: Query): UnionQuery = UnionQuery(this, q)
 
   // Join by...
   def +(j: Joiner): InnerJoin = InnerJoin(this, j)
   def -(j: Joiner): LeftAntiJoin = LeftAntiJoin(this, j)
+  def %(j: Joiner): LeftOuterJoin = LeftOuterJoin(this, j)
+  def ^(j: Joiner): LeftSemiJoin = LeftSemiJoin(this, j)
   // ...by columns in common (name & type)
   def unary_~ : CommonColumnsJoiner = CommonColumnsJoiner(this)
   // ...by explicit Column

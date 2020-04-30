@@ -86,6 +86,16 @@ case class LeftAntiJoin(left: Query, right: Query, on: Column) extends JoinQuery
 object LeftAntiJoin extends CanResolveJoinerTo[LeftAntiJoin]
 
 
+// left ^ right
+case class LeftSemiJoin(left: Query, right: Query, on: Column) extends JoinQuery {
+  override val joinType: String = "left_semi"
+  override val joinOp: String = "^"
+  override val as = s"${left.as}__ex_${right.as}"
+  override def leaves: Seq[Query] = left.leaves
+}
+object LeftSemiJoin extends CanResolveJoinerTo[LeftSemiJoin]
+
+
 // left * right
 case class CrossJoin(left: Query, right: Query) extends JoinQuery {
   override val on: Column = null

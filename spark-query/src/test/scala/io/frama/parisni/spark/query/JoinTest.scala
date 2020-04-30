@@ -1,6 +1,6 @@
 package io.frama.parisni.spark.query
 
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.{AnalysisException, DataFrame}
 import org.apache.spark.sql.catalyst.expressions.NamedExpression
 import org.apache.spark.sql.functions.col
 
@@ -31,6 +31,23 @@ class JoinTest extends QueryBaseTest {
     // Only Carlos didn't post any message
     assertQuery(1) {
       person - message
+    }
+  }
+
+  test("left semi join") {
+    // Only Carlos didn't post any message, all others did
+    assertQuery(people - 1) {
+      person ^ message
+    }
+    // cannot use filter after, either filter right before or use .on() to filter on left columns
+    assertThrows[AnalysisException]((person ^ message | message.happens).df)
+    // right is not returned
+    assertDF(people - 1, _.sameElements(peopleDf.columns)) {
+      (person ^ message).df
+    }
+    // same goes for select
+    assertDF(people - 1, _.sameElements(peopleDf.columns.map("person_" + _))) {
+      (person ^ message).select()
     }
   }
 

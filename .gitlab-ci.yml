@@ -29,6 +29,14 @@ job:start:
     - echo "Start the build"
     - env | sort
     - mount
+
+job:install:
+  tags:
+    - aphp
+    - cicd
+    - rsareth
+  stage: .pre
+  script:
     - ./build.sh --install
 
 job:test:

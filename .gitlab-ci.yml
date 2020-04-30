@@ -29,6 +29,7 @@ job:start:
     - echo "Start the build"
     - env | sort
     - mount
+    - ./build.sh --install
 
 job:test:
   tags:

@@ -8,17 +8,18 @@ import org.apache.spark.sql.{DataFrame, QueryTest, SparkSession}
 class QueryBaseTest extends QueryTest {
   protected lazy val spark: SparkSession = QueryBaseTest.spark
 
-  protected lazy val printExplanations: Boolean = true
+  protected lazy val printExplanations: Boolean = false
 
   protected def assertQuery(count: Long)(q: => Query) {
     assertResult(count){
       println(q)
+      println(q.treeString)
       val df = q.df
       if (printExplanations) {
-        df.explain(true)
+        df.explain(false)
         df.printSchema()
-        df.show()
       }
+      df.show()
       df.count()
     }
   }
@@ -67,9 +68,12 @@ class QueryBaseTest extends QueryTest {
     ::   Message(201, 5, 20, "try the backyard?",  "2020-01-02 13:00:00")
     ::   Message(202, 1, 20, "nvm found him",      "2020-01-02 14:00:00")
     :: Message(300, 2, 30, "This time Dave's DJ",  "2020-02-01 12:00:00")
+    :: Message(404, 0, 0, "No author nor topic",  "2020-01-15 12:00:00")
     :: Nil
   )
-  lazy val messages: Long = messagesDf.count()
+  lazy val allMessages: Long = messagesDf.count()
+  // only with topic/author
+  lazy val messages: Long = messagesDf.where(messagesDf("person_id") > 0 && messagesDf("topic_id") > 0).count()
 
   lazy val person:  DataFrameEventQuery = DataFrameEventQuery(peopleDf,   "person",  "born")
   lazy val topic:   DataFrameEventQuery = DataFrameEventQuery(topicsDf,   "topic",   "created")

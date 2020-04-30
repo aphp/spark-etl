@@ -16,7 +16,11 @@ abstract class JoinQuery extends Query {
 
   override def leaves: Seq[Query] = left.leaves ++ right.leaves
 
+  override def nodes: Seq[Query] = List(this, left, right)
+
   override def toString: String = s"""($left $joinOp $right.on$on)"""
+
+  override def nodeString: String = super.nodeString + s" $on"
 }
 
 object JoinQuery {
@@ -73,6 +77,24 @@ case class LeftOuterJoin(left: Query, right: Query, on: Column) extends JoinQuer
 object LeftOuterJoin extends CanResolveJoinerTo[LeftOuterJoin]
 
 
+// left %> right
+case class RightOuterJoin(left: Query, right: Query, on: Column) extends JoinQuery {
+  override val joinType: String = "right_outer"
+  override val joinOp: String = "%>"
+  override val as = s"${left.as}__w_${right.as}"
+}
+object RightOuterJoin extends CanResolveJoinerTo[RightOuterJoin]
+
+
+// left %% right
+case class FullOuterJoin(left: Query, right: Query, on: Column) extends JoinQuery {
+  override val joinType: String = "full_outer"
+  override val joinOp: String = "%%"
+  override val as = s"${left.as}__w_${right.as}"
+}
+object FullOuterJoin extends CanResolveJoinerTo[FullOuterJoin]
+
+
 // left - right
 case class LeftAntiJoin(left: Query, right: Query, on: Column) extends JoinQuery {
   override val joinType: String = "left_anti"
@@ -80,6 +102,16 @@ case class LeftAntiJoin(left: Query, right: Query, on: Column) extends JoinQuery
   override val as = s"${left.as}__wo_${right.as}"
 }
 object LeftAntiJoin extends CanResolveJoinerTo[LeftAntiJoin]
+
+
+// left ^ right
+case class LeftSemiJoin(left: Query, right: Query, on: Column) extends JoinQuery {
+  override val joinType: String = "left_semi"
+  override val joinOp: String = "^"
+  override val as = s"${left.as}__ex_${right.as}"
+  override def leaves: Seq[Query] = left.leaves
+}
+object LeftSemiJoin extends CanResolveJoinerTo[LeftSemiJoin]
 
 
 // left * right

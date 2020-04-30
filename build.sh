@@ -206,7 +206,7 @@ then
         break
         ;;
       --install)
-        mvn install
+        mvn ${MAVEN_CLI_OPTS} install
         break
         ;;
       --package-artifact)

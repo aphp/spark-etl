@@ -27,6 +27,21 @@ class JoinTest extends QueryBaseTest {
     }
   }
 
+  test("full outer join") {
+    // People and their messages, or not
+    assertQuery(messages + 2) {
+      person %% message
+    }
+    // Only Carlos didn't post any message
+    assertQuery(1) {
+      person %% message | ! message.happens
+    }
+    // One message has no author
+    assertQuery(1) {
+      person %% message | ! person.happens
+    }
+  }
+
   test("left anti join") {
     // Only Carlos didn't post any message
     assertQuery(1) {

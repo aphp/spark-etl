@@ -12,7 +12,7 @@ case class UnionQuery(top: Query, bottom: Query, as: String, byName: Boolean = t
     else        top.df.union(bottom.df)
   }
 
-  override def nodes: Seq[Query] = List(this, top, bottom)
+  override def nodes: Seq[Query] = List(top, bottom)
 
   override def toString: String = s"""($top & $bottom)"""
 }

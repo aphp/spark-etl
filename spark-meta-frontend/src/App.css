@@ -2,3 +2,8 @@
     font-family: sans-serif;
     text-align: center;
   }
+
+svg {
+  width: 100%;
+  height: auto;
+}

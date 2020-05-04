@@ -16,7 +16,7 @@ abstract class JoinQuery extends Query {
 
   override def leaves: Seq[Query] = left.leaves ++ right.leaves
 
-  override def nodes: Seq[Query] = List(this, left, right)
+  override def nodes: Seq[Query] = List(left, right)
 
   override def toString: String = s"""($left $joinOp $right.on$on)"""
 
@@ -25,17 +25,6 @@ abstract class JoinQuery extends Query {
 
 object JoinQuery {
   def unapply(j: JoinQuery): Option[(Query, Query)] = Some((j.left, j.right))
-
-  // Guess column(s) to join on, up to 1 per left leave, based on leaves' joinAs:
-  // on the left: id, {joinAs}_id, {as}_id
-  // on the right: {left.joinAs}_id, {left.joinAs}_fk, {left.joinAs}
-  val guesses: Seq[String => String] = Seq(_ + "_id", _ + "_fk", s => s)
-  def guessJoinColumns(left: Query, rightColumns: Array[String]): Seq[JoinColumn] =
-    for {
-      left <- left.leaves
-      rightCol <- guesses.map(_(left.joinAs)).find(rightColumns.contains)
-      leftCol <- Seq("id", left.joinAs + "_id", left.as + "_id").find(left.df.columns.contains)
-    } yield JoinColumn(left.as, leftCol, rightCol)
 }
 
 

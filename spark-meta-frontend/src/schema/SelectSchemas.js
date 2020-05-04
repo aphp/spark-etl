@@ -1,7 +1,6 @@
 import React from "react";
-import './App.css';
-import Select from './helpers/Select.js'
-import Error from './helpers/Error.js';
+import Select from '../helpers/Select.js'
+import Error from '../helpers/Error.js';
 
 class SelectSchemas extends React.PureComponent {
   constructor(props) {
@@ -51,7 +50,7 @@ class SelectSchemas extends React.PureComponent {
 
     const schema = this.state.schemas.find(e => e.id === values.id);
     if (schema) {
-      this.props.setSelectedSchema({ schema });
+      this.props.setSelectedSchema(schema);
       if (pushRoute) {
         this.props.history.push('/database/' + this.props.selectedDatabase.id + '/schema/' + schema.id);
       }
@@ -70,7 +69,7 @@ class SelectSchemas extends React.PureComponent {
     return <Select label="schemas"
             options={this.state.schemas}
             onChange={ values => this.onSelectSchema(values, true)}
-            selectedValue={this.props.selectedSchema && this.props.selectedSchema.schema}>
+            selectedValue={this.props.selectedSchema}>
           </Select>;
   }
 }

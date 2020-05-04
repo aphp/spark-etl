@@ -40,7 +40,7 @@ const useStyles = makeStyles(theme => ({
     [theme.breakpoints.up('md')]: {
       width: '20ch',
     },
-  },  
+  },
 }));
 
 function SearchInput({ updateSearchText, searchText }) {
@@ -58,10 +58,10 @@ function SearchInput({ updateSearchText, searchText }) {
         }}
         value={searchText}
         inputProps={{ 'aria-label': 'search' }}
-        onChange={updateSearchText}
+        onChange={(e) => updateSearchText(e.target.value)}
     />
-  </div>            
+  </div>
   );
-} 
+}
 
 export default SearchInput;

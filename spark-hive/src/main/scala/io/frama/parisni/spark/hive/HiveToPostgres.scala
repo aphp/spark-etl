@@ -76,7 +76,7 @@ object HiveToPostgres extends App with LazyLogging {
               .option("type", "full")
               .option("table", table.tablePg)
               .option("partitions", table.numThread.getOrElse(4))
-              .option("bulkLoadMode", table.bulkLoadMode.getOrElse("PgBinaryFiles"))
+              .option("bulkLoadMode", table.bulkLoadMode.getOrElse("default"))
               .option("kill-locks", true)
               .save
           }
@@ -91,7 +91,7 @@ object HiveToPostgres extends App with LazyLogging {
               .option("table", table.tablePg)
               .option("partitions", table.numThread.getOrElse(4))
               .option("reindex", table.reindex.getOrElse(false))
-              .option("bulkLoadMode", table.bulkLoadMode.getOrElse("PgBinaryFiles"))
+              .option("bulkLoadMode", table.bulkLoadMode.getOrElse("default"))
               .option("kill-locks", true)
               .save
 

@@ -1,5 +1,6 @@
 package io.frama.parisni.spark.query
 
+import org.apache.spark.sql.functions.{count, countDistinct, first}
 import org.apache.spark.sql.{Column, DataFrame}
 
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
@@ -9,7 +10,7 @@ trait Query {
   def df: DataFrame
   def as: String
   def joinAs: String = as
-  def idField: String = "id"
+  def idFields: Seq[String] = List("id")
 
   // Filter
   def |(c: Column): FilterQuery = FilterQuery(this, c, as)
@@ -40,7 +41,7 @@ trait Query {
   def on[A : TypeTag](onCols: (A, String) *): Joiner = onCols match {
     case ons: Seq[(String, String)] if typeOf[A] <:< typeOf[String] => ColumnNamesJoiner(this, ons :_*)
     case ons: Seq[(Query,  String)] if typeOf[A] <:< typeOf[Query]  =>
-      AliasAndColumnNameJoiner(this, ons.map(on => (on._1.joinAs, on._2)) :_*)
+      AliasAndColumnNameJoiner(this, ons.map(on => (on._1.as, on._2)) :_*)
   }
   def on(columnNames: String *): ColumnNameJoiner = ColumnNameJoiner(this, columnNames :_*)
 
@@ -66,11 +67,33 @@ trait Query {
     } yield query.df(name)) :_*)
   }
 
+  // Group by (query), output its columns + agg as {ungroupedQuery.as} for other leaves
+  def groupBy(qs: Seq[(Query, Seq[String])], agg: Query => Column = Query.autoCountDistinct): DataFrame = {
+    // TODO replace leaves by node traversal, could group on any nodes, as long as one isn't the ancestor of another
+    require(qs.nonEmpty, "Nothing to group on")
+    val group = for {
+      (q, cols) <- qs
+      _ = require(leaves.contains(q), "Cannot group by non-leaf " + q.as)
+      _ = require(cols.nonEmpty, "Nothing to group on for " + q.as)
+      col <- cols
+    } yield q(col)
+    val retrieve = for {
+      (q, cols) <- qs
+      col <- q.df.columns if ! cols.contains(col)
+    } yield first(q(col)).as(col)
+    val aggregate = for { q <- leaves if ! qs.map(_._1).contains(q) } yield agg(q)
+    val Seq(firstAgg, tailAgg @ _*) = retrieve ++ aggregate
+    df.groupBy(group :_*).agg(firstAgg, tailAgg :_*)
+  }
+  def groupBy(qs: Query *): DataFrame = groupBy(qs.map(q => (q,
+      if (q.idFields.forall(q.df.columns.contains)) q.idFields else q.df.columns.toSeq)))
+  def /(qs: Query *): DataFrame = groupBy(qs :_*)
+
   def alias(as: String): AliasQuery = AliasQuery(as)(this)
 
   // Traversal
   def leaves: Seq[Query] = List(this)
-  def nodes: Seq[Query] = List(this)
+  def nodes: Seq[Query] = Seq.empty
 
   def apply(column: String): Column = df(column)
 
@@ -88,20 +111,26 @@ object Query {
   def apply(df: DataFrame, as: String): Query = DataFrameQuery(df, as)
   def apply(df: DataFrame, as: String, joinAs: String): Query = DataFrameQuery(df, as, joinAs)
 
+  def unapplySeq(q: Query): Option[Seq[Query]] = Some(q.nodes)
+
   def treeString(q: Query, builder: StringBuilder, prefix: String = "") {
-    val Seq(head, tail @ _*) = q.nodes
     if (builder.nonEmpty) {
       builder.append('\n')
     }
-    builder.append(prefix).append(head.nodeString)
-    tail.foreach(treeString(_, builder, if (prefix.isEmpty) "  |- " else s"  |  $prefix"))
+    builder.append(prefix).append(q.nodeString)
+    q.nodes.foreach(treeString(_, builder, if (prefix.isEmpty) "  |- " else s"  |  $prefix"))
   }
-}
 
-
-trait QueryDecorator extends Query {
-  val base: Query
-  override def leaves: Seq[Query] = base.leaves
-  override def nodes: Seq[Query] = List(this, base)
-  override def apply(column: String): Column = base.apply(column)
+  def autoCountDistinct(q: Query): Column =
+    if (q.idFields.forall(q.df.columns.contains)) countDistinctIds(q)
+    else                                          countDistinctNonNullableColumns(q)
+  def countDistinctNonNullableColumns(q: Query): Column = {
+    val cols = q.df.schema.filterNot(_.nullable).map(f => q(f.name))
+    require(cols.nonEmpty, "Count distinct needs non-nullable columns, none found")
+    countDistinct(cols.head, cols.tail :_*).as(q.as)
+  }
+  def countDistinctIds(q: Query): Column =
+    countDistinct(q.df(q.idFields.head), q.idFields.tail.map(q.df(_)) :_*).as(q.as)
+  def countAll(q: Query): Column =
+    count(q.idFields.find(q.df.columns.contains).getOrElse(q.df.columns.head)).as(q.as)
 }

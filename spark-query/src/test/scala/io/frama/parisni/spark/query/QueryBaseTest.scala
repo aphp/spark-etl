@@ -10,30 +10,35 @@ class QueryBaseTest extends QueryTest {
 
   protected lazy val printExplanations: Boolean = false
 
-  protected def assertQuery(count: Long)(q: => Query) {
-    assertResult(count){
-      println(q)
-      println(q.treeString)
-      val df = q.df
-      if (printExplanations) {
-        df.explain(false)
-        df.printSchema()
-      }
-      df.show()
-      df.count()
-    }
+  protected def assertQuery(count: Long): (=> Query) => Unit =
+    assertQuery(None, Some(count))
+  protected def assertQuery(count: Long, expected: => DataFrame): (=> Query) => Unit =
+    assertQuery(Some(expected), Some(count))
+  protected def assertQuery(expected: => DataFrame): (=> Query) => Unit =
+    assertQuery(Some(expected), None)
+  protected def assertQuery(expected: => Option[DataFrame], count: Option[Long])(q: => Query) {
+    println(q)
+    println(q.treeString)
+    assertDF(count, expected)(q.df)
   }
 
-  protected def assertDF(count: Long, assertCols: Array[String] => Boolean = _ => true)(df: => DataFrame) {
-    assertResult(count){
-      if (printExplanations) {
-        df.explain(true)
-        df.printSchema()
-        df.show()
-      }
-      assert(assertCols(df.columns), "Columns assertion failed")
-      df.count()
+  protected def assertDF(count: Long)(df: => DataFrame) {
+    assertDF(Some(count), None)(df)
+  }
+  protected def assertDF(expected: => DataFrame)(df: => DataFrame) {
+    assertDF(None, Some(expected))(df)
+  }
+  protected def assertDF(count: Long, expected: => DataFrame)(df: => DataFrame) {
+    assertDF(Some(count), Some(expected))(df)
+  }
+  protected def assertDF(count: Option[Long], expected: => Option[DataFrame])(df: => DataFrame) {
+    if (printExplanations) {
+      df.explain(false)
+      df.printSchema()
     }
+    df.show()
+    count.foreach(c => assertResult(c)(df.count()))
+    expected.foreach(checkAnswer(df, _))
   }
 
   import QueryBaseTest.string2Timestamp

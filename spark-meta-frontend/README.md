@@ -2,6 +2,10 @@
 
 This project displays the definition of tables and attributs for APHP.
 
+## Dependencies
+
+The application needs to call `dot` (from graphviz) to be in the path to generate a graph. It is bundled with the docker image.
+
 ## Environment variables
 
 The server will connect to a postgresql database and extract its schema with comments from the following variables. Variables are:

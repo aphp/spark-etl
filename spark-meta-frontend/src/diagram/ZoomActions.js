@@ -17,8 +17,7 @@ export default class ZoomAction extends Action {
         // We can block layer rendering because we are only targeting the transforms
         model.getLayers().forEach(layer => layer.allowRepaint(false));
 
-        const zoomDirection =
-          Math.sign(event.deltaY) > 0 ? 'in' : 'out';
+        const zoomDirection = Math.sign(event.deltaY) > 0 ? 'out' : 'in';
 
         let previousZoomDiff = 1000;
         let currentZoomLevelIndex = 0;

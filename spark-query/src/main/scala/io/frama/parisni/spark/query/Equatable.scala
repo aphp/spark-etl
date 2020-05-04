@@ -6,4 +6,5 @@ trait Equatable[A] {
   def ===(a: A): Predicate = eq(a)
   def neq(a: A): Predicate = !eq(a)
   def !==(a: A): Predicate = neq(a)
+  def =!=(a: A): Predicate = neq(a)
 }

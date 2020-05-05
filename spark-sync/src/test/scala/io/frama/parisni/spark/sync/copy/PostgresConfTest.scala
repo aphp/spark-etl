@@ -23,10 +23,9 @@ class PostgresConfTest extends QueryTest with SparkSessionTestWrapper {
 
     import spark.implicits._
 
-    println(pg.getEmbeddedPostgres.getJdbcUrl("postgres", "pg"))
     //val con = pg.getEmbeddedPostgres.getPostgresDatabase.getConnection
-    val url = f"jdbc:postgresql://localhost:${pg.getEmbeddedPostgres.getPort}/postgres?user=postgres&currentSchema=public"
-
+    //val url = f"jdbc:postgresql://localhost:${pg.getEmbeddedPostgres.getPort}/postgres?user=postgres&currentSchema=public"
+    val url = getPgUrl
     // Create table "source"
     val s_inputDF: DataFrame = (
       (1, "id1s", "test details of 1st row source", Timestamp.valueOf("2016-02-01 23:00:01"),
@@ -108,7 +107,7 @@ class PostgresConfTest extends QueryTest with SparkSessionTestWrapper {
     val pgc = new PostgresConf(mapy, dates, pks)
 
     val host = pgc.getHost.getOrElse("localhost")
-    val port = pgc.getPort.getOrElse("5432")
+    val port = pg.getEmbeddedPostgres.getPort.toString
     val db = pgc.getDB.getOrElse("postgres")
     val user = pgc.getUser.getOrElse("postgres")
     val schema = pgc.getSchema.getOrElse("public")

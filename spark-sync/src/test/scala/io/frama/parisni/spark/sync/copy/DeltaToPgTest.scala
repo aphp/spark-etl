@@ -10,12 +10,13 @@ import org.scalatest.FunSuite
 
 import scala.io.Source
 
-class DeltaToPgTest extends FunSuite with SparkSessionTestWrapper{
+class DeltaToPgTest extends FunSuite with SparkSessionTestWrapper  {
 
   //@Test
   def testDelta2Pg(): Unit = {
     //println("io.frama.parisni.spark.sync.Sync Delta2Pg")
-    val url = f"jdbc:postgresql://localhost:${pg.getEmbeddedPostgres.getPort}/postgres?user=postgres&currentSchema=public"
+    //val url = f"jdbc:postgresql://localhost:${pg.getEmbeddedPostgres.getPort}/postgres?user=postgres&currentSchema=public"
+    val url = getPgUrl
 
     import spark.implicits._
 
@@ -36,7 +37,7 @@ class DeltaToPgTest extends FunSuite with SparkSessionTestWrapper{
         Nil).toDF("id", "pk2", "details", "date_update", "date_update2", "date_update3")
 
     val sourceDeltaTable = "/tmp/source"
-    val dc:DeltaConf = new DeltaConf(Map("T_LOAD_TYPE" -> "full", "S_TABLE_TYPE" -> "delta", "T_TABLE_TYPE" -> "postgres"), List(""), List(""))
+    val dc: DeltaConf = new DeltaConf(Map("T_LOAD_TYPE" -> "full", "S_TABLE_TYPE" -> "delta", "T_TABLE_TYPE" -> "postgres"), List(""), List(""))
     dc.writeSource(spark, s_inputDF, "/tmp", "source10", "full")
     /*s_inputDF.write.format("delta")
       .mode("overwrite")
@@ -53,7 +54,7 @@ class DeltaToPgTest extends FunSuite with SparkSessionTestWrapper{
     println(palette.toYaml.prettyPrint)
 
     println("delta2Pg ------------------")
-    val d2pg2:DeltaToPg2 = new DeltaToPg2
+    val d2pg2: DeltaToPg2 = new DeltaToPg2
     d2pg2.sync(spark, palette, pg.getEmbeddedPostgres.getPort.toString)
 
   }

@@ -2,7 +2,7 @@ jobName:        Analyze Delta Table
 deltaPath: "/tmp"
 host: localhost
 port: "5432"
-user: openpg
+user: postgres
 schema: public
 db: postgres
-pw: openpgpwd
+pw: postgres

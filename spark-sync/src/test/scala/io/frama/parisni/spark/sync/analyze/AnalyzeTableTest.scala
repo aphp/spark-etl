@@ -33,7 +33,7 @@ class AnalyzeTableTest extends QueryTest with SparkSessionTestWrapper {
 
     val deltaPath = database.deltaPath
     val host = database.host.toString
-    val port = database.port.toString
+    val port = pg.getEmbeddedPostgres.getPort.toString
     val db = database.db.toString
     val user = database.user.toString
     val schema = database.schema.toString
@@ -57,7 +57,7 @@ class AnalyzeTableTest extends QueryTest with SparkSessionTestWrapper {
 
     //println(pg.getEmbeddedPostgres.getJdbcUrl("postgres", "postgres"))
     //val url = f"jdbc:postgresql://localhost:${pg.getEmbeddedPostgres.getPort}/postgres?user=postgres&currentSchema=public"
-    val url = f"jdbc:postgresql://localhost:5432/postgres?user=openpg&password=openpgpwd&currentSchema=public"
+    val url = getPgUrl
     import spark.implicits._
     // Create table "meta_table"
     val metaTableDF: DataFrame = (

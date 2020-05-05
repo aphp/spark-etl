@@ -2,13 +2,13 @@ package io.frama.parisni.spark.sync.compact
 
 import java.sql.Timestamp
 
+import io.frama.parisni.spark.sync.compact.CompactTableYaml._
 import io.frama.parisni.spark.sync.copy.SparkSessionTestWrapper
 import net.jcazevedo.moultingyaml._
-import org.apache.spark.sql.{DataFrame, QueryTest, SparkSession}
+import org.apache.spark.sql.{DataFrame, QueryTest}
 import org.junit.Test
 
 import scala.io.Source
-import CompactTableYaml._
 
 class CompactTableTest extends QueryTest with SparkSessionTestWrapper {
 
@@ -18,13 +18,6 @@ class CompactTableTest extends QueryTest with SparkSessionTestWrapper {
     //Create test tables
     createTables()
     // Spark Session
-    val spark = SparkSession.builder()
-      .master("local")
-      .appName("spark session")
-      .config("spark.sql.shuffle.partitions", "1")
-      .getOrCreate()
-
-    spark.sparkContext.setLogLevel("WARN")
 
     val filename = "compactTable.yaml" //args(0)
     val ymlTxt = Source.fromFile(filename).mkString
@@ -35,7 +28,7 @@ class CompactTableTest extends QueryTest with SparkSessionTestWrapper {
     val numFiles = database.numFiles
     val partition = database.partition.getOrElse("")
     val host = database.host.toString
-    val port = database.port.toString
+    val port = pg.getEmbeddedPostgres.getPort.toString
     val db = database.db.toString
     val user = database.user.toString
     val schema = database.schema.toString
@@ -57,9 +50,7 @@ class CompactTableTest extends QueryTest with SparkSessionTestWrapper {
 
   def createTables(): Unit = {
 
-    //println(pg.getEmbeddedPostgres.getJdbcUrl("postgres", "postgres"))
-    //val url = f"jdbc:postgresql://localhost:${pg.getEmbeddedPostgres.getPort}/postgres?user=postgres&currentSchema=public"
-    val url = f"jdbc:postgresql://localhost:5432/postgres?user=openpg&password=openpgpwd&currentSchema=public"
+    val url = getPgUrl
     val comp1Path = "/tmp/comp1"
     val comp2Path = "/tmp/comp2"
     val comp3Path = "/tmp/comp3"

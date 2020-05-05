@@ -28,4 +28,5 @@ trait SparkSolrFunSuite extends FunSuite with LazyLogging {
       logger.info(s"\n\n===== FINISHED $shortSuiteName: '$testName' =====\n")
     }
   }
+
 }

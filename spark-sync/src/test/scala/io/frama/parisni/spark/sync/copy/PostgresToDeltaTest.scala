@@ -20,7 +20,8 @@ class PostgresToDeltaTest extends FunSuite with SparkSessionTestWrapper{
 
       import spark.implicits._
     println("io.frama.parisni.spark.sync.Sync Postgres To Delta")
-    val url = f"jdbc:postgresql://localhost:${pg.getEmbeddedPostgres.getPort}/postgres?user=postgres&currentSchema=public"
+    //val url = f"jdbc:postgresql://localhost:${pg.getEmbeddedPostgres.getPort}/postgres?user=postgres&currentSchema=public"
+    val url = getPgUrl
 
     // Create table "source"
     val s_inputDF: DataFrame = (

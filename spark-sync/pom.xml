@@ -276,7 +276,7 @@
 		<!--<fasterxml.version>2.9.9</fasterxml.version>-->
 		<scala.version>2.11.12</scala.version>
 		<scala.binary.version>2.11</scala.binary.version>
-		<fasterxml.version>2.6.7</fasterxml.version>
+		<fasterxml.version>2.11.0</fasterxml.version>
 	</properties>
 
         <repositories>

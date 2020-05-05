@@ -1,0 +1,17 @@
+jobName:        postgres To delta
+hostPg:         localhost
+portPg:         5432
+databasePg:     postgres
+userPg:         postgres
+timestampLastColumn:  date_update
+timestampColumns: [date_update, date_update2, date_update3]
+dateMax:  "2018-06-01 00:00:00"
+tables:
+    - tablePg: source
+      tableHive: target
+      schemaPg: public
+      schemaHive: /tmp
+      typeLoad: full
+      key: [id, pk2]
+      numThread: 4
+      isActive: true

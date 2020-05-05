@@ -50,3 +50,4 @@ spark-postgres-tmp/
 derby.log
 .cache-main
 .cache-tests
+/.gradle/

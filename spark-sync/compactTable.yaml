@@ -1,0 +1,10 @@
+jobName:     Compact Delta Table
+deltaPath: "/tmp"
+numFiles: 4
+partition:
+host: localhost
+port: "5432"
+user: postgres
+schema: public
+db: postgres
+pw: postgres

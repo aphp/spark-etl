@@ -1,0 +1,8 @@
+jobName:        Analyze Delta Table
+deltaPath: "/tmp"
+host: localhost
+port: "5432"
+user: postgres
+schema: public
+db: postgres
+pw: postgres

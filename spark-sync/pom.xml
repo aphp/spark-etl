@@ -281,11 +281,19 @@
 
         <repositories>
           <repository>
+            <id>maven.central</id>
+            <name>maven.central</name>
+            <url>https://repo1.maven.org/maven2</url>
+            <snapshots>
+              <enabled>true</enabled>
+            </snapshots>
+          </repository>
+          <repository>
             <id>maven.restlet.org</id>
             <name>maven.restlet.org</name>
             <url>http://maven.restlet.org</url>
-          </repository>        
-        </repositories>    
+          </repository>
+				</repositories>
 
 	<build>
 		<sourceDirectory>src/main/scala</sourceDirectory>

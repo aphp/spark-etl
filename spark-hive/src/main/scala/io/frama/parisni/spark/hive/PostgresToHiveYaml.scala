@@ -11,8 +11,9 @@ object PostgresToHiveYaml extends DefaultYamlProtocol {
       , userPg: String
       , timestampTable:Option[String]
       , databaseHive:Option[String]
-      , timestampLastColumn:Option[String]
-      , timestampColumns:Option[List[String]]
+      , timestampLastColumn:Option[String]      // To be used as PG  "S_DATE_FIELD"
+      , timestampColumns:Option[List[String]]   // To be used as Hive dates
+      , dateMax: Option[String]                 // Added param
       , tables: Option[List[Table]])
       
   case class Table(tablePg: String
@@ -20,6 +21,7 @@ object PostgresToHiveYaml extends DefaultYamlProtocol {
       , schemaPg: String
       , schemaHive: String
       , key: String
+      , typeLoad: Option[String]      // Added param
       , format: Option[String]
       , delta: Option[String]
       , isActive: Option[Boolean]
@@ -33,8 +35,8 @@ object PostgresToHiveYaml extends DefaultYamlProtocol {
     require(numThread.isDefined && (numThread.get < 9 && numThread.get > 0), "Thread number should be between 1 and 8")
   }
 
-  implicit val colorFormat = yamlFormat12(Table)
-  implicit val paletteFormat = yamlFormat10(Database)
+  implicit val colorFormat = yamlFormat13(Table)
+  implicit val paletteFormat = yamlFormat11(Database)
 
 }
 

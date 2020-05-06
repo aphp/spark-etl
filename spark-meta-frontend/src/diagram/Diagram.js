@@ -1,7 +1,6 @@
 import createEngine, {
 	DiagramModel,
 	DefaultNodeModel,
-	DefaultPortModel,
 	DagreEngine,
 	PathFindingLinkFactory,
 } from '@projectstorm/react-diagrams';
@@ -11,27 +10,12 @@ import { CanvasWidget } from '@projectstorm/react-canvas-core';
 import { StyledCanvasWidget } from './StyledCanvasWidget';
 import ZoomAction from './ZoomActions.js';
 import CircularIndeterminate from '../helpers/CircularIndeterminate.js';
+import { AdvancedLinkFactory, AdvancedPortModel } from './ArrowLink';
+import { CustomNodeFactory } from './CustomNode';
 
-const defaultNodeColor = 'rgb(0,192,255)';
+const defaultNodeColor = '#fefefe';
 function createNode(name) {
 	return new DefaultNodeModel(name, defaultNodeColor);
-}
-
-function connectNodes(ports, nodeFrom, nodeTo) {
-  const outKey = nodeFrom.options.name + '.to'; //+ columnFrom;
-  if (!ports.hasOwnProperty(outKey)) {
-    ports[outKey] = new DefaultPortModel(true, outKey, '');
-    ports[outKey].setLocked(true);
-    nodeFrom.addPort(ports[outKey]);
-  }
-
-  const toKey = nodeTo.options.name + '.from'; //+ columnFrom;
-  if (!ports.hasOwnProperty(toKey)) {
-    ports[toKey] = new DefaultPortModel(false, toKey, '');
-    ports[toKey].setLocked(true);
-    nodeTo.addPort(ports[toKey]);
-  }
-	return ports[outKey].link(ports[toKey]);
 }
 
 const engineMarginX = 25;
@@ -84,7 +68,7 @@ class EngineWidget extends React.Component {
     const zoomFactor = xFactor < yFactor ? xFactor : yFactor;
 
     engine.model.setZoomLevel(initialZoomLevel * zoomFactor);
-
+    engine.model.setOffset(0, 0);
     engine.repaintCanvas();
   }
 
@@ -113,13 +97,13 @@ class EngineWidget extends React.Component {
 
   zoomIn = () =>  {
     // Create a fake event to trigger zoom in
-    const evt = {type: 'wheel', deltaY: 1};
+    const evt = {type: 'wheel', deltaY: -1};
     this.props.engine.getActionEventBus().fireAction({event: evt});
   }
 
   zoomOut = () =>  {
     // Create a fake event to trigger zoom out
-    const evt = {type: 'wheel', deltaY: -1};
+    const evt = {type: 'wheel', deltaY: 1};
     this.props.engine.getActionEventBus().fireAction({event: evt});
   }
 	render() {
@@ -130,7 +114,6 @@ class EngineWidget extends React.Component {
           <StyledButton onClick={this.zoomToFit}>Zoom to fit</StyledButton>
           <StyledButton onClick={this.zoomIn}>Zoom in</StyledButton>
           <StyledButton onClick={this.zoomOut}>Zoom out</StyledButton>
-          <StyledButton onClick={this.props.showHideColumns}>{ this.props.showColumns ? 'Hide columns' : 'Show columns' }</StyledButton>
         </div>}>
 				<StyledCanvasWidget>
 					<CanvasWidget engine={this.props.engine} />
@@ -139,6 +122,7 @@ class EngineWidget extends React.Component {
 		);
 	}
 }
+
 
 class Diagram extends React.Component {
 	constructor(props) {
@@ -152,65 +136,47 @@ class Diagram extends React.Component {
   }
 
   shouldComponentUpdate(nextProps, nextState) {
-    return (nextProps.forceUpdate ||
-      this.state.engine !== nextState.engine ||
-       this.state.showColumns !== nextState.showColumns);
-  }
-
-  showHidePorts = (showColumns) => {
-    for (const table of this.props.tables) {
-      const node = this.state.nodesIndex[table.id];
-
-      for (const col of table.columns) {
-        const portName = table.name + '.' + col.name;
-
-        if (showColumns) {
-          const port = new DefaultPortModel(true, portName, col.name);
-          port.setLocked(true);
-          node.addPort(port);
-        } else {
-          const port = node.ports[portName];
-          if (port) {
-            node.removePort(port);
-          }
-        }
-      }
-    }
-  }
-
-  showHideColumns = () => {
-    const showColumns = !this.state.showColumns;
-    this.showHidePorts(showColumns);
-    this.setState({showColumns});
+    return this.state.engine !== nextState.engine ||
+    Object.keys(this.props.visibleTables).length !== Object.keys(nextProps.visibleTables).length;
   }
 
 	componentDidMount() {
     let model = new DiagramModel();
 
     const nodesIndex = {};
+    const ports = {}
     for (const table of this.props.tables) {
       const node = createNode(table.name + ` [${table.id}]`);
       node.id = table.id;
+      table._node = node;
       node.registerListener({
         selectionChanged: this.props.onSelected
       })
       node.options.color = defaultNodeColor;
 
-      if (this.props.selectedTable) {
-        node.setSelected(table.id === this.props.selectedTable.tables[0].id);
-      }
-
       nodesIndex[table.id] = node;
 
+      for (const col of table.columns) {
+        const portName = table.name + '.' + col.name;
+        const inside = col.parents.length === 0;
+        const port = new AdvancedPortModel(inside, portName, col.name);
+        port.setPk(col.is_pk);
+        port.setFk(col.is_fk);
+        port.setLocked(true);
+        node.addPort(port);
+        ports[portName] = port;
+      }
       model.addNode(node);
     }
 
-    const ports = {}
-    for (const srcTgt of this.props.links) {
-      const link = connectNodes(ports, nodesIndex[srcTgt.source], nodesIndex[srcTgt.target]);
-
-      // link.addLabel(nodesIndex[srcTgt.source].options.name + ' -> ' + nodesIndex[srcTgt.target].options.name)
-      model.addLink(link);
+    // Add ports + connect nodes
+    for (const table of this.props.tables) {
+      for (const src of table.children) {
+        const srcPort = ports[src.table_source + '.' + src.column_source];
+        const targetPort = ports[src.table_target + '.' + src.column_target];
+        const link = srcPort.link(targetPort);
+        model.addLink(link);
+      }
     }
 
     // model.setLocked(true);
@@ -218,15 +184,15 @@ class Diagram extends React.Component {
       registerDefaultDeleteItemsAction: false,
       registerDefaultZoomCanvasAction: false,
     });
+    engine.getLinkFactories().registerFactory(new AdvancedLinkFactory());
+    engine.getNodeFactories().registerFactory(new CustomNodeFactory());
     // Prevent modifying links by adding points
     engine.setMaxNumberPointsPerLink(0);
 
     engine.getActionEventBus().registerAction(new ZoomAction());
 
     engine.setModel(model);
-    this.setState({engine, nodesIndex, isLoading: false}, () => {
-      this.showHidePorts(this.state.showColumns);
-    });
+    this.setState({engine, nodesIndex, isLoading: false});
   }
 
   render() {
@@ -238,20 +204,8 @@ class Diagram extends React.Component {
       return <CircularIndeterminate size="100px"/>;
     }
 
-    for (const table of this.props.tables) {
-      const node = this.state.nodesIndex[table.id];
-      if (!node) {
-        continue;
-      }
-      if (!table._display) {
-        node.options.color = '#cccccc';
-      } else {
-        node.options.color = defaultNodeColor;
-      }
-    }
-
-    return <EngineWidget engine={this.state.engine} showColumns={this.state.showColumns} showHideColumns={this.showHideColumns}/>;
+    return <EngineWidget engine={this.state.engine} showColumns={this.state.showColumns}/>;
   }
 }
 
-export default Diagram;
+export { Diagram, defaultNodeColor };

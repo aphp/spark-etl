@@ -50,6 +50,7 @@ https://dzone.com/articles/deploy-maven-central -->
     <module>spark-postgres</module>
     <module>spark-hive</module>
     <module>spark-meta</module>
+    <module>spark-sync</module>
   </modules>
 
   <dependencies>

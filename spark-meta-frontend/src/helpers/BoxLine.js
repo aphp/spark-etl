@@ -7,9 +7,9 @@ function BoxLine(props) {
   return (
     <Box display="flex" style={{ width: '100%' }}>
       {items.map(i => {
-        return <Box m="auto" key={'box-' + i}>
-          <Typography variant={i.variant || "body1"} display="inline" bgcolor="background.paper">
-            {i.name || i}
+        return <Box m="auto" key={'box-' + i} p={2}>
+          <Typography variant={i.variant || "body1"} bgcolor="background.paper">
+            {i.text || i}
           </Typography>
         </Box>})}
     </Box>);

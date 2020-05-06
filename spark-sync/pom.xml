@@ -93,7 +93,7 @@
 		<dependency>
 			<groupId>com.lucidworks.spark</groupId>
 			<artifactId>spark-solr</artifactId>
-			<version>3.7.0-SNAPSHOT</version>		<!--3.6.7-SNAPSHOT-->
+			<version>3.7.0</version>		<!--3.6.7-SNAPSHOT-->
 			<!--<type>jar</type>-->
 			<scope>test</scope>
 		</dependency>

@@ -53,6 +53,41 @@ https://dzone.com/articles/deploy-maven-central -->
     <module>spark-sync</module>
   </modules>
 
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.frama.parisni</groupId>
+        <artifactId>spark-csv</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.frama.parisni</groupId>
+        <artifactId>spark-dataframe</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.frama.parisni</groupId>
+        <artifactId>spark-hive</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.frama.parisni</groupId>
+        <artifactId>spark-meta</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.frama.parisni</groupId>
+        <artifactId>spark-postgres</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.frama.parisni</groupId>
+        <artifactId>spark-sync</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
     <dependency>
       <groupId>com.typesafe.scala-logging</groupId>
@@ -128,13 +163,13 @@ https://dzone.com/articles/deploy-maven-central -->
     <maven.compiler.target>1.8</maven.compiler.target>
     <maven.deploy.version>3.0.0-M1</maven.deploy.version>
     <encoding>UTF-8</encoding>
-    <!-- begin module version -->
-    <spark-csv.version>0.0.1</spark-csv.version>
-    <spark-dataframe.version>0.0.4</spark-dataframe.version>
-    <spark-hive.version>0.0.1</spark-hive.version>
-    <spark-meta.version>0.0.1-SNAPSHOT</spark-meta.version>
-    <spark-postgres.version>0.0.1</spark-postgres.version>
-    <!-- end module version -->
+    <!-- begin module version
+    <spark-dataframe.version>1.0.0-SNAPSHOT</spark-dataframe.version>
+    <spark-hive.version>1.0.0-SNAPSHOT</spark-hive.version>
+    <spark-meta.version>1.0.0-SNAPSHOT</spark-meta.version>
+    <spark-postgres.version>1.0.0-SNAPSHOT</spark-postgres.version>
+    <spark-sync.version>1.0.0-SNAPSHOT</spark-sync.version>
+    end module version -->
     <scala.tools.version>2.11</scala.tools.version>
     <scala.version>2.11.11</scala.version>
     <spark.version>2.4.3</spark.version>

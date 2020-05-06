@@ -2,7 +2,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <artifactId>spark-meta</artifactId>
-    <version>${spark-meta.version}</version>
+    <version>${parent.version}</version>
     <name>Meta</name>
     <packaging>jar</packaging>
 
@@ -17,19 +17,16 @@
       <dependency>
           <groupId>io.frama.parisni</groupId>
           <artifactId>spark-dataframe</artifactId>
-          <version>${spark-dataframe.version}</version>
       </dependency>
 
       <dependency>
           <groupId>io.frama.parisni</groupId>
           <artifactId>spark-csv</artifactId>
-          <version>${spark-csv.version}</version>
       </dependency>
 
       <dependency>
           <groupId>io.frama.parisni</groupId>
           <artifactId>spark-postgres</artifactId>
-          <version>${spark-postgres.version}</version>
       </dependency>
 
       <dependency>

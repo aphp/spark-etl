@@ -3,7 +3,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <artifactId>spark-hive</artifactId>
-  <version>${spark-hive.version}</version>
+  <version>${parent.version}</version>
   <name>Spark ETL Hive</name>
   <url>https://framagit.org/parisni/spark-etl</url>
   <description/>
@@ -41,7 +41,6 @@
     <dependency>
       <groupId>io.frama.parisni</groupId>
       <artifactId>spark-dataframe</artifactId>
-      <version>${spark-dataframe.version}</version>
     </dependency>
     <dependency>
       <groupId>io.delta</groupId>

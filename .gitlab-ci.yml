@@ -28,7 +28,7 @@ job_start:
     - env | sort
     - mount
 
-job_mvn-install:
+job_install:
   tags:
     - aphp
     - cicd

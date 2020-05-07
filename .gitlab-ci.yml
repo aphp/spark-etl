@@ -1,8 +1,5 @@
 image: "$DOCKER_REGISTRY/$DOCKER_IMAGE_BUILD"
 
-services:
-  - docker:stable-dind
-
 variables:
   DEBUG: "false"
   MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"

@@ -2,7 +2,7 @@ image: "$DOCKER_REGISTRY/$DOCKER_IMAGE_BUILD"
 
 variables:
   DEBUG: "false"
-  MAVEN_OPTS: "-B -Dmaven.repo.local=.m2/repository"
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
 
 stages:
   - test

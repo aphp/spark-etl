@@ -39,16 +39,7 @@
     <plugins>
       <plugin>
         <artifactId>maven-source-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>attach-sources</id>
-            <phase>deploy</phase>
-            <goals>
-              <goal>jar-no-fork</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
+     </plugin>
       <plugin>
         <artifactId>maven-deploy-plugin</artifactId>
       </plugin>

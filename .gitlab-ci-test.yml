@@ -3,16 +3,6 @@ cache:
   paths:
     - .m2/repository
 
-job_mvn-install:
-  tags:
-    - aphp
-    - cicd
-    - rsareth
-  stage: install
-  when: always
-  script:
-    - mvn -DskipTests install
-
 job_test_spark-csv:
   dependencies:
     - job_mvn-install

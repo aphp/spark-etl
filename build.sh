@@ -2,6 +2,7 @@
 
 set -e
 
+MAVEN_CLI_OPTS="--quiet"
 if [[ "$DEBUG" = true ]]
 then
   set -x

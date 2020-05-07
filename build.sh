@@ -2,7 +2,6 @@
 
 set -e
 
-MAVEN_CLI_OPTS="-B"
 if [[ "$DEBUG" = true ]]
 then
   set -x
@@ -163,7 +162,7 @@ __prepare_release() {
     git checkout -B "${CI_BUILD_REF_NAME}"
   fi
 
-  mvn -B \
+  mvn \
     -Dpassword="${GIT_PASSWORD}" \
     -Dusername="${GIT_USER}" \
     -Drelease.name="${RELEASE_NAME}" \

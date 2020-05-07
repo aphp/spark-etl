@@ -23,6 +23,16 @@ job_start:
     - env | sort
     - mount
 
+job_mvn-install:
+  tags:
+    - aphp
+    - cicd
+    - rsareth
+  stage: install
+  when: always
+  script:
+    - mvn -DskipTests install
+
 include:
   local: '.gitlab-ci-test.yml'
 

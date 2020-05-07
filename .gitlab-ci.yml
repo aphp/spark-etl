@@ -36,6 +36,7 @@ job_install:
   stage: install
   only:
     changes:
+      - .gitlab-ci*yml
       - spark-*/pom.xml
       - spark-*/src/**/*
   script:
@@ -60,6 +61,7 @@ job_build:
       - ./spark-*/target/*.jar
   only:
     changes:
+      - .gitlab-ci*yml
       - spark-*/pom.xml
       - spark-*/src/**/*
   except:
@@ -82,6 +84,7 @@ job_deploy_artifact:
       - .m2/repository
   only:
     changes:
+      - .gitlab-ci*yml
       - spark-*/pom.xml
       - spark-*/src/**/*
   except:

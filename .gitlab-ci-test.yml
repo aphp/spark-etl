@@ -1,3 +1,8 @@
+cache:
+  key: "${CI_PROJECT_PATH_SLUG}"
+  paths:
+    - .m2/repository
+
 job_test_spark-csv:
   tags:
     - aphp

@@ -1,5 +1,6 @@
 package io.frama.parisni.spark.meta.strategy.generator
 
+import io.frama.parisni.spark.meta.Constants._
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.functions.lit
 
@@ -9,20 +10,19 @@ class DefaultTableGeneratorImpl extends TableGeneratorTrait {
   override def toString: String = "class DefaultTableGeneratorImpl extends TableGeneratorTrait"
 
   def generateDatabase(df: DataFrame): DataFrame = {
-    df.dropDuplicates("lib_database")
-      .select("lib_database")
+    df.dropDuplicates(LIB_DATABASE)
+      .select(LIB_DATABASE)
   }
 
   def generateSchema(df: DataFrame): DataFrame = {
-    df.dropDuplicates("lib_database", "lib_schema")
-      .withColumn("is_technical",
-        lit(true))
-      .select("lib_database", "lib_schema", "is_technical")
+    df.dropDuplicates(LIB_DATABASE, LIB_SCHEMA)
+      .withColumn(IS_TECHNICAL, lit(true))
+      .select(LIB_DATABASE, LIB_SCHEMA, IS_TECHNICAL)
   }
 
   //  def generateSchema(df: DataFrame): DataFrame = {
-  //    df.dropDuplicates("lib_database", "lib_schema")
-  //      .withColumn("is_technical", when(expr(
+  //    df.dropDuplicates(LIB_DATABASE, LIB_SCHEMA)
+  //      .withColumn(IS_TECHNICAL, when(expr(
   //        """
   //          (lib_database = 'pg-prod' AND lib_schema in ('eds'))
   //          OR  (lib_database = 'pg-prod' AND lib_schema in ('eds'))
@@ -33,24 +33,23 @@ class DefaultTableGeneratorImpl extends TableGeneratorTrait {
   //          """)
   //        , lit(false))
   //        .otherwise(lit(true)))
-  //      .select("lib_database", "lib_schema", "is_technical")
+  //      .select(LIB_DATABASE, LIB_SCHEMA, IS_TECHNICAL)
   //  }
 
 
   def generateTable(df: DataFrame): DataFrame = {
-    df.dropDuplicates("lib_database", "lib_schema", "lib_table")
-      .select("lib_database", "lib_schema", "lib_table", "outil_source"
-        , "count_table", "last_analyze", "typ_table", "last_commit_timestampz")
+    df.dropDuplicates(LIB_DATABASE, LIB_SCHEMA, LIB_TABLE)
+      .select(LIB_DATABASE, LIB_SCHEMA, LIB_TABLE, OUTIL_SOURCE
+        , COUNT_TABLE, LAST_ANALYSE, TYP_TABLE, LAST_COMMIT_TIMESTAMPZ)
   }
 
   def generateColumn(df: DataFrame): DataFrame = {
-    val result = df.dropDuplicates("lib_database", "lib_schema", "lib_table", "lib_column")
-      .selectExpr("lib_database", "lib_schema",
-        "lib_table", "lib_column", "typ_column", "order_column",
-        "is_mandatory", "is_pk", "is_fk", "is_index",
-        "null_ratio_column", "count_distinct_column",
-        "comment_fonctionnel_column as comment_fonctionnel")
-    result
+    df.dropDuplicates(LIB_DATABASE, LIB_SCHEMA, LIB_TABLE, LIB_COLUMN)
+      .selectExpr(LIB_DATABASE, LIB_SCHEMA,
+        LIB_TABLE, LIB_COLUMN, TYP_COLUMN, ORDER_COLUMN,
+        IS_MANDATORY, IS_PK, IS_FK, IS_INDEX,
+        NULL_RATIO_COLUMN, COUNT_DISTINCT_COLUMN,
+        s"$COMMENT_FONCTIONNEL_COLUMN as $COMMENT_FONCTIONNEL")
   }
 
 }

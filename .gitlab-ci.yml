@@ -15,7 +15,7 @@ stages:
   - deploy
   - release
 
-job:start:
+job_start:
   image: docker
   tags:
     - aphp

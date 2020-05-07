@@ -22,6 +22,20 @@ job_start:
     - env | sort
     - mount
 
+job_mvn-install:
+  image: docker
+  tags:
+    - aphp
+    - cicd
+    - rsareth
+  stage: .pre
+  cache:
+    key: "${CI_PROJECT_PATH}-${CI_JOB_NAME}"
+    paths:
+      - .m2/repository
+  script:
+    - mvn -DskipTests install
+
 job_test_spark-csv:
   tags:
     - aphp

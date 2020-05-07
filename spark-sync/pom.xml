@@ -44,7 +44,6 @@
 		<dependency>
 			<groupId>io.frama.parisni</groupId>
 			<artifactId>spark-dataframe</artifactId>
-			<version>0.0.2</version>
 		</dependency>
 		<dependency>
 			<groupId>io.delta</groupId>
@@ -54,7 +53,6 @@
 		<dependency>
 			<groupId>io.frama.parisni</groupId>
 			<artifactId>spark-postgres</artifactId>
-			<version>0.0.1</version>
 		</dependency>
 		<dependency>
 			<groupId>net.jcazevedo</groupId>

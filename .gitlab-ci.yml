@@ -27,15 +27,6 @@ job:start:
     - env | sort
     - mount
 
-job:install:
-  tags:
-    - aphp
-    - cicd
-    - rsareth
-  stage: .pre
-  script:
-    - ./build.sh --install
-
 job:test:
   tags:
     - aphp

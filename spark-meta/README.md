@@ -13,8 +13,8 @@ Usage:
 
 The entry point of this App is the MetaSync Object, which needs at least 2 input arguments:
 
-- The path to the YAML configuration file
-- The log level to apply to the spark context
+- (required) The path to the YAML configuration file
+- (optional) The log level to apply to the spark context
 
 ##### configuration file
 The YAML configuration file give information about which database, which schemas to analyse and also which extraction 
@@ -54,7 +54,7 @@ schemas:
 ```
 
 ##### Log level
-The log level should be one of this String value: ALL, DEBUG, ERROR, FATAL, INFO, OFF, TRACE, WARN
+The log level should be one of this String value: ALL, DEBUG, ERROR, FATAL, INFO (default value), OFF, TRACE, WARN
 
 ## Postgres configuration
 

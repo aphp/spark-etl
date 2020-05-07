@@ -183,6 +183,8 @@ job_build:
     - ./build.sh --package-artifact
 
 job_deploy_artifact:
+  dependencies:
+    - job_build
   tags:
     - aphp
     - cicd
@@ -202,6 +204,8 @@ job_deploy_artifact:
     - ./build.sh --deploy-artifact
 
 job_release:
+  dependencies:
+    - job_build
   tags:
     - aphp
     - cicd

@@ -6,7 +6,7 @@
 	<groupId>io.frama.parisni</groupId>
 	<artifactId>spark-sync</artifactId>
 	<version>${parent.version}</version>
-	<name>Spark ETL io.frama.parisni.spark.sync.Sync</name>
+	<name>Spark ETL Sync</name>
 	<url>https://framagit.org/parisni/spark-etl</url>
 	<description />
 	<inceptionYear>2016</inceptionYear>

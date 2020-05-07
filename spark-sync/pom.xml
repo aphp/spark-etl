@@ -5,7 +5,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>io.frama.parisni</groupId>
 	<artifactId>spark-sync</artifactId>
-	<version>${parent.version}</version>
+	<version>${project.parent.version}</version>
 	<name>Spark ETL Sync</name>
 	<url>https://framagit.org/parisni/spark-etl</url>
 	<description />

@@ -6,6 +6,10 @@ job_test_spark-csv:
     - cicd
     - rsareth
   stage: test
+  only:
+    changes:
+      - spark-csv/pom.xml
+      - spark-csv/src/**/*
   except:
     refs:
       - master
@@ -25,6 +29,10 @@ job_test_spark-dataframe:
     - cicd
     - rsareth
   stage: test
+  only:
+    changes:
+      - spark-dataframe/pom.xml
+      - spark-dataframe/src/**/*
   except:
     refs:
       - master
@@ -44,6 +52,10 @@ job_test_spark-hive:
     - cicd
     - rsareth
   stage: test
+  only:
+    changes:
+      - spark-hive/pom.xml
+      - spark-hive/src/**/*
   except:
     refs:
       - master
@@ -63,6 +75,10 @@ job_test_spark-meta:
     - cicd
     - rsareth
   stage: test
+  only:
+    changes:
+      - spark-meta/pom.xml
+      - spark-meta/src/**/*
   except:
     refs:
       - master
@@ -82,6 +98,10 @@ job_test_spark-postgres:
     - cicd
     - rsareth
   stage: test
+  only:
+    changes:
+      - spark-postgres/pom.xml
+      - spark-postgres/src/**/*
   except:
     refs:
       - master
@@ -101,6 +121,10 @@ job_test_spark-quality:
     - cicd
     - rsareth
   stage: test
+  only:
+    changes:
+      - spark-quality/pom.xml
+      - spark-quality/src/**/*
   except:
     refs:
       - master
@@ -120,6 +144,10 @@ job_test_spark-query:
     - cicd
     - rsareth
   stage: test
+  only:
+    changes:
+      - spark-query/pom.xml
+      - spark-query/src/**/*
   except:
     refs:
       - master
@@ -139,6 +167,10 @@ job_test_spark-sync:
     - cicd
     - rsareth
   stage: test
+  only:
+    changes:
+      - spark-sync/pom.xml
+      - spark-sync/src/**/*
   except:
     refs:
       - master

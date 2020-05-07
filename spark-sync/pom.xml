@@ -302,8 +302,6 @@
 				<executions>
 					<execution>
 						<phase>package</phase>
-						<goals>
-						</goals>
 					</execution>
 				</executions>
 			</plugin>

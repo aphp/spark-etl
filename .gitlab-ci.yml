@@ -169,6 +169,7 @@ job_build:
     paths:
       - .m2/repository
   artifacts:
+    expire_in: 1 week
     paths:
       - ./spark-{csv,dataframe,hive,meta,postgres,quality,query,sync}/target/*jar
   except:

@@ -5,6 +5,7 @@ variables:
   MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
 
 stages:
+  - install
   - test
   - build
   - deploy

@@ -33,7 +33,7 @@ job_mvn-install:
     paths:
       - .m2/repository
   script:
-    - mvn -DskipTests install
+    - ./build.sh --install
 
 job_test_spark-csv:
   dependencies:

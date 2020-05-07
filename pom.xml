@@ -210,11 +210,6 @@ https://dzone.com/articles/deploy-maven-central -->
               <version>3.7.1</version>
             </plugin>
             <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-project-info-reports-plugin</artifactId>
-              <version>3.0.0</version>
-            </plugin>
-            <plugin>
               <groupId>org.scalatest</groupId>
               <artifactId>scalatest-maven-plugin</artifactId>
               <version>1.0</version>

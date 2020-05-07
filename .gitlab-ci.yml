@@ -36,8 +36,12 @@ job_test_spark-csv:
     refs:
       - master
       - tags
+  artifacts:
+    paths:
+      - spark-csv/target/spark-csv-test-suites.zip
   script:
     - mvn -pl spark-csv test
+    - cd spark-csv/target/ ; zip spark-csv-test-suites.zip surefire-reports
       
 job_test_spark-dataframe:
   tags:
@@ -53,8 +57,12 @@ job_test_spark-dataframe:
     refs:
       - master
       - tags
+  artifacts:
+    paths:
+      - spark-dataframe/target/spark-dataframe-test-suites.zip
   script:
     - mvn -pl spark-dataframe test
+    - cd spark-dataframe/target/ ; zip spark-dataframe-test-suites.zip surefire-reports
 
 job_test_spark-hive:
   tags:
@@ -70,8 +78,12 @@ job_test_spark-hive:
     refs:
       - master
       - tags
+  artifacts:
+    paths:
+      - spark-hive/target/spark-hive-test-suites.zip
   script:
     - mvn -pl spark-hive test
+    - cd spark-hive/target/ ; zip spark-hive-test-suites.zip surefire-reports
 
 job_test_spark-meta:
   tags:
@@ -87,8 +99,12 @@ job_test_spark-meta:
     refs:
       - master
       - tags
+  artifacts:
+    paths:
+      - spark-meta/target/spark-meta-test-suites.zip
   script:
     - mvn -pl spark-meta test
+    - cd spark-meta/target/ ; zip spark-meta-test-suites.zip surefire-reports
 
 job_test_spark-postgres:
   tags:
@@ -104,8 +120,12 @@ job_test_spark-postgres:
     refs:
       - master
       - tags
+  artifacts:
+    paths:
+      - spark-postgres/target/spark-postgres-test-suites.zip
   script:
     - mvn -pl spark-postgres -DskipTests test
+    - cd spark-postgres/target/ ; zip spark-postgres-test-suites.zip surefire-reports
 
 job_test_spark-quality:
   tags:
@@ -121,8 +141,12 @@ job_test_spark-quality:
     refs:
       - master
       - tags
+  artifacts:
+    paths:
+      - spark-quality/target/spark-quality-test-suites.zip
   script:
     - mvn -pl spark-quality test
+    - cd spark-quality/target/ ; zip spark-quality-test-suites.zip surefire-reports
 
 job_test_spark-query:
   tags:
@@ -138,8 +162,12 @@ job_test_spark-query:
     refs:
       - master
       - tags
+  artifacts:
+    paths:
+      - spark-query/target/spark-query-test-suites.zip
   script:
     - mvn -pl spark-query -DskipTests test
+    - cd spark-query/target/ ; zip spark-query-test-suites.zip surefire-reports
 
 job_test_spark-sync:
   tags:
@@ -155,8 +183,12 @@ job_test_spark-sync:
     refs:
       - master
       - tags
+  artifacts:
+    paths:
+      - spark-sync/target/spark-sync-test-suites.zip
   script:
     - mvn -pl spark-sync -DskipTests test
+    - cd spark-sync/target/ ; zip spark-sync-test-suites.zip surefire-reports
 
 job_build:
   tags:

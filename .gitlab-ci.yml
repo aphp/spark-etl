@@ -38,7 +38,7 @@ job_test_spark-csv:
       - master
       - tags
   script:
-    - mvn -rf :spark-csv test
+    - mvn -pl spark-csv test
       
 job_test_spark-dataframe:
   tags:
@@ -51,7 +51,7 @@ job_test_spark-dataframe:
       - master
       - tags
   script:
-    - mvn -rf :spark-dataframe test
+    - mvn -pl spark-dataframe test
 
 job_test_spark-hive:
   tags:
@@ -64,7 +64,7 @@ job_test_spark-hive:
       - master
       - tags
   script:
-    - mvn -rf :spark-hive test
+    - mvn -pl spark-hive test
 
 job_test_spark-meta:
   tags:
@@ -77,7 +77,7 @@ job_test_spark-meta:
       - master
       - tags
   script:
-    - mvn -rf :spark-meta test
+    - mvn -pl spark-meta test
 
 job_test_spark-postgres:
   tags:
@@ -90,7 +90,7 @@ job_test_spark-postgres:
       - master
       - tags
   script:
-    - mvn -rf :spark-postgres test
+    - mvn -pl spark-postgres test
 
 job_test_spark-quality:
   tags:
@@ -103,7 +103,7 @@ job_test_spark-quality:
       - master
       - tags
   script:
-    - mvn -rf :spark-quality test
+    - mvn -pl spark-quality test
 
 job_test_spark-query:
   tags:
@@ -116,7 +116,7 @@ job_test_spark-query:
       - master
       - tags
   script:
-    - mvn -rf :spark-query test
+    - mvn -pl spark-query test
 
 job_test_spark-sync:
   tags:
@@ -129,7 +129,7 @@ job_test_spark-sync:
       - master
       - tags
   script:
-    - mvn -rf :spark-sync test
+    - mvn -pl spark-sync test
 
 job_build:
   tags:

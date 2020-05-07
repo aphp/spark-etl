@@ -36,7 +36,7 @@ job_mvn-install:
   stage: install
   when: always
   script:
-    - mvn -DskipTests install
+    - ./build.sh --install
 
 include:
   local: '.gitlab-ci-test.yml'

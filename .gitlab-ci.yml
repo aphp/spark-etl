@@ -23,7 +23,6 @@ job_start:
     - mount
 
 job_mvn-install:
-  image: docker
   tags:
     - aphp
     - cicd

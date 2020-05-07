@@ -37,6 +37,7 @@ job_install:
   only:
     changes:
       - .gitlab-ci*yml
+      - build.sh
       - pom.xml
       - spark-*/pom.xml
       - spark-*/src/**/*
@@ -63,6 +64,7 @@ job_build:
   only:
     changes:
       - .gitlab-ci*yml
+      - build.sh
       - pom.xml
       - spark-*/pom.xml
       - spark-*/src/**/*
@@ -87,6 +89,7 @@ job_deploy_artifact:
   only:
     changes:
       - .gitlab-ci*yml
+      - build.sh
       - pom.xml
       - spark-*/pom.xml
       - spark-*/src/**/*

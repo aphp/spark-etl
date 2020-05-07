@@ -9,6 +9,7 @@ job_test_spark-csv:
   only:
     changes:
       - .gitlab-ci*yml
+      - build.sh
       - pom.xml
       - spark-csv/pom.xml
       - spark-csv/src/**/*
@@ -34,6 +35,7 @@ job_test_spark-dataframe:
   only:
     changes:
       - .gitlab-ci*yml
+      - build.sh
       - pom.xml
       - spark-dataframe/pom.xml
       - spark-dataframe/src/**/*
@@ -59,6 +61,7 @@ job_test_spark-hive:
   only:
     changes:
       - .gitlab-ci*yml
+      - build.sh
       - pom.xml
       - spark-hive/pom.xml
       - spark-hive/src/**/*
@@ -84,6 +87,7 @@ job_test_spark-meta:
   only:
     changes:
       - .gitlab-ci*yml
+      - build.sh
       - pom.xml
       - spark-meta/pom.xml
       - spark-meta/src/**/*
@@ -109,6 +113,7 @@ job_test_spark-postgres:
   only:
     changes:
       - .gitlab-ci*yml
+      - build.sh
       - pom.xml
       - spark-postgres/pom.xml
       - spark-postgres/src/**/*
@@ -134,6 +139,7 @@ job_test_spark-quality:
   only:
     changes:
       - .gitlab-ci*yml
+      - build.sh
       - pom.xml
       - spark-quality/pom.xml
       - spark-quality/src/**/*
@@ -159,6 +165,7 @@ job_test_spark-query:
   only:
     changes:
       - .gitlab-ci*yml
+      - build.sh
       - pom.xml
       - spark-query/pom.xml
       - spark-query/src/**/*
@@ -184,6 +191,7 @@ job_test_spark-sync:
   only:
     changes:
       - .gitlab-ci*yml
+      - build.sh
       - pom.xml
       - spark-sync/pom.xml
       - spark-sync/src/**/*

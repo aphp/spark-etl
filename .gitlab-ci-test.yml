@@ -3,7 +3,19 @@ cache:
   paths:
     - .m2/repository
 
+job_mvn-install:
+  tags:
+    - aphp
+    - cicd
+    - rsareth
+  stage: install
+  when: always
+  script:
+    - mvn -DskipTests install
+
 job_test_spark-csv:
+  dependencies:
+    - job_mvn-install
   tags:
     - aphp
     - cicd
@@ -21,6 +33,8 @@ job_test_spark-csv:
     - cd spark-csv/target/ ; zip spark-csv-test-suites.zip surefire-reports
 
 job_test_spark-dataframe:
+  dependencies:
+    - job_mvn-install
   tags:
     - aphp
     - cicd
@@ -38,6 +52,8 @@ job_test_spark-dataframe:
     - cd spark-dataframe/target/ ; zip spark-dataframe-test-suites.zip surefire-reports
 
 job_test_spark-hive:
+  dependencies:
+    - job_mvn-install
   tags:
     - aphp
     - cicd
@@ -55,6 +71,8 @@ job_test_spark-hive:
     - cd spark-hive/target/ ; zip spark-hive-test-suites.zip surefire-reports
 
 job_test_spark-meta:
+  dependencies:
+    - job_mvn-install
   tags:
     - aphp
     - cicd
@@ -72,6 +90,8 @@ job_test_spark-meta:
     - cd spark-meta/target/ ; zip spark-meta-test-suites.zip surefire-reports
 
 job_test_spark-postgres:
+  dependencies:
+    - job_mvn-install
   tags:
     - aphp
     - cicd
@@ -89,6 +109,8 @@ job_test_spark-postgres:
     - cd spark-postgres/target/ ; zip spark-postgres-test-suites.zip surefire-reports
 
 job_test_spark-quality:
+  dependencies:
+    - job_mvn-install
   tags:
     - aphp
     - cicd
@@ -106,6 +128,8 @@ job_test_spark-quality:
     - cd spark-quality/target/ ; zip spark-quality-test-suites.zip surefire-reports
 
 job_test_spark-query:
+  dependencies:
+    - job_mvn-install
   tags:
     - aphp
     - cicd
@@ -123,6 +147,8 @@ job_test_spark-query:
     - cd spark-query/target/ ; zip spark-query-test-suites.zip surefire-reports
 
 job_test_spark-sync:
+  dependencies:
+    - job_mvn-install
   tags:
     - aphp
     - cicd

@@ -16,7 +16,7 @@ job_test_spark-csv:
     paths:
       - spark-csv/target/spark-csv-test-suites.zip
   script:
-    - mvn -pl spark-csv -DskipTests install
+    - mvn -pl spark-csv -DskipTests -B install
     - mvn -pl spark-csv test
     - cd spark-csv/target/ ; zip spark-csv-test-suites.zip surefire-reports
 
@@ -38,7 +38,7 @@ job_test_spark-dataframe:
     paths:
       - spark-dataframe/target/spark-dataframe-test-suites.zip
   script:
-    - mvn -pl spark-dataframe -DskipTests install
+    - mvn -pl spark-dataframe -DskipTests -B install
     - mvn -pl spark-dataframe install test
     - cd spark-dataframe/target/ ; zip spark-dataframe-test-suites.zip surefire-reports
 
@@ -60,7 +60,7 @@ job_test_spark-hive:
     paths:
       - spark-hive/target/spark-hive-test-suites.zip
   script:
-    - mvn -pl spark-hive -DskipTests install
+    - mvn -pl spark-hive -DskipTests -B install
     - mvn -pl spark-hive install test
     - cd spark-hive/target/ ; zip spark-hive-test-suites.zip surefire-reports
 
@@ -82,7 +82,7 @@ job_test_spark-meta:
     paths:
       - spark-meta/target/spark-meta-test-suites.zip
   script:
-    - mvn -pl spark-meta -DskipTests install
+    - mvn -pl spark-meta -DskipTests -B install
     - mvn -pl spark-meta install test
     - cd spark-meta/target/ ; zip spark-meta-test-suites.zip surefire-reports
 
@@ -104,7 +104,7 @@ job_test_spark-postgres:
     paths:
       - spark-postgres/target/spark-postgres-test-suites.zip
   script:
-    - mvn -pl spark-postgres -DskipTests install
+    - mvn -pl spark-postgres -DskipTests -B install
     - mvn -pl spark-postgres -DskipTests test
     - cd spark-postgres/target/ ; zip spark-postgres-test-suites.zip surefire-reports
 
@@ -126,7 +126,7 @@ job_test_spark-quality:
     paths:
       - spark-quality/target/spark-quality-test-suites.zip
   script:
-    - mvn -pl spark-quality -DskipTests install
+    - mvn -pl spark-quality -DskipTests -B install
     - mvn -pl spark-quality test
     - cd spark-quality/target/ ; zip spark-quality-test-suites.zip surefire-reports
 
@@ -148,7 +148,7 @@ job_test_spark-query:
     paths:
       - spark-query/target/spark-query-test-suites.zip
   script:
-    - mvn -pl spark-query -DskipTests install
+    - mvn -pl spark-query -DskipTests -B install
     - mvn -pl spark-query -DskipTests test
     - cd spark-query/target/ ; zip spark-query-test-suites.zip surefire-reports
 
@@ -170,6 +170,6 @@ job_test_spark-sync:
     paths:
       - spark-sync/target/spark-sync-test-suites.zip
   script:
-    - mvn -pl spark-sync -DskipTests install
+    - mvn -pl spark-sync -DskipTests -B install
     - mvn -pl spark-sync -DskipTests test
     - cd spark-sync/target/ ; zip spark-sync-test-suites.zip surefire-reports

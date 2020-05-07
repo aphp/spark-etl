@@ -236,8 +236,7 @@ https://dzone.com/articles/deploy-maven-central -->
                     <!-- begin removed for livy-->
                     <exclude>org.scala-lang:scala-library</exclude>
                     <exclude>org.scala-lang:scala-reflect</exclude>
-                    <exclude>org.scala-lang.modules:scala-parser-combinators_${scala.tools.version}
-                    </exclude>
+                    <exclude>org.scala-lang.modules:scala-parser-combinators_${scala.tools.version}</exclude>
                     <exclude>org.postgresql:postgresql</exclude>
                     <!-- end   removed for livy-->
                     <exclude>log4j:log4j</exclude>
@@ -331,6 +330,16 @@ https://dzone.com/articles/deploy-maven-central -->
               </goals>
             </execution>
           </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.sonatype.plugins</groupId>
+          <artifactId>nexus-staging-maven-plugin</artifactId>
+          <version>1.6.8</version>
+          <configuration>
+            <serverId>nexus</serverId>
+            <nexusUrl>http://10.188.192.40:8081/</nexusUrl>
+            <skipStaging>true</skipStaging>
+          </configuration>
         </plugin>
       </plugins>
     </pluginManagement>

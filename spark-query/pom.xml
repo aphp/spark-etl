@@ -31,8 +31,7 @@
       <email>nicolas.paris@riseup.net</email>
     </developer>
   </developers>
-  <dependencies>
-  </dependencies>
+
   <build>
     <sourceDirectory>src/main/scala</sourceDirectory>
     <testSourceDirectory>src/test/scala</testSourceDirectory>

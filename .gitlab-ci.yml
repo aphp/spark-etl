@@ -90,7 +90,7 @@ job_test_spark-postgres:
       - master
       - tags
   script:
-    - mvn -pl spark-postgres test
+    - mvn -pl spark-postgres -DskipTests test
 
 job_test_spark-quality:
   tags:
@@ -116,7 +116,7 @@ job_test_spark-query:
       - master
       - tags
   script:
-    - mvn -pl spark-query test
+    - mvn -pl spark-query -DskipTests test
 
 job_test_spark-sync:
   tags:
@@ -129,7 +129,7 @@ job_test_spark-sync:
       - master
       - tags
   script:
-    - mvn -pl spark-sync test
+    - mvn -pl spark-sync -DskipTests test
 
 job_build:
   tags:

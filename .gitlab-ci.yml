@@ -34,7 +34,10 @@ job_install:
     - cicd
     - rsareth
   stage: install
-  when: always
+  only:
+    changes:
+      - spark-*/pom.xml
+      - spark-*/src/**/*
   script:
     - ./build.sh --install
 
@@ -55,6 +58,10 @@ job_build:
     expire_in: 1 week
     paths:
       - ./spark-*/target/*.jar
+  only:
+    changes:
+      - spark-*/pom.xml
+      - spark-*/src/**/*
   except:
     refs:
       - master
@@ -73,6 +80,10 @@ job_deploy_artifact:
     key: "${CI_PROJECT_PATH}-${CI_JOB_NAME}"
     paths:
       - .m2/repository
+  only:
+    changes:
+      - spark-*/pom.xml
+      - spark-*/src/**/*
   except:
     refs:
       - master

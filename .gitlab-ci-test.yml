@@ -29,7 +29,7 @@ job_test_spark-dataframe:
     paths:
       - spark-dataframe/target/spark-dataframe-test-suites.zip
   script:
-    - mvn -pl spark-dataframe install test
+    - mvn -pl spark-dataframe test
     - cd spark-dataframe/target/ ; zip spark-dataframe-test-suites.zip surefire-reports
 
 job_test_spark-hive:
@@ -46,8 +46,7 @@ job_test_spark-hive:
     paths:
       - spark-hive/target/spark-hive-test-suites.zip
   script:
-    - mvn -pl spark-hive -DskipTests install
-    - mvn -pl spark-hive install test
+    - mvn -pl spark-hive test
     - cd spark-hive/target/ ; zip spark-hive-test-suites.zip surefire-reports
 
 job_test_spark-meta:
@@ -64,7 +63,7 @@ job_test_spark-meta:
     paths:
       - spark-meta/target/spark-meta-test-suites.zip
   script:
-    - mvn -pl spark-meta install test
+    - mvn -pl spark-meta test
     - cd spark-meta/target/ ; zip spark-meta-test-suites.zip surefire-reports
 
 job_test_spark-postgres:

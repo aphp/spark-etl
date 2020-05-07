@@ -4,6 +4,11 @@ variables:
   DEBUG: "false"
   MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
 
+cache:
+  key: "${CI_PROJECT_PATH_SLUG}"
+  paths:
+    - .m2/repository
+
 stages:
   - install
   - test

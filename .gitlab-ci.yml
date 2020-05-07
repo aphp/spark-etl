@@ -22,19 +22,6 @@ job_start:
     - env | sort
     - mount
 
-job_mvn-install:
-  tags:
-    - aphp
-    - cicd
-    - rsareth
-  stage: .pre
-  cache:
-    key: "${CI_PROJECT_PATH}-${CI_JOB_NAME}"
-    paths:
-      - .m2/repository
-  script:
-    - ./build.sh --install
-
 include:
   local: '.gitlab-ci-test.yml'
 

@@ -6,7 +6,7 @@
   <version>${parent.version}</version>
   <packaging>jar</packaging>
   <url>https://framagit.org/parisni/spark-etl</url>
-  <name>Spark ETL Dataframe</name>
+  <name>Spark ETL Quality</name>
   <description/>
   <licenses>
     <license>

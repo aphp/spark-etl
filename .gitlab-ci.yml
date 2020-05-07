@@ -4,11 +4,6 @@ variables:
   DEBUG: "false"
   MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
 
-cache:
-  key: "rsareth-aphp"
-  paths:
-    - .m2/repository
-
 stages:
   - test
   - build

@@ -1,35 +1,36 @@
 package io.frama.parisni.spark.meta.strategy.extractor
 
 import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.functions.{col, expr, lit, regexp_extract, regexp_replace, when}
+import org.apache.spark.sql.functions.{col, lit, regexp_extract, regexp_replace, when}
+import io.frama.parisni.spark.meta.Constants._
 
 class DefaultFeatureExtractImpl extends FeatureExtractTrait {
 
   override def toString: String = "class DefaultFeatureExtractImpl extends FeatureExtractTrait"
 
   def extractSource(df: DataFrame): DataFrame = {
-    df.withColumn("outil_source", regexp_extract(col("lib_table"), "^([^_]+)_.*$", 1))
-      .withColumn("outil_source", when(col("outil_source").isin("orbis", "hegp", "mediweb", "phedra", "glims", "general", "arem", "ems"), col("outil_source")).otherwise("orbis"))
+    df.withColumn(OUTIL_SOURCE, regexp_extract(col("lib_table"), "^([^_]+)_.*$", 1))
+      .withColumn(OUTIL_SOURCE, when(col(OUTIL_SOURCE).isin("orbis", "hegp", "mediweb", "phedra", "glims", "general", "arem", "ems"), col(OUTIL_SOURCE)).otherwise("orbis"))
   }
 
 
   def extractPrimaryKey(df: DataFrame): DataFrame = {
-    df.withColumn("is_pk", when((col("lib_column").rlike("^ids_")
-      && col("order_column") === lit(1))
-      || (col("lib_schema").rlike("omop")
-      && col("lib_column").rlike("_id$")
-      && col("order_column") === lit(1))
+    df.withColumn(IS_PK, when((col(LIB_COLUMN).rlike("^ids_")
+      && col(ORDER_COLUMN) === lit(1))
+      || (col(LIB_SCHEMA).rlike("omop")
+      && col(LIB_COLUMN).rlike("_id$")
+      && col(ORDER_COLUMN) === lit(1))
       , lit(true))
       .otherwise(lit(false)))
   }
 
   def extractForeignKey(df: DataFrame): DataFrame = {
-    df.withColumn("is_fk"
-      , when((col("lib_column").rlike("^ids_")
-        && col("order_column") =!= lit(1))
-        || (col("lib_schema").rlike("omop")
-        && col("lib_column").rlike("_id$")
-        && col("order_column") =!= lit(1)
+    df.withColumn(IS_FK
+      , when((col(LIB_COLUMN).rlike("^ids_")
+        && col(ORDER_COLUMN) =!= lit(1))
+        || (col(LIB_SCHEMA).rlike("omop")
+        && col(LIB_COLUMN).rlike("_id$")
+        && col(ORDER_COLUMN) =!= lit(1)
         )
         , lit(true))
         .otherwise(lit(false)))
@@ -70,4 +71,5 @@ class DefaultFeatureExtractImpl extends FeatureExtractTrait {
         , "t.lib_column as lib_column_target"
         , "'FK' as lib_reference")
   }
+
 }

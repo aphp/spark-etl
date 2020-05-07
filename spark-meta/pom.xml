@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>spark-meta</artifactId>
     <version>${parent.version}</version>
-    <name>Meta</name>
+    <name>Spark ETL Meta</name>
     <packaging>jar</packaging>
 
     <parent>

@@ -173,6 +173,9 @@ job_build:
     key: "${CI_PROJECT_PATH}-${CI_JOB_NAME}"
     paths:
       - .m2/repository
+  artifacts:
+    paths:
+      - ./spark-{csv,dataframe,hive,meta,postgres,quality,query,sync}/target/*jar
   except:
     refs:
       - master

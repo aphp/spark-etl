@@ -87,8 +87,6 @@ job_test_spark-meta:
     - cd spark-meta/target/ ; zip spark-meta-test-suites.zip surefire-reports
 
 job_test_spark-postgres:
-  dependencies:
-    - job_mvn-install
   tags:
     - aphp
     - cicd

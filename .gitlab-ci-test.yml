@@ -20,7 +20,7 @@ job_test_spark-csv:
       - spark-csv/target/spark-csv-test-suites.zip
   script:
     - mvn -pl spark-csv test
-    - test -d spark-csv/target/surefire-reports && (cd spark-csv/target/ ; zip spark-csv-test-suites.zip surefire-reports) || :;
+    - test -d spark-csv/target/surefire-reports && (cd spark-csv/target/ ; zip -r spark-csv-test-suites.zip surefire-reports) || :;
 
 job_test_spark-dataframe:
   dependencies:
@@ -44,7 +44,7 @@ job_test_spark-dataframe:
       - spark-dataframe/target/spark-dataframe-test-suites.zip
   script:
     - mvn -pl spark-dataframe test
-    - test -d spark-dataframe/target/surefire-reports && (cd spark-dataframe/target/ ; zip spark-dataframe-test-suites.zip surefire-reports) || :;
+    - test -d spark-dataframe/target/surefire-reports && (cd spark-dataframe/target/ ; zip -r spark-dataframe-test-suites.zip surefire-reports) || :;
 
 job_test_spark-hive:
   dependencies:
@@ -68,7 +68,7 @@ job_test_spark-hive:
       - spark-hive/target/spark-hive-test-suites.zip
   script:
     - mvn -pl spark-hive test
-    - test -d spark-hive/target/surefire-reports && (cd spark-hive/target/ ; zip spark-hive-test-suites.zip surefire-reports) || :;
+    - test -d spark-hive/target/surefire-reports && (cd spark-hive/target/ ; zip -r spark-hive-test-suites.zip surefire-reports) || :;
 
 job_test_spark-meta:
   dependencies:
@@ -92,7 +92,7 @@ job_test_spark-meta:
       - spark-meta/target/spark-meta-test-suites.zip
   script:
     - mvn -pl spark-meta test
-    - test -d spark-meta/target/surefire-reports && (cd spark-meta/target/ ; zip spark-meta-test-suites.zip surefire-reports) || :;
+    - test -d spark-meta/target/surefire-reports && (cd spark-meta/target/ ; zip -r spark-meta-test-suites.zip surefire-reports) || :;
 
 job_test_spark-postgres:
   dependencies:
@@ -116,7 +116,7 @@ job_test_spark-postgres:
       - spark-postgres/target/spark-postgres-test-suites.zip
   script:
     - mvn -pl spark-postgres -DskipTests test
-    - test -d spark-postgres/target/surefire-reports && (cd spark-postgres/target/ ; zip spark-postgres-test-suites.zip surefire-reports) || :;
+    - test -d spark-postgres/target/surefire-reports && (cd spark-postgres/target/ ; zip -r spark-postgres-test-suites.zip surefire-reports) || :;
 
 job_test_spark-quality:
   dependencies:
@@ -140,7 +140,7 @@ job_test_spark-quality:
       - spark-quality/target/spark-quality-test-suites.zip
   script:
     - mvn -pl spark-quality test
-    - test -d spark-quality/target/surefire-reports && (cd spark-quality/target/ ; zip spark-quality-test-suites.zip surefire-reports) || :;
+    - test -d spark-quality/target/surefire-reports && (cd spark-quality/target/ ; zip -r spark-quality-test-suites.zip surefire-reports) || :;
 
 job_test_spark-query:
   dependencies:
@@ -164,7 +164,7 @@ job_test_spark-query:
       - spark-query/target/spark-query-test-suites.zip
   script:
     - mvn -pl spark-query -DskipTests test
-    - test -d spark-query/target/surefire-reports && (cd spark-query/target/ ; zip spark-query-test-suites.zip surefire-reports) || :;
+    - test -d spark-query/target/surefire-reports && (cd spark-query/target/ ; zip -r spark-query-test-suites.zip surefire-reports) || :;
 
 job_test_spark-sync:
   dependencies:
@@ -188,4 +188,4 @@ job_test_spark-sync:
       - spark-sync/target/spark-sync-test-suites.zip
   script:
     - mvn -pl spark-sync -DskipTests test
-    - test -d spark-sync/target/surefire-reports && (cd spark-sync/target/ ; zip spark-sync-test-suites.zip surefire-reports) || :;
+    - test -d spark-sync/target/surefire-reports && (cd spark-sync/target/ ; zip -r spark-sync-test-suites.zip surefire-reports) || :;

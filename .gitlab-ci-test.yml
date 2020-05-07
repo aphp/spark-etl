@@ -1,0 +1,183 @@
+job_test_spark-csv:
+  dependencies:
+    - job_mvn-install
+  tags:
+    - aphp
+    - cicd
+    - rsareth
+  stage: test
+  cache:
+    key: "${CI_PROJECT_PATH}-${CI_JOB_NAME}"
+    paths:
+      - .m2/repository
+  except:
+    refs:
+      - master
+      - tags
+  artifacts:
+    paths:
+      - spark-csv/target/spark-csv-test-suites.zip
+  script:
+    - mvn -pl spark-csv test
+    - cd spark-csv/target/ ; zip spark-csv-test-suites.zip surefire-reports
+
+job_test_spark-dataframe:
+  dependencies:
+    - job_mvn-install
+  tags:
+    - aphp
+    - cicd
+    - rsareth
+  stage: test
+  cache:
+    key: "${CI_PROJECT_PATH}-${CI_JOB_NAME}"
+    paths:
+      - .m2/repository
+  except:
+    refs:
+      - master
+      - tags
+  artifacts:
+    paths:
+      - spark-dataframe/target/spark-dataframe-test-suites.zip
+  script:
+    - mvn -pl spark-dataframe test
+    - cd spark-dataframe/target/ ; zip spark-dataframe-test-suites.zip surefire-reports
+
+job_test_spark-hive:
+  dependencies:
+    - job_mvn-install
+  tags:
+    - aphp
+    - cicd
+    - rsareth
+  stage: test
+  cache:
+    key: "${CI_PROJECT_PATH}-${CI_JOB_NAME}"
+    paths:
+      - .m2/repository
+  except:
+    refs:
+      - master
+      - tags
+  artifacts:
+    paths:
+      - spark-hive/target/spark-hive-test-suites.zip
+  script:
+    - mvn -pl spark-hive test
+    - cd spark-hive/target/ ; zip spark-hive-test-suites.zip surefire-reports
+
+job_test_spark-meta:
+  dependencies:
+    - job_mvn-install
+  tags:
+    - aphp
+    - cicd
+    - rsareth
+  stage: test
+  cache:
+    key: "${CI_PROJECT_PATH}-${CI_JOB_NAME}"
+    paths:
+      - .m2/repository
+  except:
+    refs:
+      - master
+      - tags
+  artifacts:
+    paths:
+      - spark-meta/target/spark-meta-test-suites.zip
+  script:
+    - mvn -pl spark-meta test
+    - cd spark-meta/target/ ; zip spark-meta-test-suites.zip surefire-reports
+
+job_test_spark-postgres:
+  dependencies:
+    - job_mvn-install
+  tags:
+    - aphp
+    - cicd
+    - rsareth
+  stage: test
+  cache:
+    key: "${CI_PROJECT_PATH}-${CI_JOB_NAME}"
+    paths:
+      - .m2/repository
+  except:
+    refs:
+      - master
+      - tags
+  artifacts:
+    paths:
+      - spark-postgres/target/spark-postgres-test-suites.zip
+  script:
+    - mvn -pl spark-postgres -DskipTests test
+    - cd spark-postgres/target/ ; zip spark-postgres-test-suites.zip surefire-reports
+
+job_test_spark-quality:
+  dependencies:
+    - job_mvn-install
+  tags:
+    - aphp
+    - cicd
+    - rsareth
+  stage: test
+  cache:
+    key: "${CI_PROJECT_PATH}-${CI_JOB_NAME}"
+    paths:
+      - .m2/repository
+  except:
+    refs:
+      - master
+      - tags
+  artifacts:
+    paths:
+      - spark-quality/target/spark-quality-test-suites.zip
+  script:
+    - mvn -pl spark-quality test
+    - cd spark-quality/target/ ; zip spark-quality-test-suites.zip surefire-reports
+
+job_test_spark-query:
+  dependencies:
+    - job_mvn-install
+  tags:
+    - aphp
+    - cicd
+    - rsareth
+  stage: test
+  cache:
+    key: "${CI_PROJECT_PATH}-${CI_JOB_NAME}"
+    paths:
+      - .m2/repository
+  except:
+    refs:
+      - master
+      - tags
+  artifacts:
+    paths:
+      - spark-query/target/spark-query-test-suites.zip
+  script:
+    - mvn -pl spark-query -DskipTests test
+    - cd spark-query/target/ ; zip spark-query-test-suites.zip surefire-reports
+
+job_test_spark-sync:
+  dependencies:
+    - job_mvn-install
+  tags:
+    - aphp
+    - cicd
+    - rsareth
+  stage: test
+  cache:
+    key: "${CI_PROJECT_PATH}-${CI_JOB_NAME}"
+    paths:
+      - .m2/repository
+  except:
+    refs:
+      - master
+      - tags
+  artifacts:
+    paths:
+      - spark-sync/target/spark-sync-test-suites.zip
+  script:
+    - mvn -pl spark-sync -DskipTests test
+    - cd spark-sync/target/ ; zip spark-sync-test-suites.zip surefire-reports

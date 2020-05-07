@@ -51,7 +51,6 @@
     <dependency>
       <groupId>io.frama.parisni</groupId>
       <artifactId>spark-postgres</artifactId>
-      <version>0.0.1</version>
     </dependency>
     <dependency>
       <groupId>net.jcazevedo</groupId>

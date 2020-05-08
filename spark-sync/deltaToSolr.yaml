@@ -1,7 +1,6 @@
 jobName:        Delta To Solr
 timestampLastColumn:  date_update
-timestampColumns: [date_update, date_update2, date_update3]
-dateMax:  "2016-01-01 00:00:00"
+dateMax:  "2019-03-01 00:00:00"
 tables:
     - tableSolr: target
       tableDelta: source

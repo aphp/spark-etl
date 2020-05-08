@@ -6,15 +6,12 @@ import io.frama.parisni.spark.sync.conf.DeltaConf
 import io.frama.parisni.spark.sync.copy.DeltaToSolrYaml.Database
 import net.jcazevedo.moultingyaml._
 import org.apache.spark.sql.DataFrame
-//import org.scalatest.FunSuite
 
 import scala.io.Source
 
-class DeltaToSolrTest extends SolrConfTest{
+class DeltaToSolrTest extends SolrConfTest {
 
-  //@Test
-  def testDelta2Solr(): Unit = {
-    //println("io.frama.parisni.spark.sync.Sync Delta2Solr")
+  test("test delta to solr based on a max") {
 
     import spark.implicits._
 
@@ -34,29 +31,26 @@ class DeltaToSolrTest extends SolrConfTest{
           Timestamp.valueOf("2016-06-16 00:00:00"), Timestamp.valueOf("2016-06-16 00:00:00")) ::
         Nil).toDF("id", "pk2", "details", "date_update", "date_update2", "date_update3")
 
-    //val sourceDeltaTable = "/tmp/source"
-    val dc:DeltaConf = new DeltaConf(Map("T_LOAD_TYPE" -> "full", "S_TABLE_TYPE" -> "delta", "T_TABLE_TYPE" -> "postgres"), List(""), List(""))
+    val dc: DeltaConf = new DeltaConf(Map("T_LOAD_TYPE" -> "full", "S_TABLE_TYPE" -> "delta", "T_TABLE_TYPE" -> "postgres"), List(""), List(""))
     dc.writeSource(spark, s_inputDF, "/tmp", "source", "full")
-    /*s_inputDF.write.format("delta")
-      .mode("overwrite")
-      .save(sourceDeltaTable)*/
 
     startSolrCloudCluster
-    //createSolrTables
 
     val filename = "deltaToSolr.yaml"
     val ymlTxt = Source.fromFile(filename).mkString
     val yaml = ymlTxt.stripMargin.parseYaml
     val palette = yaml.convertTo[Database]
 
-    for (pal <- palette.tables.getOrElse(Nil)) {
-      println("bob" + pal.toString())
-    }
-    println(palette.toYaml.prettyPrint)
-
     println("delta2Solr ------------------")
-    val d2solr2:DeltaToSolr2 = new DeltaToSolr2
+    val d2solr2: DeltaToSolr = new DeltaToSolr
     d2solr2.sync(spark, palette, zkHost)
+
+    import com.lucidworks.spark.util.SolrDataFrameImplicits._
+    val options = Map("collection" -> "target", "zkhost" -> zkHost.toString, "commit_within" -> "5000", "fields" -> "id,pk2,date_update", "request_handler" -> "/export") //, "soft_commit_secs"-> "10")
+    s_inputDF.write.options(options).solr("target")
+
+
+    assert(spark.read.solr("target", options).count == 2L)
 
   }
 }

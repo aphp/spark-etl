@@ -10,6 +10,7 @@ import org.apache.spark.sql.{Column, DataFrame, Row, SparkSession}
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
+import io.delta.tables.DeltaTable
 
 
 /** Factory for [[io.frama.parisni.spark.dataframe.DFTool]] instances. */
@@ -369,5 +370,40 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
 
   def toDate(c: Column, format: String): Column = {
     expr("TO_timestamp(CAST(UNIX_TIMESTAMP(`" + c.toString() + "`, '" + format + "') AS TIMESTAMP))")
+  }
+
+  def deltaScd1(candidate: DataFrame, table: String, primaryKeys: List[String], deltaPath: String) = {
+
+    val query = primaryKeys.map(x => (f"df.${x} = dt.${x}")).mkString(" AND ")
+    if (!tableExists(candidate.sparkSession, deltaPath, table)) {
+      logger.warn("Table %s does not yet exists".format(deltaPath + table))
+      candidate.write.mode(org.apache.spark.sql.SaveMode.Overwrite).format("delta").save(deltaPath + table)
+    }
+    else {
+      logger.warn("Merging table %s with table of %d rows".format(deltaPath + table, candidate.count))
+      DeltaTable.forPath(candidate.sparkSession, deltaPath + table)
+        .as("t")
+        .merge(
+          candidate.as("s"), query)
+        .whenMatched("s.hash <> t.hash")
+        .updateAll()
+        .whenNotMatched()
+        .insertAll()
+        .execute()
+    }
+  }
+
+  def tableExists(spark: SparkSession, deltaPath: String, tablePath: String): Boolean = {
+    val defaultFSConf = spark.sessionState.newHadoopConf().get("fs.defaultFS")
+    val fsConf = if (deltaPath.startsWith("file:")) {
+      "file:///"
+    } else {
+      defaultFSConf
+    }
+    val conf = new Configuration()
+    conf.set("fs.defaultFS", fsConf)
+    val fs = FileSystem.get(conf)
+
+    fs.exists(new Path(deltaPath + tablePath))
   }
 }

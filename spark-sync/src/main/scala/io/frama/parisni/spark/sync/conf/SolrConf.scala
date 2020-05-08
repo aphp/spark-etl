@@ -69,13 +69,17 @@ class SolrConf(config: Map[String, String], dates: List[String], pks: List[Strin
 
   def getDateFields = dates
 
-  override def getDateMax(spark: SparkSession): String =
-    if (config.get(T_DATE_MAX).isDefined) config.get(T_DATE_MAX).getOrElse("")
-    else if (!checkCollectionExists(getTargetTableName.getOrElse(""), getZkHost.getOrElse(""))) {
-      "1900-01-01 00:00:00"
+  override def getDateMax(spark: SparkSession): String = {
+
+    val result = config.get(T_DATE_MAX) match {
+      case Some("") => if (!checkCollectionExists(getTargetTableName.getOrElse(""), getZkHost.getOrElse(""))) "1900-01-01 00:00:00"
+      else calculDateMax(spark, getZkHost.getOrElse(""), getTargetTableType.getOrElse(""), getTargetTableName.getOrElse(""), getDateFields)
+      case Some(_) => config.get(T_DATE_MAX).get
     }
-    else
-      calculDateMax(spark, getZkHost.getOrElse(""), getTargetTableType.getOrElse(""), getTargetTableName.getOrElse(""), getDateFields)
+    logger.warn(s"getting the maxdate : ${result}")
+    result
+
+  }
 
   // Write to Solr Collection
   def writeSource(s_df: DataFrame, zkhost: String, collection: String, load_type: String = "full"): Unit = {

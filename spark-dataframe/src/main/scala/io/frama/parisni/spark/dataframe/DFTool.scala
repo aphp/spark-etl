@@ -374,7 +374,7 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
 
   def deltaScd1(candidate: DataFrame, table: String, primaryKeys: List[String], deltaPath: String) = {
 
-    val query = primaryKeys.map(x => (f"df.${x} = dt.${x}")).mkString(" AND ")
+    val query = primaryKeys.map(x => (f"t.${x} = s.${x}")).mkString(" AND ")
     if (!tableExists(candidate.sparkSession, deltaPath, table)) {
       logger.warn("Table %s does not yet exists".format(deltaPath + table))
       candidate.write.mode(org.apache.spark.sql.SaveMode.Overwrite).format("delta").save(deltaPath + table)

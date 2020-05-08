@@ -42,7 +42,7 @@ class PostgresConf(config: Map[String, String], dates: List[String], pks: List[S
 
       var query = f"select * from ${s_table}"
       if (load_type != "full")
-        query += f" where `${s_date_field}` >= '${date_Max}'::date"
+        query += f""" where "${s_date_field}" > '${date_Max}'"""
 
       logger.warn("query: " + query)
 
@@ -50,6 +50,8 @@ class PostgresConf(config: Map[String, String], dates: List[String], pks: List[S
         .option("url", url)
         .option("query", query)
         .option("partitions", 4)
+        .option("multiline", true)
+        .option("numSplits", "40")
         .option("partitionColumn", pks.head)
         .load
 
@@ -80,16 +82,15 @@ class PostgresConf(config: Map[String, String], dates: List[String], pks: List[S
   override def getDateMax(spark: SparkSession): String = {
 
     val url = f"jdbc:postgresql://${getHost.getOrElse("localhost")}:${getPort.getOrElse("5432")}/" +
-      f"${getDB.getOrElse("postgres")}?user=${getUser.getOrElse("postgres")}&currentSchema=${getSchema.getOrElse("public")}/" +
-      f"&password="
+      f"${getDB.getOrElse("postgres")}?user=${getUser.getOrElse("postgres")}&currentSchema=${getSchema.getOrElse("public")}/"
 
-    if (config.get(T_DATE_MAX).isDefined) config.get(T_DATE_MAX).getOrElse("")
-    else if (!checkTableExists(spark, url, getSchema.getOrElse("public"), getTargetTableName.getOrElse(""))) {
-      "1900-01-01 00:00:00"
+    val result = config.get(T_DATE_MAX) match {
+      case Some("") => if (!checkTableExists(spark, url, getSchema.getOrElse("public"), getTargetTableName.getOrElse(""))) "1900-01-01 00:00:00"
+      else calculDateMax(spark, url, getTargetTableType.getOrElse(""), getTargetTableName.getOrElse(""), getDateFields)
+      case Some(_) => config.get(T_DATE_MAX).get
     }
-    else {
-      calculDateMax(spark, url, getTargetTableType.getOrElse(""), getTargetTableName.getOrElse(""), getDateFields)
-    }
+    logger.warn(s"getting the maxdate : ${result}")
+    result
   }
 
   def writeSource(spark: SparkSession, s_df: DataFrame, host: String, port: String,
@@ -98,7 +99,7 @@ class PostgresConf(config: Map[String, String], dates: List[String], pks: List[S
 
     try {
       logger.warn("Writing data into Postgres table ---------")
-      val url = f"jdbc:postgresql://${host}:${port}/${db}?user=${user}&currentSchema=${schema}&password=${pw}"
+      val url = f"jdbc:postgresql://${host}:${port}/${db}?user=${user}&currentSchema=${schema}"
 
       if (!checkTableExists(spark, url, schema, t_table)) {
         logger.warn(s"Creating Postgres Table ${t_table} from scratch")

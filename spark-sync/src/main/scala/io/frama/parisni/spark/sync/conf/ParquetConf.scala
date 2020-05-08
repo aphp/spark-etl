@@ -4,33 +4,33 @@ import io.frama.parisni.spark.dataframe.DFTool
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 
-class DeltaConf(config: Map[String, String], dates: List[String], pks: List[String])
-  extends SourceAndTarget { //io.frama.parisni.spark.sync.conf.TargetConf with io.frama.parisni.spark.sync.conf.SourceConf with LazyLogging{
+class ParquetConf(config: Map[String, String], dates: List[String], pks: List[String])
+  extends SourceAndTarget {
 
-  checkTargetParams(config)
   checkSourceParams(config)
+  checkTargetParams(config)
   // SourceTable fields & methods
-  val PATH: String = "PATH" //PATH is used by Delta for connexion
+  val PATH: String = "PATH" //PATH is used by Parquet for connexion
   def getPath: Option[String] = config.get(PATH)
 
   def readSource(spark: SparkSession, path: String, s_table: String,
                  s_date_field: String, date_Max: String, load_type: String): DataFrame = {
 
     try {
-      logger.warn("Reading data from Delta table ---------")
+      logger.warn("Reading data from Parquet table ---------")
 
       if (!checkTableExists(spark, path, s_table)) {
-        logger.warn(s"Delta Table ${s_table} doesn't exist")
+        logger.warn(s"Parquet Table ${s_table} doesn't exist")
         return spark.emptyDataFrame
       }
 
-      val deltaPath = "%s/%s".format(path, s_table)
-      var dfDelta = spark.read.format("delta").load(deltaPath)
+      val parquetPath = "%s/%s".format(path, s_table)
+      var dfParquet = spark.read.format("parquet").load(parquetPath)
 
       if (load_type != "full")
-        dfDelta = dfDelta.filter(f"${s_date_field} >= '${date_Max}'")
+        dfParquet = dfParquet.filter(f"${s_date_field} >= '${date_Max}'")
 
-      dfDelta
+      dfParquet
     } catch {
       case re: RuntimeException => throw re
       case e: Exception => throw new RuntimeException(e)
@@ -56,48 +56,39 @@ class DeltaConf(config: Map[String, String], dates: List[String], pks: List[Stri
   def getDateFields = dates
 
   override def getDateMax(spark: SparkSession): String = {
-
-    val result = config.get(T_DATE_MAX) match {
-      case Some("") => if (!checkTableExists(spark, getPath.getOrElse(""), getTargetTableName.getOrElse(""))) "1900-01-01 00:00:00"
-      else calculDateMax(spark, getPath.getOrElse(""), getTargetTableType.getOrElse(""), getTargetTableName.getOrElse(""), getDateFields)
-      case Some(_) => config.get(T_DATE_MAX).get
+    if (config.get(T_DATE_MAX).isDefined) config.get(T_DATE_MAX).getOrElse("")
+    else if (!checkTableExists(spark, getPath.getOrElse(""), getTargetTableName.getOrElse(""))) {
+      "1900-01-01 00:00:00"
     }
-    logger.warn(s"getting the maxdate : ${result}")
-    result
+    else
+      calculDateMax(spark, getPath.getOrElse(""), getTargetTableType.getOrElse(""), getTargetTableName.getOrElse(""), getDateFields)
   }
 
-  /**
-   * Delta Lake automatically validates that the schema of the DF being written is compatible with the schema of the target table.
-   *  - All DataFrame columns must exist in the target table.
-   *  - DataFrame column data types must match the column data types in the target table.
-   *  - DataFrame column names cannot differ only by case.
-   */
   def writeSource(spark: SparkSession, s_df: DataFrame, path: String, t_table: String, load_type: String,
                   hash_field: String = "hash"): Unit = {
 
     try {
-      logger.warn("Writing data into Delta table ---------")
-      val deltaPath = "%s/%s".format(path, t_table)
+      logger.warn("Writing data into Parquet table ---------")
+      val parquetPath = "%s/%s".format(path, t_table)
 
       //Add hash field to DF
       val hashedDF = DFTool.dfAddHash(s_df)
 
       if (!checkTableExists(spark, path, t_table)) {
-        logger.warn(s"Creating delta table ${deltaPath} from scratch")
-        hashedDF.write.format("delta").save(deltaPath)
+        logger.warn(s"Creating parquet table ${parquetPath} from scratch")
+        hashedDF.write.format("parquet").save(parquetPath)
       }
       else {
 
         load_type match {
           case "full" => {
-            hashedDF.write.format("delta")
+            hashedDF.write.format("parquet")
               .mode("overwrite")
-              .save(deltaPath)
+              .save(parquetPath)
           }
           case "scd1" => {
 
-            val pks = getSourcePK
-            DFTool.deltaScd1(hashedDF, t_table, pks, path)
+            throw new Exception("Scd1 for parquet not implemented yet")
 
           }
         }
@@ -113,9 +104,9 @@ class DeltaConf(config: Map[String, String], dates: List[String], pks: List[Stri
 
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = org.apache.hadoop.fs.FileSystem.get(conf)
-    val deltaPath = path + "/" + table
-    val res = fs.exists(new org.apache.hadoop.fs.Path(deltaPath))
-    logger.warn(s"Delta Table ${deltaPath} exists = " + res)
+    val parquetPath = path + "/" + table
+    val res = fs.exists(new org.apache.hadoop.fs.Path(parquetPath))
+    logger.warn(s"Parquet Table ${parquetPath} exists = " + res)
     return res
   }
 

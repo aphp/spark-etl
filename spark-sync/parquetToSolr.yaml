@@ -1,0 +1,11 @@
+jobName:        Parquet To Solr
+timestampLastColumn:  date_update
+dateMax:  "2019-03-01 00:00:00"
+tables:
+    - tableSolr: target
+      tableParquet: source
+      ZkHost: zkhost
+      schemaParquet: /tmp
+      key: [id, pk2]
+      numThread: 4
+      isActive: true

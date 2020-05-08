@@ -2,7 +2,7 @@ package io.frama.parisni.spark.sync.conf
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{greatest, max}
+import org.apache.spark.sql.functions.{col, greatest}
 
 trait TargetConf extends LazyLogging {
 
@@ -36,17 +36,15 @@ trait TargetConf extends LazyLogging {
       "Target table shall be in postgres, solr, delta, parquet")
   }
 
-  //def getDateFields: Option[List[String]]
-
   def calculDateMax(spark: SparkSession, url: String, t_table_type: String, t_table_name: String,
                     date_fields: List[String]): String = {
 
-    t_table_type match {
+    val result = t_table_type match {
       case "postgres" => {
 
         val result = date_fields.map(date => (date, spark.read.format("postgres")
           .option("url", url)
-          .option("query", f"select max(${date}) from ${t_table_name}")
+          .option("query", f"select max(${date}) + interval '1 second' from ${t_table_name}")
           .load.first.get(0).toString
         )
         ).maxBy(_._2)._2
@@ -56,43 +54,39 @@ trait TargetConf extends LazyLogging {
       case "delta" => {
 
         val deltaPath = "%s/%s".format(url, t_table_name) //Url = Path
-        val deltaDF = spark.read.format("delta").load(deltaPath)
+        val result = spark.read.format("delta").load(deltaPath)
 
+        val maxDate = date_fields.size match {
+          case 1 => col(date_fields(0))
+          case _ => greatest(date_fields.map(x => col(x)): _*)
+        }
         // get just date columns
-        val newDF = deltaDF.select(date_fields.head, date_fields.tail: _*) //"date_update", "date_update2", "date_update3")
-        val numCols = newDF.columns.tail
-        val result = deltaDF.withColumn("MaxDate", greatest(numCols.head, numCols.tail: _*))
-          .select(max("MaxDate")).first.get(0)
+        result.withColumn("MaxDate", maxDate)
+          .selectExpr("max(MaxDate) + interval 1 second").first.get(0)
+          .toString
 
-        logger.warn("Delta: Max Date = " + result)
-        result.toString
       }
       case "solr" => {
 
-        //TODO: create a loop on every fields
+
         val options = Map("collection" -> t_table_name
           , "zkhost" -> url
           , "query" -> "*:*"
-          , "solr.params" -> s"sort: ${date_fields.head} desc"
-          , "fields" -> date_fields.mkString(",")
           , "rows" -> "1"
         )
 
-        val solrDF = spark.read.format("solr").options(options)
+        val result = date_fields.map(date => (date, spark.read.format("solr")
+          .options(options)
+          .option("fields", date.toString)
+          .option("solr.params", s"sort: ${date} desc")
           .load
-
-        // get just date columns
-        val newDF = solrDF.select(date_fields.head, date_fields.tail: _*) //"date_update", "date_update2", "date_update3")
-        val numCols = newDF.columns.tail
-        val result = solrDF.withColumn("MaxDate", greatest(numCols.head, numCols.tail: _*))
-          .select(max("MaxDate")).first.get(0)
-
-        logger.warn("Solr: Max Date = " + result)
-        result.toString
-
+          .first.get(0).toString
+        )
+        ).maxBy(_._2)._2
+        result
       }
     }
-  }
+    result
 
-  //def writeSource(s_df: DataFrame, strings: String*): Unit
+  }
 }

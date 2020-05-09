@@ -58,7 +58,7 @@ class DeltaConf(config: Map[String, String], dates: List[String], pks: List[Stri
   override def getDateMax(spark: SparkSession): String = {
 
     val result = config.get(T_DATE_MAX) match {
-      case Some("") => if (!checkTableExists(spark, getPath.getOrElse(""), getTargetTableName.getOrElse(""))) "1900-01-01 00:00:00"
+      case Some("") => if (!checkTableExists(spark, getPath.getOrElse(""), getTargetTableName.getOrElse(""))) ""
       else calculDateMax(spark, getPath.getOrElse(""), getTargetTableType.getOrElse(""), getTargetTableName.getOrElse(""), getDateFields)
       case Some(_) => config.get(T_DATE_MAX).get
     }

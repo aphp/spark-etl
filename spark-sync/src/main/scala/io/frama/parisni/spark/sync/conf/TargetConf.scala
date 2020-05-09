@@ -4,6 +4,34 @@ import com.typesafe.scalalogging.LazyLogging
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.{col, greatest}
 
+import scala.util.Try
+
+object TargetConf extends LazyLogging {
+  def getSolrMaxDate(spark: SparkSession, t_table_name: String, url: String, date_fields: List[String]): String = {
+    val options = Map("collection" -> t_table_name
+      , "zkhost" -> url
+      , "query" -> "*:*"
+      , "rows" -> "1"
+    )
+
+    val result = Try(date_fields.map(date => (date, spark.read.format("solr")
+      .options(options)
+      .option("fields", date.toString)
+      .option("solr.params", s"sort: ${date} desc")
+      .load
+      .selectExpr(s"${date} + interval 1 second")
+      .first.get(0).toString
+    )
+    ).maxBy(_._2)._2)
+
+    if (result.isSuccess) {
+      logger.warn(s"found solr max date : ${result}")
+      result.get
+    } else ""
+
+  }
+}
+
 trait TargetConf extends LazyLogging {
 
   val T_TABLE_NAME: String = "T_TABLE_NAME"
@@ -66,25 +94,7 @@ trait TargetConf extends LazyLogging {
           .toString
 
       }
-      case "solr" => {
-
-
-        val options = Map("collection" -> t_table_name
-          , "zkhost" -> url
-          , "query" -> "*:*"
-          , "rows" -> "1"
-        )
-
-        val result = date_fields.map(date => (date, spark.read.format("solr")
-          .options(options)
-          .option("fields", date.toString)
-          .option("solr.params", s"sort: ${date} desc")
-          .load
-          .first.get(0).toString
-        )
-        ).maxBy(_._2)._2
-        result
-      }
+      case "solr" => TargetConf.getSolrMaxDate(spark, t_table_name, url, date_fields)
     }
     result
 

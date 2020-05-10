@@ -13,7 +13,8 @@ object TargetConf extends LazyLogging {
       .options(Map("collection" -> t_table_name
         , "zkhost" -> url
         , "query" -> "*:*"
-        , "rows" -> "1"
+        , "max_rows" -> "1"
+        , "request_handler" -> "/select"
         , "fields" -> date.toString
         , "solr.params" -> s"sort=${date} desc"
       ))

@@ -11,6 +11,7 @@ import PostgresToDeltaYaml._
 object PostgresToDelta extends App with LazyLogging {
 
   val filename = args(0)
+  val log = args(1)
   val ymlTxt = Source.fromFile(filename).mkString
   val yaml = ymlTxt.stripMargin.parseYaml
   val database = yaml.convertTo[Database]
@@ -21,7 +22,7 @@ object PostgresToDelta extends App with LazyLogging {
     .enableHiveSupport()
     .getOrCreate()
 
-  spark.sparkContext.setLogLevel("WARN")
+  spark.sparkContext.setLogLevel(args(1))
 
   try {
 

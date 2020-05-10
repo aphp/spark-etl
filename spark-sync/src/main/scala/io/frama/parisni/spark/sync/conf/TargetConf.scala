@@ -8,16 +8,15 @@ import scala.util.Try
 
 object TargetConf extends LazyLogging {
   def getSolrMaxDate(spark: SparkSession, t_table_name: String, url: String, date_fields: List[String]): String = {
-    val options = Map("collection" -> t_table_name
-      , "zkhost" -> url
-      , "query" -> "*:*"
-      , "rows" -> "1"
-    )
 
     val result = Try(date_fields.map(date => (date, spark.read.format("solr")
-      .options(options)
-      .option("fields", date.toString)
-      .option("solr.params", s"sort: ${date} desc")
+      .options(Map("collection" -> t_table_name
+        , "zkhost" -> url
+        , "query" -> "*:*"
+        , "rows" -> "1"
+        , "fields" -> date.toString
+        , "solr.params" -> s"sort=${date} desc"
+      ))
       .load
       .selectExpr(s"${date} + interval 1 second")
       .first.get(0).toString

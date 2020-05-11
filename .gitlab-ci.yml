@@ -1,7 +1,7 @@
 image: "$DOCKER_REGISTRY/$DOCKER_IMAGE_BUILD"
 
 variables:
-  DEBUG: "false"
+  DEBUG: "true"
   MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
 
 cache:

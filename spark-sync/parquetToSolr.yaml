@@ -1,11 +1,11 @@
-jobName:        Delta To Solr
+jobName:        Parquet To Solr
 timestampLastColumn:  date_update
 dateMax:  "2019-03-01 00:00:00"
 tables:
     - tableSolr: target
-      tableDelta: source
+      tableParquet: source
       ZkHost: zkhost
-      schemaDelta: /tmp
+      schemaParquet: /tmp
       key: [id, pk2]
       numThread: 4
       isActive: true

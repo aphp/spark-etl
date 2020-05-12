@@ -17,7 +17,7 @@ stages:
   - release
 
 job_start:
-  image: docker
+  image: busybox:latest
   tags:
     - aphp
     - cicd

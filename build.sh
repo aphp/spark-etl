@@ -92,8 +92,8 @@ __init() {
   esac
   NB_THREAD_TO_USE=$((NB_THREAD_TO_USE / 2))
   export NB_THREAD_TO_USE
-  MAVEN_CLI_OPTS="${MAVEN_CLI_OPTS} --threads ${NB_THREAD_TO_USE}"
-  export MAVEN_CLI_OPTS
+#  MAVEN_CLI_OPTS="${MAVEN_CLI_OPTS} --threads ${NB_THREAD_TO_USE}"
+#  export MAVEN_CLI_OPTS
 
   DOCKER_IMAGE_NAME=$(mvn help:evaluate \
     -B \

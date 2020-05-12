@@ -92,6 +92,8 @@ __init() {
   esac
   NB_THREAD_TO_USE=$((NB_THREAD_TO_USE / 2))
   export NB_THREAD_TO_USE
+  MAVEN_CLI_OPTS="${MAVEN_CLI_OPTS} --threads ${NB_THREAD_TO_USE}"
+  export MAVEN_CLI_OPTS
 
   DOCKER_IMAGE_NAME=$(mvn help:evaluate \
     -B \
@@ -122,8 +124,6 @@ __init() {
       -Dnexus.snapshot.url=${MVN_SNAPSHOT_REPOSITORY} \
       -Dnexus.release.url=${MVN_RELEASE_REPOSITORY}"
   fi
-  MAVEN_CLI_OPTS="${MAVEN_CLI_OPTS} --threads ${NB_THREAD_TO_USE}"
-  export MAVEN_CLI_OPTS
 }
 
 __login_docker() {

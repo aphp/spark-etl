@@ -1,10 +1,10 @@
 package io.frama.parisni.spark.sync
 
 import com.typesafe.scalalogging.LazyLogging
-import io.frama.parisni.spark.sync.conf.{DeltaConf, PostgresConf, SolrConf}
+import io.frama.parisni.spark.sync.conf.{DeltaConf, ParquetConf, PostgresConf, SolrConf}
 import org.apache.spark.sql.SparkSession
 
-class Sync extends LazyLogging{
+class Sync extends LazyLogging {
 
   def syncSourceTarget(spark: SparkSession, config: Map[String, String], dates: List[String],
                        pks: List[String]): Unit = {
@@ -16,16 +16,18 @@ class Sync extends LazyLogging{
     val pgc = new PostgresConf(config, dates, pks)
     val dc = new DeltaConf(config, dates, pks)
     val slc = new SolrConf(config, dates, pks)
+    val plc = new ParquetConf(config, dates, pks)
 
     /** Calculation of date_max: be sure that "target" table exists
-          (in order to calculate date_max) or provide date_max **/
+     * (in order to calculate date_max) or provide date_max **/
     var date_max = ""
-    if(targetType == "postgres")  date_max = pgc.getDateMax(spark)
-    else if(targetType == "delta") date_max = dc.getDateMax(spark)
-    else if(targetType == "solr") date_max = slc.getDateMax(spark)
+    if (targetType == "postgres") date_max = pgc.getDateMax(spark)
+    else if (targetType == "delta") date_max = dc.getDateMax(spark)
+    else if (targetType == "solr") date_max = slc.getDateMax(spark)
+    else if (targetType == "parquet") date_max = plc.getDateMax(spark)
 
     // Load table "source" as DF
-    sourceType match{
+    sourceType match {
       case "postgres" => {
 
         val host = pgc.getHost.getOrElse("localhost")
@@ -37,9 +39,7 @@ class Sync extends LazyLogging{
         val s_date_field = pgc.getSourceDateField.getOrElse("")
         val load_type = pgc.getLoadType.getOrElse("")
 
-        sourceDF = pgc.readSource(spark, host, port, db, user, schema, s_table, s_date_field, date_max, load_type)
-        logger.warn("Source: Showing Postgres table")
-        sourceDF.show()
+        sourceDF = pgc.readSource(spark, host, port, db, user, schema, s_table, s_date_field, date_max, load_type, pks)
       }
       case "delta" => {
 
@@ -49,8 +49,15 @@ class Sync extends LazyLogging{
         val load_type = dc.getLoadType.getOrElse("")
 
         sourceDF = dc.readSource(spark, path, s_table, s_date_field, date_max, load_type)
-        logger.warn("Source: Showing Delta table")
-        sourceDF.show()
+      }
+      case "parquet" => {
+
+        val path = dc.getPath.getOrElse("/tmp")
+        val s_table = dc.getSourceTableName.getOrElse("")
+        val s_date_field = dc.getSourceDateField.getOrElse("")
+        val load_type = dc.getLoadType.getOrElse("")
+
+        sourceDF = plc.readSource(spark, path, s_table, s_date_field, date_max, load_type)
       }
       case "solr" => {
 
@@ -58,15 +65,14 @@ class Sync extends LazyLogging{
         val s_collection = slc.getSourceTableName.getOrElse("")
         val s_date_field = slc.getSourceDateField.getOrElse("")
 
-        //@transient var cloudClient: CloudSolrClient = _
-        //sourceDF = slc.readSource( null, spark, zkhost, s_collection, s_date_field, date_max)
         sourceDF = slc.readSource(spark, zkhost, s_collection, s_date_field, date_max)
-        logger.warn("Source: Showing Solr collection")
-        sourceDF.show()
       }
     }
 
-    if(!sourceDF.isEmpty) {
+    val candidateCount: Long = sourceDF.count
+    logger.warn(s"rows to modify / insert ${candidateCount}")
+
+    if (candidateCount > 0) {
       // Merge DF with table "target"
       targetType match {
         case "postgres" => {
@@ -81,17 +87,8 @@ class Sync extends LazyLogging{
           val hash_field = pgc.getSourcePK.mkString(",")
 
           pgc.writeSource(spark, sourceDF, host, port, db, user, schema, t_table, load_type, hash_field)
-          logger.warn("Target: Showing Postgres table")
-
-          val url = f"jdbc:postgresql://${host}:${port}/${db}?user=${user}&currentSchema=${schema}"
-          spark.read.format("postgres")
-            .option("url",url)
-            .option("query", s"select * from ${t_table}")
-            //.option("partitions",4)
-            //.option("partitionColumn","id")
-            //.option("numSplits",5)
-            .load.show
         }
+
         case "delta" => {
 
           val path = dc.getPath.getOrElse("/tmp")
@@ -99,19 +96,21 @@ class Sync extends LazyLogging{
           val load_type = dc.getLoadType.getOrElse("")
 
           dc.writeSource(spark, sourceDF, path, t_table, load_type)
-          logger.warn("Target: Showing Delta table")
-          spark.read.format("delta").load(path + "/" + t_table).show
+        }
+        case "parquet" => {
+
+          val path = dc.getPath.getOrElse("/tmp")
+          val t_table = dc.getTargetTableName.getOrElse("")
+          val load_type = dc.getLoadType.getOrElse("")
+
+          plc.writeSource(spark, sourceDF, path, t_table, load_type)
         }
         case "solr" => {
 
           val zkhost = slc.getZkHost.getOrElse("")
           val t_collection = slc.getTargetTableName.getOrElse("")
-          //val load_type = slc.getLoadType.getOrElse("full")   //always "full"
 
           slc.writeSource(sourceDF, zkhost, t_collection)
-          logger.warn("Target: Showing Solr collection")
-          val options = Map( "collection" -> t_collection, "zkhost" -> zkhost)
-          spark.read.format("solr").options(options).load.show
         }
       }
     }

@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -43,12 +44,12 @@
 		<dependency>
 			<groupId>io.frama.parisni</groupId>
 			<artifactId>spark-dataframe</artifactId>
-			<version>0.0.2</version>
+			<version>0.0.4</version>
 		</dependency>
 		<dependency>
 			<groupId>io.delta</groupId>
 			<artifactId>delta-core_${scala.tools.version}</artifactId>
-			<version>0.4.0</version>
+			<version>0.6.0</version>
 		</dependency>
 		<dependency>
 			<groupId>io.frama.parisni</groupId>
@@ -93,7 +94,7 @@
 		<dependency>
 			<groupId>com.lucidworks.spark</groupId>
 			<artifactId>spark-solr</artifactId>
-			<version>3.7.0</version>		<!--3.6.7-SNAPSHOT-->
+			<version>3.7.6</version>		<!--3.6.7-SNAPSHOT-->
 			<!--<type>jar</type>-->
 			<scope>test</scope>
 		</dependency>
@@ -272,7 +273,7 @@
 
 	<properties>
 		<spark.version>2.4.3</spark.version>
-		<solr.version>8.2.0</solr.version>
+		<solr.version>8.5.1</solr.version>
 		<!--<fasterxml.version>2.9.9</fasterxml.version>-->
 		<scala.version>2.11.12</scala.version>
 		<scala.binary.version>2.11</scala.binary.version>

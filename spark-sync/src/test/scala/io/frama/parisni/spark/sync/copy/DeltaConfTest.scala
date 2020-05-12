@@ -42,31 +42,6 @@ class DeltaConfTest extends QueryTest with SparkSessionTestWrapper {
     s_outputDF.show()
     //checkAnswer(s_inputDF, s_outputDF)
 
-    /*// Create table "target"
-    val t_inputDF = (
-      (1, "id1t", 1, "Delta details of 1st row target", Timestamp.valueOf("2017-06-16 00:00:00"),
-                Timestamp.valueOf("2019-06-16 00:00:00"), Timestamp.valueOf("2019-06-16 00:00:00")) ::
-        (2, "id2t", 2, "Delta details of 2nd row target", Timestamp.valueOf("2018-07-25 00:00:00"),
-                Timestamp.valueOf("2019-06-16 00:00:00"), Timestamp.valueOf("2019-06-16 00:00:00")) ::
-        (3, "id3t", 3, "Delta details of 3rd row target", Timestamp.valueOf("2017-11-19 00:00:00"),
-                Timestamp.valueOf("2011-06-16 00:00:00"), Timestamp.valueOf("2019-06-26 23:10:02")) ::
-        (4, "id4t", 4, "Delta details of 4th row target", Timestamp.valueOf("2017-07-05 00:00:00"),
-                Timestamp.valueOf("2019-06-16 00:00:00"), Timestamp.valueOf("2017-06-16 00:00:00")) ::
-        (5, "id5", 5, "Delta details of 5th row target", Timestamp.valueOf("2019-09-25 20:16:07"),
-                Timestamp.valueOf("2019-09-25 20:16:07"), Timestamp.valueOf("2019-06-16 00:00:00")) ::
-        (6, "id6", 6, "Delta details of 6th row target", Timestamp.valueOf("2013-01-30 00:00:00"),
-                Timestamp.valueOf("2019-06-16 00:00:00"), Timestamp.valueOf("2019-06-16 00:00:00")) ::
-        Nil).toDF("id", "pk2", "hash", "details", "date_update", "date_update2", "date_update3")
-
-    val targetDeltaTable = "/tmp/target"
-    t_inputDF.write.format("delta").mode("overwrite").save(targetDeltaTable)
-
-    println(s"table /tmp/target exists = "+ checkTableExists(spark, "/tmp", "target"))
-
-    val t_outputDF = spark.read.format("delta").load(targetDeltaTable)
-    t_outputDF.show()
-    checkAnswer(t_inputDF, t_outputDF)*/
-
   }
 
   //@Test
@@ -122,7 +97,6 @@ class DeltaConfTest extends QueryTest with SparkSessionTestWrapper {
     val t_table = dc.getTargetTableName.getOrElse("")
     val date_max =  dc.getDateMax(spark)        //pgc.getDateMax.getOrElse("2019-01-01")
 
-    //val calculatedDateMax = dc.calculDateMax(spark, path, t_table, dates)
     assert(date_max == "2019-09-25 20:16:07.0")        //"2016-10-16 23:16:16"))    "2019-06-26 23:10:02.0"
   }
 
@@ -134,21 +108,6 @@ class DeltaConfTest extends QueryTest with SparkSessionTestWrapper {
     val res = fs.exists(new org.apache.hadoop.fs.Path(deltaPath))
     println(s"Delta Table ${deltaPath} exists = "+res)
     return res
-    //true
   }
 
-
-  /*def checkTableExists2(spark: SparkSession, deltaPath: String, tablePath: String): Boolean = {
-    val defaultFSConf = spark.sessionState.newHadoopConf().get("fs.defaultFS")
-    val fsConf = if (deltaPath.startsWith("file:")) {
-      "file:///"
-    } else {
-      defaultFSConf
-    }
-    val conf = new Configuration()
-    conf.set("fs.defaultFS", fsConf)
-    val fs = FileSystem.get(conf)
-
-    fs.exists(new Path(deltaPath + "/" +tablePath))
-  }*/
 }

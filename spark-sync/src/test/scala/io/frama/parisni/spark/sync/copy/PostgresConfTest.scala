@@ -58,37 +58,6 @@ class PostgresConfTest extends QueryTest with SparkSessionTestWrapper {
 
     println("Table source exists = " + checkTableExists(spark, url, "source", "public"))
     println("Table target exists = " + checkTableExists(spark, url, "target", "public"))
-    //checkAnswer(s_inputDF, s_outputDF)
-
-    /*// Create table "target"
-    val t_inputDF = (
-      (1, "id1t", 1, "test details of 1st row target", Timestamp.valueOf("2017-06-16 00:00:00"),
-        Timestamp.valueOf("2019-06-16 00:00:00"), Timestamp.valueOf("2019-06-16 00:00:00")) ::
-        (2, "id2t", 2, "test details of 2nd row target", Timestamp.valueOf("2018-07-25 00:00:00"),
-          Timestamp.valueOf("2019-06-16 00:00:00"), Timestamp.valueOf("2019-06-16 00:00:00")) ::
-        (3, "id3t", 3, "test details of 3rd row target", Timestamp.valueOf("2017-11-19 00:00:00"),
-          Timestamp.valueOf("2011-06-16 00:00:00"), Timestamp.valueOf("2019-06-26 23:10:02")) ::
-        (4, "id4t", 4, "test details of 4th row target", Timestamp.valueOf("2017-07-05 00:00:00"),
-          Timestamp.valueOf("2019-06-16 00:00:00"), Timestamp.valueOf("2017-06-16 00:00:00")) ::
-        (5, "id5", 5, "test details of 5th row target", Timestamp.valueOf("2019-09-25 20:16:07"),
-          Timestamp.valueOf("2019-09-25 20:16:07"), Timestamp.valueOf("2019-06-16 00:00:00")) ::
-        (6, "id6", 6, "test details of 6th row target", Timestamp.valueOf("2013-01-30 00:00:00"),
-          Timestamp.valueOf("2019-06-16 00:00:00"), Timestamp.valueOf("2019-06-16 00:00:00")) ::
-        Nil).toDF("id", "pk2", "hash", "details", "date_update", "date_update2", "date_update3")
-
-    t_inputDF.write.format("postgres")
-      .option("url", url)
-      .option("table", "target")
-      //.mode(org.apache.spark.sql.SaveMode.Overwrite)
-      .save
-
-    val t_outputDF: DataFrame = spark.read.format("postgres")
-      .option("url", url)
-      .option("query", "select * from target")
-      .load
-    t_outputDF.show
-    println("Table target exists = " + checkTableExists(spark, url, "target", "public"))*/
-    //checkAnswer(t_inputDF, t_outputDF)
   }
 
   //@Test
@@ -123,7 +92,7 @@ class PostgresConfTest extends QueryTest with SparkSessionTestWrapper {
 
     // load table from source
     println(s"Table ${s_table}")
-    val s_df = pgc.readSource(spark, host, port, db, user, schema, s_table, s_date_field, date_max, load_type)
+    val s_df = pgc.readSource(spark, host, port, db, user, schema, s_table, s_date_field, date_max, load_type, pks)
     s_df.show()
 
     // write table to target

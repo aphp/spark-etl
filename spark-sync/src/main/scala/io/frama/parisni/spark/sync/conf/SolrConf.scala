@@ -9,32 +9,17 @@ import org.apache.solr.common.params.{CollectionParams, CoreAdminParams, Modifia
 import org.apache.spark.sql.types.IntegerType
 import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
 
-class SolrConf (config: Map[String, String], dates: List[String], pks: List[String])
-  extends SourceAndTarget{    //io.frama.parisni.spark.sync.conf.TargetConf with io.frama.parisni.spark.sync.conf.SourceConf with LazyLogging{
+class SolrConf(config: Map[String, String], dates: List[String], pks: List[String])
+  extends SourceAndTarget { //io.frama.parisni.spark.sync.conf.TargetConf with io.frama.parisni.spark.sync.conf.SourceConf with LazyLogging{
 
-  require(config != null, "Config cannot be null")
-  require(config.nonEmpty, "Config cannot be empty")
-
-  // Solr accepts just insert/full as loading type
-  /**
-  require(config.get(T_LOAD_TYPE).isEmpty || (config.get(T_LOAD_TYPE).isDefined
-    && ("full" :: "scd1" :: "scd2" :: Nil).contains(config.get(T_LOAD_TYPE).get)),
-    "Loading type shall be in full, scd1, scd2")
-  **/
-
-  require(config.get(S_TABLE_TYPE).isEmpty || (config.get(S_TABLE_TYPE).isDefined
-    && ("postgres" :: "solr" :: "delta" :: Nil).contains(config.get(S_TABLE_TYPE).get)),
-    "Source table shall be in postgres, solr, delta")
-
-  require(config.get(T_TABLE_TYPE).isEmpty || (config.get(T_TABLE_TYPE).isDefined
-    && ("postgres" :: "solr" :: "delta" :: Nil).contains(config.get(T_TABLE_TYPE).get)),
-    "Target table shall be in postgres, solr, delta")
+  checkTargetParams(config)
+  checkSourceParams(config)
 
   // SourceTable fields & methods
-  val ZKHOST: String = "ZKHOST"     // ZKHOST & Collection are used by Solr for connexion
+  val ZKHOST: String = "ZKHOST" // ZKHOST & Collection are used by Solr for connexion
   def getZkHost: Option[String] = config.get(ZKHOST)
 
-  def readSource(spark: SparkSession, zkhost: String, collection: String,     //cloudClient: CloudSolrClient,
+  def readSource(spark: SparkSession, zkhost: String, collection: String, //cloudClient: CloudSolrClient,
                  s_date_field: String, date_Max: String, load_type: String = "full"): DataFrame = {
 
     import org.apache.spark.sql.functions._
@@ -44,15 +29,15 @@ class SolrConf (config: Map[String, String], dates: List[String], pks: List[Stri
 
       if (!checkCollectionExists(collection, zkhost)) {
         logger.warn(s"Collection ${collection} doesn't exist !!")
-        return  spark.emptyDataFrame
+        return spark.emptyDataFrame
       }
 
-      val options = Map( "collection" -> collection, "zkhost" -> zkhost)
+      val options = Map("collection" -> collection, "zkhost" -> zkhost)
       dfSolr = spark.read.format("solr").options(options).load
       logger.warn("Full Solr DataFrame")
       dfSolr.show()
 
-      if(load_type != "full")
+      if (load_type != "full")
         dfSolr = dfSolr.filter(f"${s_date_field} >= '${date_Max}'")
 
       //change "id" type to Integer (Solr uses "id" as String)
@@ -68,23 +53,33 @@ class SolrConf (config: Map[String, String], dates: List[String], pks: List[Stri
   }
 
   override def getSourceTableName = config.get(S_TABLE_NAME)
+
   override def getSourceTableType = config.get(S_TABLE_TYPE)
+
   override def getSourceDateField = config.get(S_DATE_FIELD)
+
   def getSourcePK = pks
 
   // TargetTable methods
   override def getTargetTableName = config.get(T_TABLE_NAME)
+
   override def getTargetTableType = config.get(T_TABLE_TYPE)
+
   override def getLoadType = config.get(T_LOAD_TYPE)
+
   def getDateFields = dates
 
-  override def getDateMax(spark: SparkSession): String =
-    if (config.get(T_DATE_MAX).isDefined) config.get(T_DATE_MAX).getOrElse("")
-    else if(!checkCollectionExists(getTargetTableName.getOrElse(""), getZkHost.getOrElse(""))) {
-      "1900-01-01 00:00:00"
+  override def getDateMax(spark: SparkSession): String = {
+
+    val result = config.get(T_DATE_MAX) match {
+      case Some("") => if (!checkCollectionExists(getTargetTableName.getOrElse(""), getZkHost.getOrElse(""))) ""
+      else calculDateMax(spark, getZkHost.getOrElse(""), getTargetTableType.getOrElse(""), getTargetTableName.getOrElse(""), getDateFields)
+      case Some(_) => config.get(T_DATE_MAX).get
     }
-    else
-      calculDateMax(spark, getZkHost.getOrElse(""), getTargetTableType.getOrElse(""), getTargetTableName.getOrElse(""), getDateFields)
+    logger.warn(s"getting the maxdate : ${result}")
+    result
+
+  }
 
   // Write to Solr Collection
   def writeSource(s_df: DataFrame, zkhost: String, collection: String, load_type: String = "full"): Unit = {
@@ -109,16 +104,16 @@ class SolrConf (config: Map[String, String], dates: List[String], pks: List[Stri
         val request: QueryRequest = new QueryRequest(modParams)
         request.setPath("/admin/collections")
         solrClient.request(request)
+
+        //Explicit commit
+        solrClient.commit(collection)
       }
 
-      val options = Map( "collection" -> collection, "zkhost" -> zkhost, "commit_within"-> "5000")    //, "soft_commit_secs"-> "10")
-      s_df.write.format ("solr")
+      val options = Map("collection" -> collection, "zkhost" -> zkhost, "commit_within" -> "5000") //, "soft_commit_secs"-> "10")
+      s_df.write.format("solr")
         .options(options)
         .mode(SaveMode.Overwrite)
         .save
-
-      //Explicit commit
-      solrClient.commit(collection)
 
     } catch {
       case re: RuntimeException => throw re

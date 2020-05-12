@@ -28,6 +28,15 @@
       <email>nicolas.paris@riseup.net</email>
     </developer>
   </developers>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.delta</groupId>
+      <artifactId>delta-core_${scala.tools.version}</artifactId>
+      <version>0.6.0</version>
+    </dependency>
+  </dependencies>
+
   <build>
     <sourceDirectory>src/main/scala</sourceDirectory>
     <testSourceDirectory>src/test/scala</testSourceDirectory>

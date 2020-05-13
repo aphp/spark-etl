@@ -41,7 +41,7 @@ class PostgresConf(config: Map[String, String], dates: List[String], pks: List[S
       }
 
       var query = f"select * from ${s_table}"
-      if (load_type != "full")
+      if (load_type != "full" && date_Max != "")
         query += f""" where "${s_date_field}" > '${date_Max}'"""
 
       logger.warn("query: " + query)

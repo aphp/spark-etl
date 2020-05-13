@@ -27,7 +27,7 @@ class DeltaConf(config: Map[String, String], dates: List[String], pks: List[Stri
       val deltaPath = "%s/%s".format(path, s_table)
       var dfDelta = spark.read.format("delta").load(deltaPath)
 
-      if (load_type != "full")
+      if (load_type != "full" && date_Max != "")
         dfDelta = dfDelta.filter(f"${s_date_field} >= '${date_Max}'")
 
       dfDelta

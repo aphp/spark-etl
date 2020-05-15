@@ -31,6 +31,9 @@
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 	<dependencies>
+		<!--
+			io.frama.parisni
+		-->
 		<dependency>
 			<groupId>io.frama.parisni</groupId>
 			<artifactId>spark-dataframe</artifactId>

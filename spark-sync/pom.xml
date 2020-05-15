@@ -41,11 +41,11 @@
 		<dependency>
 			<groupId>io.delta</groupId>
 			<artifactId>delta-core_${scala.tools.version}</artifactId>
-			<version>0.6.0</version>
 		</dependency>
 		<dependency>
 			<groupId>io.frama.parisni</groupId>
 			<artifactId>spark-postgres</artifactId>
+		</dependency>
 		<!--
 			others
 		-->

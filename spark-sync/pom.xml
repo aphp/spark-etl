@@ -269,31 +269,6 @@
 		</dependency>
 	</dependencies>
 
-	<properties>
-		<spark.version>2.4.3</spark.version>
-		<solr.version>8.5.1</solr.version>
-		<!--<fasterxml.version>2.9.9</fasterxml.version>-->
-		<scala.version>2.11.12</scala.version>
-		<scala.binary.version>2.11</scala.binary.version>
-		<fasterxml.version>2.6.7</fasterxml.version>
-	</properties>
-
-        <repositories>
-          <repository>
-            <id>maven.central</id>
-            <name>maven.central</name>
-            <url>https://repo1.maven.org/maven2</url>
-            <snapshots>
-              <enabled>true</enabled>
-            </snapshots>
-          </repository>
-          <repository>
-            <id>maven.restlet.org</id>
-            <name>maven.restlet.org</name>
-            <url>http://maven.restlet.org</url>
-          </repository>
-				</repositories>
-
 	<build>
 		<sourceDirectory>src/main/scala</sourceDirectory>
 		<testSourceDirectory>src/test/scala</testSourceDirectory>

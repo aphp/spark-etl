@@ -33,7 +33,6 @@
       <dependency>
           <groupId>net.jcazevedo</groupId>
           <artifactId>moultingyaml_${scala.tools.version}</artifactId>
-          <version>0.4.1</version>
       </dependency>
 
       <dependency>

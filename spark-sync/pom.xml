@@ -43,75 +43,47 @@
 		<dependency>
 			<groupId>io.frama.parisni</groupId>
 			<artifactId>spark-postgres</artifactId>
+		<!--
+			others
+		-->
+		<dependency>
+			<groupId>io.delta</groupId>
+			<artifactId>delta-core_${scala.tools.version}</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>io.delta</groupId>
+					<artifactId>delta-core_${scala.tools.version}</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.antlr</groupId>
+					<artifactId>antlr4-runtime</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>net.jcazevedo</groupId>
 			<artifactId>moultingyaml_${scala.tools.version}</artifactId>
-			<version>0.4.1</version>
 		</dependency>
-
-		<!-- <dependency> <groupId>org.apache.hive</groupId> <artifactId>hive-exec</artifactId> 
-			<version>${hive.version}</version> <scope>provided</scope> </dependency> 
-			<dependency> <groupId>org.apache.hive</groupId> <artifactId>hive-jdbc</artifactId> 
-			<version>${hive.version}</version> <scope>provided</scope> </dependency> 
-			<dependency> <groupId>org.apache.hive</groupId> <artifactId>hive-service</artifactId> 
-			<version>${hive.version}</version> <scope>provided</scope> </dependency> 
-			<dependency> <groupId>org.apache.hive</groupId> <artifactId>hive-cli</artifactId> 
-			<version>${hive.version}</version> <scope>provided</scope> </dependency> 
-			<dependency> <groupId>org.apache.hadoop</groupId> <artifactId>hadoop-common</artifactId> 
-			<version>2.7.3</version> <scope>provided</scope> </dependency> <dependency> 
-			<groupId>org.apache.hadoop</groupId> <artifactId>hadoop-client</artifactId> 
-			<version>2.7.3</version> <scope>provided</scope> </dependency> <dependency> 
-			<groupId>org.apache.httpcomponents</groupId> <artifactId>httpclient</artifactId> 
-			<version>4.5.8</version> </dependency> -->
-
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
-			<version>${postgres.version}</version>
 		</dependency>
-
-		<!-- Test -->
-		<dependency>
-			<groupId>com.opentable.components</groupId>
-			<artifactId>otj-pg-embedded</artifactId>
-			<version>0.13.3</version>
-			<scope>test</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>com.lucidworks.spark</groupId>
-			<artifactId>spark-solr</artifactId>
-			<version>3.7.6</version>		<!--3.6.7-SNAPSHOT-->
-			<!--<type>jar</type>-->
-			<scope>test</scope>
-		</dependency>
-
-		<!--<dependency>
-			<groupId>org.apache.solr</groupId>
-			<artifactId>solr-test-framework</artifactId>
-			<version>${solr.version}</version>
-			<scope>test</scope>
-		</dependency>-->
-
-
-
 		<dependency>
 			<groupId>com.esotericsoftware</groupId>
 			<artifactId>kryo-shaded</artifactId>
-			<version>4.0.2</version>
-			<!--<scope>compile</scope>-->
 		</dependency>
+
+		<!--
+			org.apache.solr
+		-->
 		<dependency>
 			<groupId>org.apache.solr</groupId>
 			<artifactId>solr-solrj</artifactId>
-			<version>${solr.version}</version>
 			<type>jar</type>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.solr</groupId>
 			<artifactId>solr-core</artifactId>
-			<version>${solr.version}</version>
 			<type>jar</type>
 			<scope>compile</scope>
 			<exclusions>
@@ -142,10 +114,54 @@
 			</exclusions>
 		</dependency>
 
+		<!--
+			com.fasterxml.jackson
+		-->
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>com.fasterxml.jackson.core</groupId>
+					<artifactId>jackson-core</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.module</groupId>
+			<artifactId>jackson-module-scala_${scala.tools.version}</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>com.fasterxml.jackson.core</groupId>
+					<artifactId>jackson-databind</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency> <!-- optional dependency of joda-time that is mandatory in Scala -->
+			<groupId>org.joda</groupId>
+			<artifactId>joda-convert</artifactId>
+		</dependency>
+
+		<!--
+			Tests
+		-->
+		<dependency>
+			<groupId>com.opentable.components</groupId>
+			<artifactId>otj-pg-embedded</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.lucidworks.spark</groupId>
+			<artifactId>spark-solr</artifactId>
+			<scope>test</scope>
+		</dependency>
 		<dependency>
 			<groupId>org.apache.solr</groupId>
 			<artifactId>solr-test-framework</artifactId>
-			<version>${solr.version}</version>
 			<type>jar</type>
 			<scope>test</scope>
 			<exclusions>
@@ -175,32 +191,9 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
-
-		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-core</artifactId>
-			<version>${fasterxml.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-databind</artifactId>
-			<version>${fasterxml.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.fasterxml.jackson.module</groupId>
-			<artifactId>jackson-module-scala_${scala.binary.version}</artifactId>
-			<version>${fasterxml.version}</version>
-		</dependency>
-		<dependency> <!-- optional dependency of joda-time that is mandatory in Scala -->
-			<groupId>org.joda</groupId>
-			<artifactId>joda-convert</artifactId>
-			<version>1.2</version>
-		</dependency>
-
 		<dependency>
 			<groupId>com.github.tomakehurst</groupId>
 			<artifactId>wiremock</artifactId>
-			<version>1.56</version>
 			<!-- Include everything below here if you have dependency conflicts -->
 			<classifier>standalone</classifier>
 			<exclusions>
@@ -255,8 +248,22 @@
 			</exclusions>
 			<scope>test</scope>
 		</dependency>
-
-
+		<dependency>
+			<groupId>org.apache.spark</groupId>
+			<artifactId>spark-sql_${scala.tools.version}</artifactId>
+			<scope>test</scope>
+			<classifier>tests</classifier>
+		</dependency>
+		<dependency>
+			<groupId>org.scalatest</groupId>
+			<artifactId>scalatest_${scala.tools.version}</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.scalatest</groupId>
+			<artifactId>scalatest-funsuite_${scala.tools.version}</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<properties>

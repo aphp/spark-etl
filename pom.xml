@@ -93,78 +93,181 @@ https://dzone.com/articles/deploy-maven-central -->
         <artifactId>spark-sync</artifactId>
         <version>${project.version}</version>
       </dependency>
+
+        <dependency>
+            <groupId>com.github.tomakehurst</groupId>
+            <artifactId>wiremock</artifactId>
+            <version>1.56</version>
+            <classifier>standalone</classifier>
+        </dependency>
+        <dependency>
+            <groupId>io.delta</groupId>
+            <artifactId>delta-core_${scala.tools.version}</artifactId>
+            <version>0.6.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>${postgres.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.esotericsoftware</groupId>
+            <artifactId>kryo-shaded</artifactId>
+            <version>4.0.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.solr</groupId>
+            <artifactId>solr-solrj</artifactId>
+            <version>${solr.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.solr</groupId>
+            <artifactId>solr-core</artifactId>
+            <version>${solr.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.solr</groupId>
+            <artifactId>solr-test-framework</artifactId>
+            <version>${solr.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${fasterxml.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${fasterxml.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.module</groupId>
+            <artifactId>jackson-module-scala_${scala.tools.version}</artifactId>
+            <version>${fasterxml.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.joda</groupId>
+            <artifactId>joda-convert</artifactId>
+            <version>1.2</version>
+        </dependency>
+      <dependency>
+        <groupId>com.amazon.deequ</groupId>
+        <artifactId>deequ</artifactId>
+        <version>1.0.2</version>
+      </dependency>
+      <dependency>
+        <groupId>net.jcazevedo</groupId>
+        <artifactId>moultingyaml_${scala.tools.version}</artifactId>
+        <version>${scala-yaml.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-common</artifactId>
+        <version>2.6.5</version>
+      </dependency>
+      <dependency>
+        <groupId>de.bytefish</groupId>
+        <artifactId>pgbulkinsert</artifactId>
+        <version>4.1</version>
+      </dependency>
+
+
+        <dependency>
+            <groupId>com.typesafe.scala-logging</groupId>
+            <artifactId>scala-logging_${scala.tools.version}</artifactId>
+            <version>${scala-logging.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+            <version>${scala.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-core_${scala.tools.version}</artifactId>
+            <version>${spark.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-sql_${scala.tools.version}</artifactId>
+            <version>${spark.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+
+        <!-- Test -->
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.13</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.junit.jupiter</groupId>
+          <artifactId>junit-jupiter-engine</artifactId>
+          <version>5.1.0</version>
+          <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.scalatest</groupId>
+            <artifactId>scalatest_${scala.tools.version}</artifactId>
+            <version>3.0.8</version>
+            <scope>test</scope>
+        </dependency>
+      <dependency>
+        <groupId>org.scalatest</groupId>
+        <artifactId>scalatest-funsuite_${scala.tools.version}</artifactId>
+        <version>3.3.0-SNAP2</version>
+        <scope>test</scope>
+      </dependency>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-core_${scala.tools.version}</artifactId>
+            <version>${spark.version}</version>
+            <scope>test</scope>
+            <classifier>tests</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-sql_${scala.tools.version}</artifactId>
+            <version>${spark.version}</version>
+            <scope>test</scope>
+            <classifier>tests</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-catalyst_${scala.tools.version}</artifactId>
+            <version>${spark.version}</version>
+            <scope>test</scope>
+            <classifier>tests</classifier>
+        </dependency>
+        <dependency>
+            <groupId>com.opentable.components</groupId>
+            <artifactId>otj-pg-embedded</artifactId>
+            <version>0.13.3</version>
+            <scope>test</scope>
+            <classifier>tests</classifier>
+        </dependency>
+      <dependency>
+        <groupId>com.opentable.components</groupId>
+        <artifactId>otj-pg-embedded</artifactId>
+        <version>0.13.3</version>
+        <scope>provided</scope>
+      </dependency>
+        <dependency>
+            <groupId>com.lucidworks.spark</groupId>
+            <artifactId>spark-solr</artifactId>
+            <version>3.7.6</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
   </dependencyManagement>
-
-  <dependencies>
-    <dependency>
-      <groupId>com.typesafe.scala-logging</groupId>
-      <artifactId>scala-logging_${scala.tools.version}</artifactId>
-      <version>${scala-logging.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.scala-lang</groupId>
-      <artifactId>scala-library</artifactId>
-      <version>${scala.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-core_${scala.tools.version}</artifactId>
-      <version>${spark.version}</version>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-sql_${scala.tools.version}</artifactId>
-      <version>${spark.version}</version>
-      <scope>provided</scope>
-    </dependency>
-
-
-    <!-- Test -->
-
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.13</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.scalatest</groupId>
-      <artifactId>scalatest_${scala.tools.version}</artifactId>
-      <version>3.0.8</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-core_${scala.tools.version}</artifactId>
-      <version>${spark.version}</version>
-      <scope>test</scope>
-      <classifier>tests</classifier>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-sql_${scala.tools.version}</artifactId>
-      <version>${spark.version}</version>
-      <scope>test</scope>
-      <classifier>tests</classifier>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-catalyst_${scala.tools.version}</artifactId>
-      <version>${spark.version}</version>
-      <scope>test</scope>
-      <classifier>tests</classifier>
-    </dependency>
-
-  </dependencies>
 
   <properties>
     <maven.compiler.source>1.8</maven.compiler.source>
@@ -180,6 +283,9 @@ https://dzone.com/articles/deploy-maven-central -->
     <spark-testing.version>2.4.0_0.11.0</spark-testing.version>
     <hive.version>2.3.5</hive.version>
     <scala-yaml.version>0.4.1</scala-yaml.version>
+
+      <solr.version>8.5.1</solr.version>
+      <fasterxml.version>2.6.7</fasterxml.version>
   </properties>
   <build>
     <sourceDirectory>src/main/scala</sourceDirectory>

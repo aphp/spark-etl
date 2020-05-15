@@ -390,7 +390,6 @@ https://dzone.com/articles/deploy-maven-central -->
                 <execution>
                   <goals>
                     <goal>compile</goal>
-                    <goal>testCompile</goal>
                   </goals>
                   <configuration>
                     <args>

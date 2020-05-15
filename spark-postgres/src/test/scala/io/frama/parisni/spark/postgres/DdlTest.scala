@@ -5,7 +5,7 @@ import java.sql.Date
 import java.util
 
 import org.apache.spark.sql.QueryTest
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import org.postgresql.util.PSQLException
 
 class DdlTest extends QueryTest with SparkSessionTestWrapper {

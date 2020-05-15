@@ -93,6 +93,9 @@ job_deploy_artifact:
       - pom.xml
       - spark-*/pom.xml
       - spark-*/src/**/*
+    refs:
+      - tags
+      - dev
   except:
     refs:
       - master

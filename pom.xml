@@ -53,6 +53,14 @@ https://dzone.com/articles/deploy-maven-central -->
     <module>spark-sync</module>
   </modules>
 
+    <repositories>
+        <repository>
+            <id>maven.restlet.org</id>
+            <name>maven.restlet.org</name>
+            <url>http://maven.restlet.org</url>
+        </repository>
+    </repositories>
+
   <dependencyManagement>
     <dependencies>
       <dependency>

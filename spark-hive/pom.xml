@@ -77,8 +77,7 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-  <repositories>
-  </repositories>
+
   <build>
     <sourceDirectory>src/main/scala</sourceDirectory>
     <testSourceDirectory>src/test/scala</testSourceDirectory>
@@ -109,45 +108,10 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-gpg-plugin</artifactId>
-            <version>1.6</version>
-            <executions>
-              <execution>
-                <id>sign-artifacts</id>
-                <phase>verify</phase>
-                <goals>
-                  <goal>sign</goal>
-                </goals>
-                <configuration>
-                  <keyname>${gpg.keyname}</keyname>
-                  <passphraseServerId>${gpg.keyname}</passphraseServerId>
-                </configuration>
-              </execution>
-            </executions>
           </plugin>
           <plugin>
             <groupId>net.alchim31.maven</groupId>
             <artifactId>scala-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>doc</id>
-                <phase>generate-sources</phase>
-                <goals>
-                  <goal>compile</goal>
-                </goals>
-              </execution>
-            </executions>
-            <configuration>
-              <args>
-                <arg>-P:genjavadoc:out=${project.build.directory}/genjavadoc</arg>
-              </args>
-              <compilerPlugins>
-                <compilerPlugin>
-                  <groupId>com.typesafe.genjavadoc</groupId>
-                  <artifactId>genjavadoc-plugin_2.11.12</artifactId>
-                  <version>0.13</version>
-                </compilerPlugin>
-              </compilerPlugins>
-            </configuration>
           </plugin>
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
@@ -156,13 +120,6 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-javadoc-plugin</artifactId>
-            <version>2.9</version>
-            <configuration>
-              <minmemory>64m</minmemory>
-              <maxmemory>2g</maxmemory>
-              <outputDirectory>${project.build.directory}</outputDirectory>
-              <detectLinks>true</detectLinks>
-            </configuration>
           </plugin>
         </plugins>
       </build>

@@ -37,16 +37,16 @@ object CSVTool extends LazyLogging {
       dfNull
   }
 
-  def write(df: DataFrame, path: String, mode: org.apache.spark.sql.SaveMode) = {
+  def write(df: DataFrame, path: String, mode: org.apache.spark.sql.SaveMode): Unit = {
     df.write.format("csv")
       .option("delimiter", ",")
-      .option("header", false)
+      .option("header", value = false)
       .option("nullValue", null)
       .option("emptyValue", "\"\"")
       .option("quote", "\"")
       .option("escape", "\"")
-      .option("ignoreLeadingWhiteSpace", false)
-      .option("ignoreTrailingWhiteSpace", false)
+      .option("ignoreLeadingWhiteSpace", value = false)
+      .option("ignoreTrailingWhiteSpace", value = false)
       .mode(mode)
       .save(path)
   }
@@ -59,7 +59,7 @@ object CSVTool extends LazyLogging {
       .schema(schemaSimple)
       .option("multiline", multiline.getOrElse(false))
       .option("delimiter", delimiter.getOrElse(","))
-      .option("header", true)
+      .option("header", value = true)
       .option("quote", "\"")
       .option("escape", escape.getOrElse("\""))
       .option("timestampFormat", timestampFormat.getOrElse("yyyy-MM-dd HH:mm:ss"))

@@ -36,7 +36,6 @@
     <dependency>
       <groupId>io.delta</groupId>
       <artifactId>delta-core_${scala.tools.version}</artifactId>
-      <version>0.4.0</version>
     </dependency>
     <dependency>
       <groupId>io.frama.parisni</groupId>
@@ -45,49 +44,38 @@
     <dependency>
       <groupId>net.jcazevedo</groupId>
       <artifactId>moultingyaml_${scala.tools.version}</artifactId>
-      <version>0.4.1</version>
-    </dependency>
-    <!--      <dependency>
-      <groupId>org.apache.hive</groupId>
-      <artifactId>hive-exec</artifactId>
-      <version>${hive.version}</version>
-      <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.apache.hive</groupId>
-      <artifactId>hive-jdbc</artifactId>
-      <version>${hive.version}</version>
+      <groupId>org.apache.spark</groupId>
+      <artifactId>spark-sql_${scala.tools.version}</artifactId>
       <scope>provided</scope>
     </dependency>
+
+    <!--
+      Tests
+    -->
     <dependency>
-      <groupId>org.apache.hive</groupId>
-      <artifactId>hive-service</artifactId>
-      <version>${hive.version}</version>
-      <scope>provided</scope>
+      <groupId>org.apache.spark</groupId>
+      <artifactId>spark-core_${scala.tools.version}</artifactId>
+      <scope>test</scope>
+      <classifier>tests</classifier>
     </dependency>
     <dependency>
-      <groupId>org.apache.hive</groupId>
-      <artifactId>hive-cli</artifactId>
-      <version>${hive.version}</version>
-      <scope>provided</scope>
+      <groupId>org.apache.spark</groupId>
+      <artifactId>spark-sql_${scala.tools.version}</artifactId>
+      <scope>test</scope>
+      <classifier>tests</classifier>
     </dependency>
     <dependency>
-      <groupId>org.apache.hadoop</groupId>
-      <artifactId>hadoop-common</artifactId>
-      <version>2.7.3</version>
-      <scope>provided</scope>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest_${scala.tools.version}</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.apache.hadoop</groupId>
-      <artifactId>hadoop-client</artifactId>
-      <version>2.7.3</version>
-      <scope>provided</scope>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest-funsuite_${scala.tools.version}</artifactId>
+      <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpclient</artifactId>
-      <version>4.5.8</version>
-</dependency> -->
   </dependencies>
   <repositories>
   </repositories>
@@ -164,19 +152,6 @@
           <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>build-helper-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <phase>generate-sources</phase>
-                <goals>
-                  <goal>add-source</goal>
-                </goals>
-                <configuration>
-                  <sources>
-                    <source>${project.build.directory}/genjavadoc</source>
-                  </sources>
-                </configuration>
-              </execution>
-            </executions>
           </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>

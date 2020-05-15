@@ -125,7 +125,7 @@ job_test_spark-postgres:
     paths:
       - spark-postgres/target/spark-postgres-test-suites.zip
   script:
-    - mvn -pl spark-postgres -DskipTests test
+    - mvn -pl spark-postgres test
     - test -d spark-postgres/target/surefire-reports && (cd spark-postgres/target/ ; zip -r spark-postgres-test-suites.zip surefire-reports) || :;
 
 job_test_spark-quality:
@@ -177,7 +177,7 @@ job_test_spark-query:
     paths:
       - spark-query/target/spark-query-test-suites.zip
   script:
-    - mvn -pl spark-query -DskipTests test
+    - mvn -pl spark-query test
     - test -d spark-query/target/surefire-reports && (cd spark-query/target/ ; zip -r spark-query-test-suites.zip surefire-reports) || :;
 
 job_test_spark-sync:
@@ -203,5 +203,5 @@ job_test_spark-sync:
     paths:
       - spark-sync/target/spark-sync-test-suites.zip
   script:
-    - mvn -pl spark-sync -DskipTests test
+    - mvn -pl spark-sync test
     - test -d spark-sync/target/surefire-reports && (cd spark-sync/target/ ; zip -r spark-sync-test-suites.zip surefire-reports) || :;

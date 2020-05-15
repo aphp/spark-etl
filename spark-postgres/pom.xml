@@ -38,31 +38,52 @@
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
-      <version>${postgres.version}</version>
     </dependency>
 
-    <!-- https://mvnrepository.com/artifact/de.bytefish/pgbulkinsert -->
     <dependency>
       <groupId>de.bytefish</groupId>
       <artifactId>pgbulkinsert</artifactId>
-      <version>4.1</version>
     </dependency>
 
-    <!-- https://mvnrepository.com/artifact/junit/junit -->
+    <!--
+      org.apache.spark
+    -->
+    <dependency>
+      <groupId>org.apache.spark</groupId>
+      <artifactId>spark-core_${scala.tools.version}</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.spark</groupId>
+      <artifactId>spark-sql_${scala.tools.version}</artifactId>
+      <scope>provided</scope>
+    </dependency>
 
     <!-- Test -->
     <dependency>
       <groupId>com.opentable.components</groupId>
       <artifactId>otj-pg-embedded</artifactId>
-      <version>0.13.3</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>com.opentable.components</groupId>
       <artifactId>otj-pg-embedded</artifactId>
-      <version>0.13.3</version>
       <scope>test</scope>
       <classifier>tests</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.spark</groupId>
+      <artifactId>spark-sql_${scala.tools.version}</artifactId>
+      <scope>test</scope>
+      <classifier>tests</classifier>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest-funsuite_${scala.tools.version}</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
   <build>

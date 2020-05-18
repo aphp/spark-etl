@@ -13,7 +13,6 @@
     </parent>
 
   <dependencies>
-
       <dependency>
           <groupId>io.frama.parisni</groupId>
           <artifactId>spark-dataframe</artifactId>
@@ -38,38 +37,6 @@
           <groupId>com.opentable.components</groupId>
           <artifactId>otj-pg-embedded</artifactId>
       </dependency>
-
-      <dependency>
-          <groupId>org.apache.spark</groupId>
-          <artifactId>spark-sql_${scala.tools.version}</artifactId>
-          <scope>provided</scope>
-      </dependency>
-
-      <!-- Test dependencies -->
-      <dependency>
-          <groupId>com.opentable.components</groupId>
-          <artifactId>otj-pg-embedded</artifactId>
-          <scope>test</scope>
-          <classifier>tests</classifier>
-      </dependency>
-      <dependency>
-          <groupId>org.apache.spark</groupId>
-          <artifactId>spark-core_${scala.tools.version}</artifactId>
-          <scope>test</scope>
-          <classifier>tests</classifier>
-      </dependency>
-      <dependency>
-          <groupId>org.apache.spark</groupId>
-          <artifactId>spark-sql_${scala.tools.version}</artifactId>
-          <scope>test</scope>
-          <classifier>tests</classifier>
-      </dependency>
-      <dependency>
-          <groupId>org.scalatest</groupId>
-          <artifactId>scalatest-funsuite_${scala.tools.version}</artifactId>
-          <scope>test</scope>
-      </dependency>
-
   </dependencies>
 
     <build>

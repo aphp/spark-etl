@@ -549,7 +549,7 @@ https://dzone.com/articles/deploy-maven-central -->
                 <detectLinks>true</detectLinks>
               </configuration>
             </plugin>
-            <plugin>
+            <!--<plugin>
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-gpg-plugin</artifactId>
               <version>1.6</version>
@@ -566,7 +566,7 @@ https://dzone.com/articles/deploy-maven-central -->
                   </configuration>
                 </execution>
               </executions>
-            </plugin>
+            </plugin>-->
           </plugins>
         </pluginManagement>
       </build>

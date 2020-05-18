@@ -21,7 +21,7 @@ class TestDfTool extends QueryTest with SparkSessionTestWrapper {
   test("test cast") {
 
     val inputDF = spark.sql("select '2' as c1, '1' as c2")
-    val schema = StructType(StructField("c1", IntegerType, nullable=false) :: StructField("c2", IntegerType, nullable=false) :: Nil)
+    val schema = StructType(StructField("c1", IntegerType, nullable = false) :: StructField("c2", IntegerType, nullable = false) :: Nil)
     val resultDF = spark.sql("select 2 as c1, 1 as c2")
     val testDF = DFTool.castColumns(inputDF, schema)
     checkAnswer(resultDF, testDF)
@@ -40,7 +40,7 @@ class TestDfTool extends QueryTest with SparkSessionTestWrapper {
   test("test mandatory columns") {
     val mb = new MetadataBuilder()
     val m = mb.putNull("default").build
-    val schema = StructType(StructField("c1", IntegerType, nullable=false) :: StructField("c2", IntegerType, nullable=true, m) :: Nil)
+    val schema = StructType(StructField("c1", IntegerType, nullable = false) :: StructField("c2", IntegerType, nullable = true, m) :: Nil)
     val mandatorySchema = StructType(StructField("c1", IntegerType) :: Nil)
 
     assert(DFTool.getMandatoryColumns(schema).toDDL == mandatorySchema.toDDL)
@@ -50,8 +50,8 @@ class TestDfTool extends QueryTest with SparkSessionTestWrapper {
   test("test optional columns") {
     val mb = new MetadataBuilder()
     val m = mb.putNull("default").build
-    val schema = StructType(StructField("c1", IntegerType, nullable=false) :: StructField("c2", IntegerType, nullable=true, m) :: Nil)
-    val optionalSchema = StructType(StructField("c2", IntegerType, nullable=true, m) :: Nil)
+    val schema = StructType(StructField("c1", IntegerType, nullable = false) :: StructField("c2", IntegerType, nullable = true, m) :: Nil)
+    val optionalSchema = StructType(StructField("c2", IntegerType, nullable = true, m) :: Nil)
 
     assert(DFTool.getOptionalColumns(schema).toDDL == optionalSchema.toDDL)
 
@@ -60,7 +60,7 @@ class TestDfTool extends QueryTest with SparkSessionTestWrapper {
   test("test add columns") {
     val mb = new MetadataBuilder()
     val m = mb.putNull("default").build
-    val optionalSchema = StructType(StructField("c3", IntegerType, nullable=true, m) :: Nil)
+    val optionalSchema = StructType(StructField("c3", IntegerType, nullable = true, m) :: Nil)
     val inputDF = spark.sql("select '2' as c1, '1' as c2")
     val resultDF = spark.sql("select '2' as c1, '1' as c2, cast(null as int) as c3")
 
@@ -165,6 +165,29 @@ class TestDfTool extends QueryTest with SparkSessionTestWrapper {
 
     ).toDF("dt", "Ji m", "(hi)")
     df.withColumn("dt", DFTool.toDate(col("dt"), "yyyy-MM-dd")).show
+  }
+
+
+  test("get archived tables") {
+    import spark.implicits._
+    val newDf = List((1, 2, 3), (4, 5, 6)).toDF("id", "cd", "value")
+    val old1 = List((1, 2, 4), (7, 8, 9)).toDF("id", "cd", "value")
+    val old2 = List((1, 2, 5), (7, 10, 12)).toDF("id", "cd", "value")
+
+    val result = List((1, 2, 3), (4, 5, 6), (7, 8, 9)).toDF("id", "cd", "value")
+
+    checkAnswer(result, DFTool.getArchived(Seq("id"), newDf, old1, old2))
+  }
+
+  test("get empty archived ") {
+    import spark.implicits._
+    val newDf = List((1, 2, 3), (4, 5, 6)).toDF("id", "cd", "value")
+    val old1 = List((1, 2, 4), (7, 8, 9)).toDF("id", "cd", "value")
+    val old2 = List((1, 2, 5), (7, 10, 12)).toDF("id", "cd", "value")
+
+    val result = List((1, 2, 3), (4, 5, 6)).toDF("id", "cd", "value")
+
+    checkAnswer(result, DFTool.getArchived(Seq("id"), newDf))
   }
 
 }

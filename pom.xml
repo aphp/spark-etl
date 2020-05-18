@@ -52,6 +52,14 @@ https://dzone.com/articles/deploy-maven-central -->
   </modules>
 
     <repositories>
+      <repository>
+        <id>nexus-group</id>
+        <name>nexus-group</name>
+        <url>${nexus.group.url}</url>
+        <snapshots>
+          <enabled>true</enabled>
+        </snapshots>
+      </repository>
         <repository>
             <id>maven.restlet.org</id>
             <name>maven.restlet.org</name>

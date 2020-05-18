@@ -28,19 +28,26 @@ job_start:
     - env | sort
     - mount
 
+.job_common_changes_condition: &job_common_changes_condition
+  - .gitlab-ci*yml
+  - build.sh
+  - pom.xml
+  - spark-*/pom.xml
+  - spark-*/src/**/*
+
+.job_common_condition_for_releasing: &job_common_condition_for_releasing
+  '$CI_COMMIT_BRANCH == "master" && $CI_COMMIT_MESSAGE !~ /^\[CICD\]/'
+
+.job_common_tags: &job_common_tags
+  - aphp
+  - cicd
+  - rsareth
+
 job_install:
-  tags:
-    - aphp
-    - cicd
-    - rsareth
+  tags: *job_common_tags
   stage: install
   rules:
-    - changes:
-        - .gitlab-ci*yml
-        - build.sh
-        - pom.xml
-        - spark-*/pom.xml
-        - spark-*/src/**/*
+    - changes: *job_common_changes_condition
   script:
     - ./build.sh --install
 
@@ -48,10 +55,7 @@ include:
   local: '.gitlab-ci-test.yml'
 
 job_build:
-  tags:
-    - aphp
-    - cicd
-    - rsareth
+  tags: *job_common_tags
   stage: build
   cache:
     key: "${CI_PROJECT_PATH}-${CI_JOB_NAME}"
@@ -62,36 +66,23 @@ job_build:
     paths:
       - ./spark-*/target/*.jar
   rules:
-    - changes:
-        - .gitlab-ci*yml
-        - build.sh
-        - pom.xml
-        - spark-*/pom.xml
-        - spark-*/src/**/*
+    - changes: *job_common_changes_condition
     - if: '$CI_COMMIT_BRANCH != "master"'
-    - if: '$CI_COMMIT_BRANCH == "master" && $CI_COMMIT_MESSAGE !~ /^\[CICD\]/'
+    - if: *job_common_condition_for_releasing
   script:
     - ./build.sh --package-artifact
 
 job_deploy_artifact:
   dependencies:
     - job_build
-  tags:
-    - aphp
-    - cicd
-    - rsareth
+  tags: *job_common_tags
   stage: deploy
   cache:
     key: "${CI_PROJECT_PATH}-${CI_JOB_NAME}"
     paths:
       - .m2/repository
   rules:
-    - changes:
-        - .gitlab-ci*yml
-        - build.sh
-        - pom.xml
-        - spark-*/pom.xml
-        - spark-*/src/**/*
+    - changes: *job_common_changes_condition
     - if: '$CI_COMMIT_TAG != "" || $CI_COMMIT_BRANCH == "dev"'
   retry:
     max: 2
@@ -102,25 +93,19 @@ job_deploy_artifact:
 job_release:
   dependencies:
     - job_build
-  tags:
-    - aphp
-    - cicd
-    - rsareth
+  tags: *job_common_tags
   stage: release
   cache:
     key: "${CI_PROJECT_PATH}-${CI_JOB_NAME}"
     paths:
       - .m2/repository
   rules:
-    - if: '$CI_COMMIT_BRANCH == "master" && $CI_COMMIT_MESSAGE !~ /^\[CICD\]/'
+    - if: *job_common_condition_for_releasing
   script:
     - ./build.sh --prepare-release
 
 job_end:
-  tags:
-    - aphp
-    - cicd
-    - rsareth
+  tags: *job_common_tags
   stage: .post
   script:
     - echo "End"

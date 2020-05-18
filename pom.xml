@@ -1,65 +1,66 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>io.frama.parisni</groupId>
-  <artifactId>spark-etl</artifactId>
-  <packaging>pom</packaging>
-  <version>1.0.4-SNAPSHOT</version>
-  <name>Spark ETL Parent</name>
-  <url>http://maven.apache.org</url>
-  <licenses>
-    <license>
-      <name>Apache License, Version 2.0</name>
-      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-      <distribution>repo</distribution>
-      <comments>A business-friendly OSS license</comments>
-    </license>
-  </licenses>
-  <!-- maven central with sonatype tutorial here
-https://dzone.com/articles/deploy-maven-central -->
-  <parent>
-    <groupId>org.sonatype.oss</groupId>
-    <artifactId>oss-parent</artifactId>
-    <version>9</version>
-  </parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>io.frama.parisni</groupId>
+    <artifactId>spark-etl</artifactId>
+    <packaging>pom</packaging>
+    <version>1.0.4-SNAPSHOT</version>
+    <name>Spark ETL Parent</name>
+    <url>http://maven.apache.org</url>
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+            <comments>A business-friendly OSS license</comments>
+        </license>
+    </licenses>
+    <!-- maven central with sonatype tutorial here
+  https://dzone.com/articles/deploy-maven-central -->
+    <parent>
+        <groupId>org.sonatype.oss</groupId>
+        <artifactId>oss-parent</artifactId>
+        <version>9</version>
+    </parent>
 
-  <scm>
-    <connection>scm:git:https://gitlab.com/rsareth-aphp/data/spark-etl.git</connection>
-    <developerConnection>scm:git:https://gitlab.com/rsareth-aphp/data/spark-etl.git</developerConnection>
-    <url>https://gitlab.com/rsareth-aphp/data/spark-etl</url>
-    <tag>HEAD</tag>
-  </scm>
+    <scm>
+        <connection>scm:git:https://gitlab.com/rsareth-aphp/data/spark-etl.git</connection>
+        <developerConnection>scm:git:https://gitlab.com/rsareth-aphp/data/spark-etl.git</developerConnection>
+        <url>https://gitlab.com/rsareth-aphp/data/spark-etl</url>
+        <tag>HEAD</tag>
+    </scm>
 
-  <distributionManagement>
-    <repository>
-      <id>nexus-release</id>
-      <url>${nexus.release.url}</url>
-    </repository>
-    <snapshotRepository>
-      <id>nexus-snapshot</id>
-      <url>${nexus.snapshot.url}</url>
-    </snapshotRepository>
-  </distributionManagement>
+    <distributionManagement>
+        <repository>
+            <id>nexus-release</id>
+            <url>${nexus.release.url}</url>
+        </repository>
+        <snapshotRepository>
+            <id>nexus-snapshot</id>
+            <url>${nexus.snapshot.url}</url>
+        </snapshotRepository>
+    </distributionManagement>
 
-  <modules>
-    <module>spark-query</module>
-    <module>spark-quality</module>
-    <module>spark-dataframe</module>
-    <module>spark-csv</module>
-    <module>spark-postgres</module>
-    <module>spark-hive</module>
-    <module>spark-meta</module>
-    <module>spark-sync</module>
-  </modules>
+    <modules>
+        <module>spark-query</module>
+        <module>spark-quality</module>
+        <module>spark-dataframe</module>
+        <module>spark-csv</module>
+        <module>spark-postgres</module>
+        <module>spark-hive</module>
+        <module>spark-meta</module>
+        <module>spark-sync</module>
+    </modules>
 
     <repositories>
-      <repository>
-        <id>nexus-group</id>
-        <name>nexus-group</name>
-        <url>${nexus.group.url}</url>
-        <snapshots>
-          <enabled>true</enabled>
-        </snapshots>
-      </repository>
+        <repository>
+            <id>nexus-group</id>
+            <name>nexus-group</name>
+            <url>${nexus.group.url}</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
         <repository>
             <id>maven.restlet.org</id>
             <name>maven.restlet.org</name>
@@ -67,184 +68,7 @@ https://dzone.com/articles/deploy-maven-central -->
         </repository>
     </repositories>
 
-  <dependencies>
-    <dependency>
-      <groupId>com.typesafe.scala-logging</groupId>
-      <artifactId>scala-logging_${scala.tools.version}</artifactId>
-      <version>${scala-logging.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.scala-lang</groupId>
-      <artifactId>scala-library</artifactId>
-      <version>${scala.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-core_${scala.tools.version}</artifactId>
-      <version>${spark.version}</version>
-      <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-sql_${scala.tools.version}</artifactId>
-      <version>${spark.version}</version>
-      <scope>provided</scope>
-    </dependency>
-
-
-    <!-- Test -->
-
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.scalatest</groupId>
-      <artifactId>scalatest_${scala.tools.version}</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-core_${scala.tools.version}</artifactId>
-      <version>${spark.version}</version>
-      <scope>test</scope>
-      <classifier>tests</classifier>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-sql_${scala.tools.version}</artifactId>
-      <version>${spark.version}</version>
-      <scope>test</scope>
-      <classifier>tests</classifier>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.spark</groupId>
-      <artifactId>spark-catalyst_${scala.tools.version}</artifactId>
-      <version>${spark.version}</version>
-      <scope>test</scope>
-      <classifier>tests</classifier>
-    </dependency>
-  </dependencies>
-
-  <dependencyManagement>
     <dependencies>
-      <dependency>
-        <groupId>io.frama.parisni</groupId>
-        <artifactId>spark-csv</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.frama.parisni</groupId>
-        <artifactId>spark-dataframe</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.frama.parisni</groupId>
-        <artifactId>spark-hive</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.frama.parisni</groupId>
-        <artifactId>spark-meta</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.frama.parisni</groupId>
-        <artifactId>spark-postgres</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>io.frama.parisni</groupId>
-        <artifactId>spark-sync</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-        <dependency>
-            <groupId>com.github.tomakehurst</groupId>
-            <artifactId>wiremock</artifactId>
-            <version>1.56</version>
-            <classifier>standalone</classifier>
-        </dependency>
-        <dependency>
-            <groupId>io.delta</groupId>
-            <artifactId>delta-core_${scala.tools.version}</artifactId>
-            <version>0.6.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
-            <version>${postgres.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.esotericsoftware</groupId>
-            <artifactId>kryo-shaded</artifactId>
-            <version>4.0.2</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.solr</groupId>
-            <artifactId>solr-solrj</artifactId>
-            <version>${solr.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.solr</groupId>
-            <artifactId>solr-core</artifactId>
-            <version>${solr.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.solr</groupId>
-            <artifactId>solr-test-framework</artifactId>
-            <version>${solr.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-            <version>${fasterxml.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${fasterxml.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.module</groupId>
-            <artifactId>jackson-module-scala_${scala.tools.version}</artifactId>
-            <version>${fasterxml.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.joda</groupId>
-            <artifactId>joda-convert</artifactId>
-            <version>1.2</version>
-        </dependency>
-      <dependency>
-        <groupId>com.amazon.deequ</groupId>
-        <artifactId>deequ</artifactId>
-        <version>1.0.2</version>
-      </dependency>
-      <dependency>
-        <groupId>net.jcazevedo</groupId>
-        <artifactId>moultingyaml_${scala.tools.version}</artifactId>
-        <version>${scala-yaml.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.hadoop</groupId>
-        <artifactId>hadoop-common</artifactId>
-        <version>2.6.5</version>
-      </dependency>
-      <dependency>
-        <groupId>de.bytefish</groupId>
-        <artifactId>pgbulkinsert</artifactId>
-        <version>4.1</version>
-      </dependency>
-
-
         <dependency>
             <groupId>com.typesafe.scala-logging</groupId>
             <artifactId>scala-logging_${scala.tools.version}</artifactId>
@@ -277,22 +101,15 @@ https://dzone.com/articles/deploy-maven-central -->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.13</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-          <groupId>org.junit.jupiter</groupId>
-          <artifactId>junit-jupiter-engine</artifactId>
-          <version>5.1.0</version>
-          <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.scalatest</groupId>
             <artifactId>scalatest_${scala.tools.version}</artifactId>
-            <version>${scalatest.version}</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-core_${scala.tools.version}</artifactId>
@@ -300,6 +117,7 @@ https://dzone.com/articles/deploy-maven-central -->
             <scope>test</scope>
             <classifier>tests</classifier>
         </dependency>
+
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-sql_${scala.tools.version}</artifactId>
@@ -307,6 +125,7 @@ https://dzone.com/articles/deploy-maven-central -->
             <scope>test</scope>
             <classifier>tests</classifier>
         </dependency>
+
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-catalyst_${scala.tools.version}</artifactId>
@@ -314,347 +133,541 @@ https://dzone.com/articles/deploy-maven-central -->
             <scope>test</scope>
             <classifier>tests</classifier>
         </dependency>
-        <dependency>
-            <groupId>com.opentable.components</groupId>
-            <artifactId>otj-pg-embedded</artifactId>
-            <version>0.13.3</version>
-            <scope>test</scope>
-            <classifier>tests</classifier>
-        </dependency>
-      <dependency>
-        <groupId>com.opentable.components</groupId>
-        <artifactId>otj-pg-embedded</artifactId>
-        <version>0.13.3</version>
-        <scope>provided</scope>
-      </dependency>
-        <dependency>
-            <groupId>com.lucidworks.spark</groupId>
-            <artifactId>spark-solr</artifactId>
-            <version>3.7.6</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
-  </dependencyManagement>
 
-  <properties>
-    <maven.compiler.source>1.8</maven.compiler.source>
-    <maven.compiler.target>1.8</maven.compiler.target>
-    <encoding>UTF-8</encoding>
-    <scala.tools.version>2.11</scala.tools.version>
-    <scala.version>2.11.11</scala.version>
-    <spark.version>2.4.3</spark.version>
-    <logback.version>1.0.13</logback.version>
-    <slf4j.version>1.7.25</slf4j.version>
-    <scala-logging.version>3.9.2</scala-logging.version>
-    <postgres.version>42.2.5</postgres.version>
-    <spark-testing.version>2.4.0_0.11.0</spark-testing.version>
-    <hive.version>2.3.5</hive.version>
-    <scala-yaml.version>0.4.1</scala-yaml.version>
-    <scalatest.version>3.0.8</scalatest.version>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.frama.parisni</groupId>
+                <artifactId>spark-csv</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.frama.parisni</groupId>
+                <artifactId>spark-dataframe</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.frama.parisni</groupId>
+                <artifactId>spark-hive</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.frama.parisni</groupId>
+                <artifactId>spark-meta</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.frama.parisni</groupId>
+                <artifactId>spark-postgres</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.frama.parisni</groupId>
+                <artifactId>spark-sync</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
-      <solr.version>8.5.1</solr.version>
-      <fasterxml.version>2.6.7</fasterxml.version>
-    <release.name>RELEASE</release.name>
-    <snapshot.name>SNAPSHOT</snapshot.name>
-  </properties>
-  <build>
-    <sourceDirectory>src/main/scala</sourceDirectory>
-    <testSourceDirectory>src/test/scala</testSourceDirectory>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-site-plugin</artifactId>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-project-info-reports-plugin</artifactId>
-      </plugin>
-      <plugin>
-        <artifactId>maven-deploy-plugin</artifactId>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-release-plugin</artifactId>
-      </plugin>
-    </plugins>
-  </build>
+            <dependency>
+                <groupId>com.github.tomakehurst</groupId>
+                <artifactId>wiremock</artifactId>
+                <version>1.56</version>
+                <classifier>standalone</classifier>
+            </dependency>
+            <dependency>
+                <groupId>io.delta</groupId>
+                <artifactId>delta-core_${scala.tools.version}</artifactId>
+                <version>0.6.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.postgresql</groupId>
+                <artifactId>postgresql</artifactId>
+                <version>${postgres.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.esotericsoftware</groupId>
+                <artifactId>kryo-shaded</artifactId>
+                <version>4.0.2</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.solr</groupId>
+                <artifactId>solr-solrj</artifactId>
+                <version>${solr.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.solr</groupId>
+                <artifactId>solr-core</artifactId>
+                <version>${solr.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.solr</groupId>
+                <artifactId>solr-test-framework</artifactId>
+                <version>${solr.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>${fasterxml.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${fasterxml.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.module</groupId>
+                <artifactId>jackson-module-scala_${scala.tools.version}</artifactId>
+                <version>${fasterxml.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.joda</groupId>
+                <artifactId>joda-convert</artifactId>
+                <version>1.2</version>
+            </dependency>
+            <dependency>
+                <groupId>com.amazon.deequ</groupId>
+                <artifactId>deequ</artifactId>
+                <version>1.0.2</version>
+            </dependency>
+            <dependency>
+                <groupId>net.jcazevedo</groupId>
+                <artifactId>moultingyaml_${scala.tools.version}</artifactId>
+                <version>${scala-yaml.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-common</artifactId>
+                <version>2.6.5</version>
+            </dependency>
+            <dependency>
+                <groupId>de.bytefish</groupId>
+                <artifactId>pgbulkinsert</artifactId>
+                <version>4.1</version>
+            </dependency>
 
-  <profiles>
-    <!--
-      By default, it is always activated.
-    -->
-    <profile>
-      <id>default</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <build>
-        <pluginManagement>
-          <plugins>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-site-plugin</artifactId>
-              <version>3.7.1</version>
-            </plugin>
-            <plugin>
-              <groupId>org.scalatest</groupId>
-              <artifactId>scalatest-maven-plugin</artifactId>
-              <version>2.0.0</version>
-              <configuration>
-                <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
-                <junitxml>.</junitxml>
-                <filereports>WDF TestSuite.txt</filereports>
-              </configuration>
-              <executions>
-                <execution>
-                  <id>test</id>
-                  <goals>
-                    <goal>test</goal>
-                  </goals>
-                </execution>
-              </executions>
-            </plugin>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-shade-plugin</artifactId>
-              <version>3.1.0</version>
-              <executions>
-                <execution>
-                  <phase>package</phase>
-                  <goals>
-                    <goal>shade</goal>
-                  </goals>
-                  <configuration>
-                    <shadedArtifactAttached>true</shadedArtifactAttached>
-                    <shadedClassifierName>shaded</shadedClassifierName>
-                    <filters>
-                      <filter>
-                        <artifact>*:*</artifact>
-                        <excludes>
-                          <exclude>META-INF/*.SF</exclude>
-                          <exclude>META-INF/*.DSA</exclude>
-                          <exclude>META-INF/*.RSA</exclude>
-                        </excludes>
-                      </filter>
-                    </filters>
-                    <artifactSet>
-                      <excludes>
-                        <!-- begin removed for livy-->
-                        <exclude>org.scala-lang:scala-library</exclude>
-                        <exclude>org.scala-lang:scala-reflect</exclude>
-                        <exclude>org.scala-lang.modules:scala-parser-combinators_${scala.tools.version}</exclude>
-                        <exclude>org.postgresql:postgresql</exclude>
-                        <!-- end   removed for livy-->
-                        <exclude>log4j:log4j</exclude>
-                        <exclude>org.slf4j:*</exclude>
-                      </excludes>
-                    </artifactSet>
-                    <relocations>
-                    </relocations>
-                  </configuration>
-                </execution>
-              </executions>
-            </plugin>
-            <plugin>
-              <!-- see http://davidb.github.com/scala-maven-plugin -->
-              <groupId>net.alchim31.maven</groupId>
-              <artifactId>scala-maven-plugin</artifactId>
-              <version>3.2.0</version>
-              <executions>
-                <execution>
-                  <goals>
-                    <goal>compile</goal>
-                    <goal>testCompile</goal>
-                  </goals>
-                </execution>
-              </executions>
-            </plugin>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-surefire-plugin</artifactId>
-              <version>3.0.0-M4</version>
-              <configuration>
-                <skipTests>false</skipTests>
-                <useFile>false</useFile>
-                <disableXmlReport>true</disableXmlReport>
-                <!-- If you have classpath issue like NoDefClassError,... -->
-                <!-- useManifestOnlyJar>false</useManifestOnlyJar -->
-                <includes>
-                  <include>**/*Test.*</include>
-                  <include>**/*Suite.*</include>
-                </includes>
-                <filters>
-                  <filter>
-                    <artifact>*:*</artifact>
-                    <excludes>
-                      <exclude>META-INF/*.SF</exclude>
-                      <exclude>META-INF/*.DSA</exclude>
-                      <exclude>META-INF/*.RSA</exclude>
-                    </excludes>
-                  </filter>
-                </filters>
-              </configuration>
-            </plugin>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-source-plugin</artifactId>
-              <version>3.2.0</version>
-              <executions>
-                <execution>
-                  <id>attach-sources</id>
-                  <phase>deploy</phase>
-                  <goals>
-                    <goal>jar-no-fork</goal>
-                  </goals>
-                </execution>
-              </executions>
-            </plugin>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-deploy-plugin</artifactId>
-              <version>3.0.0-M1</version>
-              <executions>
-                <execution>
-                  <id>default-deploy</id>
-                  <phase>deploy</phase>
-                  <goals>
-                    <goal>deploy</goal>
-                  </goals>
-                </execution>
-              </executions>
-            </plugin>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-project-info-reports-plugin</artifactId>
-              <version>3.0.0</version>
-            </plugin>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-javadoc-plugin</artifactId>
-              <version>3.2.0</version>
-              <executions>
-                <execution>
-                  <id>attach-javadocs</id>
-                  <goals>
-                    <goal>jar</goal>
-                  </goals>
-                </execution>
-              </executions>
-            </plugin>
-            <plugin>
-              <groupId>org.sonatype.plugins</groupId>
-              <artifactId>nexus-staging-maven-plugin</artifactId>
-              <version>1.6.8</version>
-              <configuration>
-                <serverId>nexus</serverId>
-                <nexusUrl>http://10.188.192.40:8081/</nexusUrl>
-                <skipStaging>true</skipStaging>
-              </configuration>
-            </plugin>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-release-plugin</artifactId>
-              <version>3.0.0-M1</version>
-              <configuration>
-                <arguments>-DskipTests</arguments>
-                <developmentVersion>${snapshot.name}</developmentVersion>
-                <releaseVersion>${release.name}</releaseVersion>
-                <scmCommentPrefix>[CICD]</scmCommentPrefix>
-                <scmDevelopmentCommitComment>@{prefix} Snapshot: ${snapshot.name}</scmDevelopmentCommitComment>
-                <scmReleaseCommitComment>@{prefix} Release: ${release.name}</scmReleaseCommitComment>
-                <tag>${release.name}</tag>
-                <tagNameFormat>@{project.version}</tagNameFormat>
-              </configuration>
-            </plugin>
-          </plugins>
-        </pluginManagement>
-      </build>
-    </profile>
 
-    <!--
-      Only for generating the javadoc
-    -->
-    <profile>
-      <id>javadoc</id>
-      <build>
-        <pluginManagement>
-          <plugins>
+            <dependency>
+                <groupId>com.typesafe.scala-logging</groupId>
+                <artifactId>scala-logging_${scala.tools.version}</artifactId>
+                <version>${scala-logging.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.scala-lang</groupId>
+                <artifactId>scala-library</artifactId>
+                <version>${scala.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.spark</groupId>
+                <artifactId>spark-core_${scala.tools.version}</artifactId>
+                <version>${spark.version}</version>
+                <scope>provided</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.spark</groupId>
+                <artifactId>spark-sql_${scala.tools.version}</artifactId>
+                <version>${spark.version}</version>
+                <scope>provided</scope>
+            </dependency>
+
+
+            <!-- Test -->
+
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.13</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-engine</artifactId>
+                <version>5.1.0</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.scalatest</groupId>
+                <artifactId>scalatest_${scala.tools.version}</artifactId>
+                <version>${scalatest.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.spark</groupId>
+                <artifactId>spark-core_${scala.tools.version}</artifactId>
+                <version>${spark.version}</version>
+                <scope>test</scope>
+                <classifier>tests</classifier>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.spark</groupId>
+                <artifactId>spark-sql_${scala.tools.version}</artifactId>
+                <version>${spark.version}</version>
+                <scope>test</scope>
+                <classifier>tests</classifier>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.spark</groupId>
+                <artifactId>spark-catalyst_${scala.tools.version}</artifactId>
+                <version>${spark.version}</version>
+                <scope>test</scope>
+                <classifier>tests</classifier>
+            </dependency>
+            <dependency>
+                <groupId>com.opentable.components</groupId>
+                <artifactId>otj-pg-embedded</artifactId>
+                <version>0.13.3</version>
+                <scope>test</scope>
+                <classifier>tests</classifier>
+            </dependency>
+            <dependency>
+                <groupId>com.opentable.components</groupId>
+                <artifactId>otj-pg-embedded</artifactId>
+                <version>0.13.3</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.lucidworks.spark</groupId>
+                <artifactId>spark-solr</artifactId>
+                <version>3.7.6</version>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <encoding>UTF-8</encoding>
+        <scala.tools.version>2.11</scala.tools.version>
+        <scala.version>2.11.11</scala.version>
+        <spark.version>2.4.3</spark.version>
+        <logback.version>1.0.13</logback.version>
+        <slf4j.version>1.7.25</slf4j.version>
+        <scala-logging.version>3.9.2</scala-logging.version>
+        <postgres.version>42.2.5</postgres.version>
+        <spark-testing.version>2.4.0_0.11.0</spark-testing.version>
+        <hive.version>2.3.5</hive.version>
+        <scala-yaml.version>0.4.1</scala-yaml.version>
+        <scalatest.version>3.0.8</scalatest.version>
+        <solr.version>8.5.1</solr.version>
+        <fasterxml.version>2.6.7</fasterxml.version>
+        <release.name>RELEASE</release.name>
+        <snapshot.name>SNAPSHOT</snapshot.name>
+    </properties>
+    <build>
+        <sourceDirectory>src/main/scala</sourceDirectory>
+        <testSourceDirectory>src/test/scala</testSourceDirectory>
+        <plugins>
             <plugin>
-              <groupId>net.alchim31.maven</groupId>
-              <artifactId>scala-maven-plugin</artifactId>
-              <version>3.2.0</version>
-              <executions>
-                <execution>
-                  <id>doc</id>
-                  <phase>generate-sources</phase>
-                  <goals>
-                    <goal>compile</goal>
-                  </goals>
-                </execution>
-              </executions>
-              <configuration>
-                <args>
-                  <arg>-P:genjavadoc:out=${project.build.directory}/genjavadoc</arg>
-                </args>
-                <compilerPlugins>
-                  <compilerPlugin>
-                    <groupId>com.typesafe.genjavadoc</groupId>
-                    <artifactId>genjavadoc-plugin_2.12.12</artifactId>
-                    <version>0.13</version>
-                  </compilerPlugin>
-                </compilerPlugins>
-              </configuration>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-site-plugin</artifactId>
             </plugin>
             <plugin>
-              <groupId>org.codehaus.mojo</groupId>
-              <artifactId>build-helper-maven-plugin</artifactId>
-              <version>3.1.0</version>
-              <executions>
-                <execution>
-                  <phase>generate-sources</phase>
-                  <goals>
-                    <goal>add-source</goal>
-                  </goals>
-                  <configuration>
-                    <sources>
-                      <source>${project.build.directory}/genjavadoc</source>
-                    </sources>
-                  </configuration>
-                </execution>
-              </executions>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-project-info-reports-plugin</artifactId>
             </plugin>
             <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-javadoc-plugin</artifactId>
-              <version>2.9</version>
-              <configuration>
-                <minmemory>64m</minmemory>
-                <maxmemory>2g</maxmemory>
-                <outputDirectory>${project.build.directory}</outputDirectory>
-                <detectLinks>true</detectLinks>
-              </configuration>
+                <artifactId>maven-deploy-plugin</artifactId>
             </plugin>
-            <!--<plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-gpg-plugin</artifactId>
-              <version>1.6</version>
-              <executions>
-                <execution>
-                  <id>sign-artifacts</id>
-                  <phase>verify</phase>
-                  <goals>
-                    <goal>sign</goal>
-                  </goals>
-                  <configuration>
-                    <keyname>${gpg.keyname}</keyname>
-                    <passphraseServerId>${gpg.keyname}</passphraseServerId>
-                  </configuration>
-                </execution>
-              </executions>
-            </plugin>-->
-          </plugins>
-        </pluginManagement>
-      </build>
-    </profile>
-  </profiles>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <!--
+          By default, it is always activated.
+        -->
+        <profile>
+            <id>default</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <groupId>org.apache.maven.plugins</groupId>
+                            <artifactId>maven-site-plugin</artifactId>
+                            <version>3.7.1</version>
+                        </plugin>
+                        <plugin>
+                            <groupId>org.scalatest</groupId>
+                            <artifactId>scalatest-maven-plugin</artifactId>
+                            <version>2.0.0</version>
+                            <configuration>
+                                <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
+                                <junitxml>.</junitxml>
+                                <filereports>WDF TestSuite.txt</filereports>
+                            </configuration>
+                            <executions>
+                                <execution>
+                                    <id>test</id>
+                                    <phase>test</phase>
+                                    <goals>
+                                        <goal>test</goal>
+                                    </goals>
+                                </execution>
+                            </executions>
+                        </plugin>
+                        <plugin>
+                            <groupId>org.apache.maven.plugins</groupId>
+                            <artifactId>maven-shade-plugin</artifactId>
+                            <version>3.1.0</version>
+                            <executions>
+                                <execution>
+                                    <phase>package</phase>
+                                    <goals>
+                                        <goal>shade</goal>
+                                    </goals>
+                                    <configuration>
+                                        <shadedArtifactAttached>true</shadedArtifactAttached>
+                                        <shadedClassifierName>shaded</shadedClassifierName>
+                                        <filters>
+                                            <filter>
+                                                <artifact>*:*</artifact>
+                                                <excludes>
+                                                    <exclude>META-INF/*.SF</exclude>
+                                                    <exclude>META-INF/*.DSA</exclude>
+                                                    <exclude>META-INF/*.RSA</exclude>
+                                                </excludes>
+                                            </filter>
+                                        </filters>
+                                        <artifactSet>
+                                            <excludes>
+                                                <!-- begin removed for livy-->
+                                                <exclude>org.scala-lang:scala-library</exclude>
+                                                <exclude>org.scala-lang:scala-reflect</exclude>
+                                                <exclude>
+                                                    org.scala-lang.modules:scala-parser-combinators_${scala.tools.version}
+                                                </exclude>
+                                                <exclude>org.postgresql:postgresql</exclude>
+                                                <!-- end   removed for livy-->
+                                                <exclude>log4j:log4j</exclude>
+                                                <exclude>org.slf4j:*</exclude>
+                                            </excludes>
+                                        </artifactSet>
+                                        <relocations>
+                                        </relocations>
+                                    </configuration>
+                                </execution>
+                            </executions>
+                        </plugin>
+                        <plugin>
+                            <!-- see http://davidb.github.com/scala-maven-plugin -->
+                            <groupId>net.alchim31.maven</groupId>
+                            <artifactId>scala-maven-plugin</artifactId>
+                            <version>3.2.0</version>
+                            <executions>
+                                <execution>
+                                    <id>compile</id>
+                                    <goals>
+                                        <goal>compile</goal>
+                                        <goal>testCompile</goal>
+                                    </goals>
+                                </execution>
+                                <execution>
+                                    <id>test</id>
+                                    <phase>test</phase>
+                                    <goals>
+                                        <goal>compile</goal>
+                                        <goal>testCompile</goal>
+                                    </goals>
+                                </execution>
+                            </executions>
+                        </plugin>
+                        <plugin>
+                            <groupId>org.apache.maven.plugins</groupId>
+                            <artifactId>maven-surefire-plugin</artifactId>
+                            <version>3.0.0-M4</version>
+                            <configuration>
+                                <skipTests>true</skipTests>
+                                <useFile>false</useFile>
+                                <disableXmlReport>true</disableXmlReport>
+                                <!-- If you have classpath issue like NoDefClassError,... -->
+                                <!-- useManifestOnlyJar>false</useManifestOnlyJar -->
+                                <includes>
+                                    <include>**/*Test.*</include>
+                                    <include>**/*Suite.*</include>
+                                </includes>
+                                <filters>
+                                    <filter>
+                                        <artifact>*:*</artifact>
+                                        <excludes>
+                                            <exclude>META-INF/*.SF</exclude>
+                                            <exclude>META-INF/*.DSA</exclude>
+                                            <exclude>META-INF/*.RSA</exclude>
+                                        </excludes>
+                                    </filter>
+                                </filters>
+                            </configuration>
+                        </plugin>
+                        <plugin>
+                            <groupId>org.apache.maven.plugins</groupId>
+                            <artifactId>maven-source-plugin</artifactId>
+                            <version>3.2.0</version>
+                            <executions>
+                                <execution>
+                                    <id>attach-sources</id>
+                                    <phase>deploy</phase>
+                                    <goals>
+                                        <goal>jar-no-fork</goal>
+                                    </goals>
+                                </execution>
+                            </executions>
+                        </plugin>
+                        <plugin>
+                            <groupId>org.apache.maven.plugins</groupId>
+                            <artifactId>maven-deploy-plugin</artifactId>
+                            <version>3.0.0-M1</version>
+                            <executions>
+                                <execution>
+                                    <id>default-deploy</id>
+                                    <phase>deploy</phase>
+                                    <goals>
+                                        <goal>deploy</goal>
+                                    </goals>
+                                </execution>
+                            </executions>
+                        </plugin>
+                        <plugin>
+                            <groupId>org.apache.maven.plugins</groupId>
+                            <artifactId>maven-project-info-reports-plugin</artifactId>
+                            <version>3.0.0</version>
+                        </plugin>
+                        <plugin>
+                            <groupId>org.apache.maven.plugins</groupId>
+                            <artifactId>maven-javadoc-plugin</artifactId>
+                            <version>3.2.0</version>
+                            <executions>
+                                <execution>
+                                    <id>attach-javadocs</id>
+                                    <goals>
+                                        <goal>jar</goal>
+                                    </goals>
+                                </execution>
+                            </executions>
+                        </plugin>
+                        <plugin>
+                            <groupId>org.sonatype.plugins</groupId>
+                            <artifactId>nexus-staging-maven-plugin</artifactId>
+                            <version>1.6.8</version>
+                            <configuration>
+                                <serverId>nexus</serverId>
+                                <nexusUrl>http://10.188.192.40:8081/</nexusUrl>
+                                <skipStaging>true</skipStaging>
+                            </configuration>
+                        </plugin>
+                        <plugin>
+                            <groupId>org.apache.maven.plugins</groupId>
+                            <artifactId>maven-release-plugin</artifactId>
+                            <version>3.0.0-M1</version>
+                            <configuration>
+                                <arguments>-DskipTests</arguments>
+                                <developmentVersion>${snapshot.name}</developmentVersion>
+                                <releaseVersion>${release.name}</releaseVersion>
+                                <scmCommentPrefix>[CICD]</scmCommentPrefix>
+                                <scmDevelopmentCommitComment>@{prefix} Snapshot: ${snapshot.name}
+                                </scmDevelopmentCommitComment>
+                                <scmReleaseCommitComment>@{prefix} Release: ${release.name}</scmReleaseCommitComment>
+                                <tag>${release.name}</tag>
+                                <tagNameFormat>@{project.version}</tagNameFormat>
+                            </configuration>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+            </build>
+        </profile>
+
+        <!--
+          Only for generating the javadoc
+        -->
+        <profile>
+            <id>javadoc</id>
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <groupId>net.alchim31.maven</groupId>
+                            <artifactId>scala-maven-plugin</artifactId>
+                            <version>3.2.0</version>
+                            <executions>
+                                <execution>
+                                    <id>doc</id>
+                                    <phase>generate-sources</phase>
+                                    <goals>
+                                        <goal>compile</goal>
+                                    </goals>
+                                </execution>
+                            </executions>
+                            <configuration>
+                                <args>
+                                    <arg>-P:genjavadoc:out=${project.build.directory}/genjavadoc</arg>
+                                </args>
+                                <compilerPlugins>
+                                    <compilerPlugin>
+                                        <groupId>com.typesafe.genjavadoc</groupId>
+                                        <artifactId>genjavadoc-plugin_2.12.12</artifactId>
+                                        <version>0.13</version>
+                                    </compilerPlugin>
+                                </compilerPlugins>
+                            </configuration>
+                        </plugin>
+                        <plugin>
+                            <groupId>org.codehaus.mojo</groupId>
+                            <artifactId>build-helper-maven-plugin</artifactId>
+                            <version>3.1.0</version>
+                            <executions>
+                                <execution>
+                                    <phase>generate-sources</phase>
+                                    <goals>
+                                        <goal>add-source</goal>
+                                    </goals>
+                                    <configuration>
+                                        <sources>
+                                            <source>${project.build.directory}/genjavadoc</source>
+                                        </sources>
+                                    </configuration>
+                                </execution>
+                            </executions>
+                        </plugin>
+                        <plugin>
+                            <groupId>org.apache.maven.plugins</groupId>
+                            <artifactId>maven-javadoc-plugin</artifactId>
+                            <version>2.9</version>
+                            <configuration>
+                                <minmemory>64m</minmemory>
+                                <maxmemory>2g</maxmemory>
+                                <outputDirectory>${project.build.directory}</outputDirectory>
+                                <detectLinks>true</detectLinks>
+                            </configuration>
+                        </plugin>
+                        <!--<plugin>
+                          <groupId>org.apache.maven.plugins</groupId>
+                          <artifactId>maven-gpg-plugin</artifactId>
+                          <version>1.6</version>
+                          <executions>
+                            <execution>
+                              <id>sign-artifacts</id>
+                              <phase>verify</phase>
+                              <goals>
+                                <goal>sign</goal>
+                              </goals>
+                              <configuration>
+                                <keyname>${gpg.keyname}</keyname>
+                                <passphraseServerId>${gpg.keyname}</passphraseServerId>
+                              </configuration>
+                            </execution>
+                          </executions>
+                        </plugin>-->
+                    </plugins>
+                </pluginManagement>
+            </build>
+        </profile>
+    </profiles>
 </project>

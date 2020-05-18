@@ -95,6 +95,22 @@
             <scope>provided</scope>
         </dependency>
 
+        <!--
+            org.apache.hadoop
+        -->
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-client</artifactId>
+            <version>${hadoop.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-common</artifactId>
+            <version>${hadoop.version}</version>
+            <scope>provided</scope>
+        </dependency>
 
         <!-- Test -->
 
@@ -272,6 +288,19 @@
                 <scope>provided</scope>
             </dependency>
 
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-client</artifactId>
+                <version>${hadoop.version}</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.hadoop</groupId>
+                <artifactId>hadoop-common</artifactId>
+                <version>${hadoop.version}</version>
+                <scope>provided</scope>
+            </dependency>
+
 
             <!-- Test -->
 
@@ -356,6 +385,7 @@
         <fasterxml.version>2.6.7</fasterxml.version>
         <release.name>RELEASE</release.name>
         <snapshot.name>SNAPSHOT</snapshot.name>
+        <hadoop.version>2.7.3</hadoop.version>
     </properties>
     <build>
         <sourceDirectory>src/main/scala</sourceDirectory>

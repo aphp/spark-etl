@@ -1,6 +1,11 @@
 <settings>
   <servers>
     <server>
+      <id>nexus-group</id>
+      <username>${nexus.user}</username>
+      <password>${nexus.password}</password>
+    </server>
+    <server>
       <id>nexus-release</id>
       <username>${nexus.user}</username>
       <password>${nexus.password}</password>

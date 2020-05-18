@@ -43,6 +43,11 @@ job_start:
   - cicd
   - rsareth
 
+.job_common_m2_cache: &job_common_m2_cache
+  key: "${CI_PROJECT_PATH}-${CI_JOB_NAME}"
+  paths:
+    - .m2/repository
+
 job_install:
   tags: *job_common_tags
   stage: install
@@ -57,10 +62,7 @@ include:
 job_build:
   tags: *job_common_tags
   stage: build
-  cache:
-    key: "${CI_PROJECT_PATH}-${CI_JOB_NAME}"
-    paths:
-      - .m2/repository
+  cache: *job_common_m2_cache
   artifacts:
     expire_in: 1 week
     paths:
@@ -77,10 +79,7 @@ job_deploy_artifact:
     - job_build
   tags: *job_common_tags
   stage: deploy
-  cache:
-    key: "${CI_PROJECT_PATH}-${CI_JOB_NAME}"
-    paths:
-      - .m2/repository
+  cache: *job_common_m2_cache
   rules:
     - changes: *job_common_changes_condition
     - if: '$CI_COMMIT_TAG != "" || $CI_COMMIT_BRANCH == "dev"'
@@ -95,10 +94,7 @@ job_release:
     - job_build
   tags: *job_common_tags
   stage: release
-  cache:
-    key: "${CI_PROJECT_PATH}-${CI_JOB_NAME}"
-    paths:
-      - .m2/repository
+  cache: *job_common_m2_cache
   rules:
     - if: *job_common_condition_for_releasing
   script:

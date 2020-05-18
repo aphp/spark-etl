@@ -383,7 +383,7 @@
         <fasterxml.version>2.6.7</fasterxml.version>
         <release.name>RELEASE</release.name>
         <snapshot.name>SNAPSHOT</snapshot.name>
-        <hadoop.version>>2.6.5</hadoop.version>
+        <hadoop.version>2.6.5</hadoop.version>
     </properties>
     <build>
         <sourceDirectory>src/main/scala</sourceDirectory>

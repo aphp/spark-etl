@@ -16,18 +16,6 @@ stages:
   - deploy
   - release
 
-job_start:
-  image: busybox:latest
-  tags:
-    - aphp
-    - cicd
-    - rsareth
-  stage: .pre
-  script:
-    - echo "Start the build"
-    - env | sort
-    - mount
-
 .job_common_changes_condition: &job_common_changes_condition
   - .gitlab-ci*yml
   - build.sh
@@ -47,6 +35,15 @@ job_start:
   key: "${CI_PROJECT_PATH}-${CI_JOB_NAME}"
   paths:
     - .m2/repository
+
+job_start:
+  image: busybox:latest
+  tags: *job_common_tags
+  stage: .pre
+  script:
+    - echo "Start the build"
+    - env | sort
+    - mount
 
 job_install:
   tags: *job_common_tags

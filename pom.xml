@@ -81,6 +81,9 @@
             <version>${scala.version}</version>
         </dependency>
 
+        <!--
+            org.apache.spark
+        -->
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-core_${scala.tools.version}</artifactId>

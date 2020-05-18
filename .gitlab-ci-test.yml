@@ -1,4 +1,11 @@
-job_test_spark-csv:
+.job_test_common_rules_changes: &job_test_common_rules_changes
+  rules:
+    - changes:
+      - .gitlab-ci*yml
+      - build.sh
+      - pom.xml
+
+.job_test_template: &job_test_definition
   dependencies:
     - job_install
   tags:
@@ -6,202 +13,67 @@ job_test_spark-csv:
     - cicd
     - rsareth
   stage: test
-  only:
-    changes:
-      - .gitlab-ci*yml
-      - build.sh
-      - pom.xml
-      - spark-csv/pom.xml
-      - spark-csv/src/**/*
-  except:
-    refs:
-      - master
-      - tags
   artifacts:
     paths:
-      - spark-csv/target/spark-csv-test-suites.zip
+      - spark-*/target/*-test-suites.zip
   script:
-    - mvn -pl spark-csv test
-    - test -d spark-csv/target/surefire-reports && (cd spark-csv/target/ ; zip -r spark-csv-test-suites.zip surefire-reports) || :;
+    - |
+      MODULE_NAME=$(echo $CI_JOB_NAME | cut -d_ -f3)
+      mvn -pl "${MODULE_NAME}" test
+      test -d "${MODULE_NAME}"/target/surefire-reports && (cd "${MODULE_NAME}"/target/ ; zip -r "${MODULE_NAME}"-test-suites.zip surefire-reports) || :;
+
+job_test_spark-csv:
+  <<: *job_test_definition
+  rules:
+    - changes: *job_test_common_rules_changes
+      - spark-csv/pom.xml
+    - if: '$CI_COMMIT_BRANCH != "master" && $CI_COMMIT_TAG == ""'
 
 job_test_spark-dataframe:
-  dependencies:
-    - job_install
-  tags:
-    - aphp
-    - cicd
-    - rsareth
-  stage: test
-  only:
-    changes:
-      - .gitlab-ci*yml
-      - build.sh
-      - pom.xml
+  <<: *job_test_definition
+  rules:
+    - changes: *job_test_common_rules_changes
       - spark-dataframe/pom.xml
-      - spark-dataframe/src/**/*
-  except:
-    refs:
-      - master
-      - tags
-  artifacts:
-    paths:
-      - spark-dataframe/target/spark-dataframe-test-suites.zip
-  script:
-    - mvn -pl spark-dataframe test
-    - test -d spark-dataframe/target/surefire-reports && (cd spark-dataframe/target/ ; zip -r spark-dataframe-test-suites.zip surefire-reports) || :;
+    - if: '$CI_COMMIT_BRANCH != "master" && $CI_COMMIT_TAG == ""'
 
 job_test_spark-hive:
-  dependencies:
-    - job_install
-  tags:
-    - aphp
-    - cicd
-    - rsareth
-  stage: test
-  only:
-    changes:
-      - .gitlab-ci*yml
-      - build.sh
-      - pom.xml
+  <<: *job_test_definition
+  rules:
+    - changes: *job_test_common_rules_changes
       - spark-hive/pom.xml
-      - spark-hive/src/**/*
-  except:
-    refs:
-      - master
-      - tags
-  artifacts:
-    paths:
-      - spark-hive/target/spark-hive-test-suites.zip
-  script:
-    - mvn -pl spark-hive test
-    - test -d spark-hive/target/surefire-reports && (cd spark-hive/target/ ; zip -r spark-hive-test-suites.zip surefire-reports) || :;
+    - if: '$CI_COMMIT_BRANCH != "master" && $CI_COMMIT_TAG == ""'
 
 job_test_spark-meta:
-  dependencies:
-    - job_install
-  tags:
-    - aphp
-    - cicd
-    - rsareth
-  stage: test
-  only:
-    changes:
-      - .gitlab-ci*yml
-      - build.sh
-      - pom.xml
+  <<: *job_test_definition
+  rules:
+    - changes: *job_test_common_rules_changes
       - spark-meta/pom.xml
-      - spark-meta/src/**/*
-  except:
-    refs:
-      - master
-      - tags
-  artifacts:
-    paths:
-      - spark-meta/target/spark-meta-test-suites.zip
-  script:
-    - mvn -pl spark-meta test
-    - test -d spark-meta/target/surefire-reports && (cd spark-meta/target/ ; zip -r spark-meta-test-suites.zip surefire-reports) || :;
+    - if: '$CI_COMMIT_BRANCH != "master" && $CI_COMMIT_TAG == ""'
 
 job_test_spark-postgres:
-  dependencies:
-    - job_install
-  tags:
-    - aphp
-    - cicd
-    - rsareth
-  stage: test
-  only:
-    changes:
-      - .gitlab-ci*yml
-      - build.sh
-      - pom.xml
+  <<: *job_test_definition
+  rules:
+    - changes: *job_test_common_rules_changes
       - spark-postgres/pom.xml
-      - spark-postgres/src/**/*
-  except:
-    refs:
-      - master
-      - tags
-  artifacts:
-    paths:
-      - spark-postgres/target/spark-postgres-test-suites.zip
-  script:
-    - mvn -pl spark-postgres test
-    - test -d spark-postgres/target/surefire-reports && (cd spark-postgres/target/ ; zip -r spark-postgres-test-suites.zip surefire-reports) || :;
+    - if: '$CI_COMMIT_BRANCH != "master" && $CI_COMMIT_TAG == ""'
 
 job_test_spark-quality:
-  dependencies:
-    - job_install
-  tags:
-    - aphp
-    - cicd
-    - rsareth
-  stage: test
-  only:
-    changes:
-      - .gitlab-ci*yml
-      - build.sh
-      - pom.xml
+  <<: *job_test_definition
+  rules:
+    - changes: *job_test_common_rules_changes
       - spark-quality/pom.xml
-      - spark-quality/src/**/*
-  except:
-    refs:
-      - master
-      - tags
-  artifacts:
-    paths:
-      - spark-quality/target/spark-quality-test-suites.zip
-  script:
-    - mvn -pl spark-quality test
-    - test -d spark-quality/target/surefire-reports && (cd spark-quality/target/ ; zip -r spark-quality-test-suites.zip surefire-reports) || :;
+    - if: '$CI_COMMIT_BRANCH != "master" && $CI_COMMIT_TAG == ""'
 
 job_test_spark-query:
-  dependencies:
-    - job_install
-  tags:
-    - aphp
-    - cicd
-    - rsareth
-  stage: test
-  only:
-    changes:
-      - .gitlab-ci*yml
-      - build.sh
-      - pom.xml
+  <<: *job_test_definition
+  rules:
+    - changes: *job_test_common_rules_changes
       - spark-query/pom.xml
-      - spark-query/src/**/*
-  except:
-    refs:
-      - master
-      - tags
-  artifacts:
-    paths:
-      - spark-query/target/spark-query-test-suites.zip
-  script:
-    - mvn -pl spark-query test
-    - test -d spark-query/target/surefire-reports && (cd spark-query/target/ ; zip -r spark-query-test-suites.zip surefire-reports) || :;
+    - if: '$CI_COMMIT_BRANCH != "master" && $CI_COMMIT_TAG == ""'
 
 job_test_spark-sync:
-  dependencies:
-    - job_install
-  tags:
-    - aphp
-    - cicd
-    - rsareth
-  stage: test
-  only:
-    changes:
-      - .gitlab-ci*yml
-      - build.sh
-      - pom.xml
+  <<: *job_test_definition
+  rules:
+    - changes: *job_test_common_rules_changes
       - spark-sync/pom.xml
-      - spark-sync/src/**/*
-  except:
-    refs:
-      - master
-      - tags
-  artifacts:
-    paths:
-      - spark-sync/target/spark-sync-test-suites.zip
-  script:
-    - mvn -pl spark-sync test
-    - test -d spark-sync/target/surefire-reports && (cd spark-sync/target/ ; zip -r spark-sync-test-suites.zip surefire-reports) || :;
+    - if: '$CI_COMMIT_BRANCH != "master" && $CI_COMMIT_TAG == ""'

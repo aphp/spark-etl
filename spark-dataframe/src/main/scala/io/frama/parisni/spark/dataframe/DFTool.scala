@@ -6,11 +6,13 @@ import java.util.regex.Pattern
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.spark.sql.{Column, DataFrame, Row, SparkSession}
+import org.apache.spark.sql.{Column, DataFrame, Row, SaveMode, SparkSession}
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 import io.delta.tables.DeltaTable
+
+import scala.util.Try
 
 
 /** Factory for [[io.frama.parisni.spark.dataframe.DFTool]] instances. */
@@ -406,4 +408,53 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
 
     fs.exists(new Path(deltaPath + tablePath))
   }
+
+  /**
+   * Writes a parquet table even if the table already exists
+   * The strategy might not work as expected because the hive table is not created.
+   * A better strategy may be to catch the error, parse the location and remove it.
+   *
+   * @param df
+   * @param tableName
+   */
+  def saveHive(df: DataFrame, tableName: String): Unit = {
+    def write() = df.write.format("parquet").mode(SaveMode.Overwrite)
+      .saveAsTable(tableName)
+
+    if (Try {
+      write()
+    }.isFailure) { // the hdfs files apparently already exist
+      val location = getHiveLocation(df.sparkSession, tableName)
+      logger.warn(s"${location} already exists")
+      removeHiveLocation(df.sparkSession, location)
+      write()
+    }
+  }
+
+  def removeHiveLocation(spark: SparkSession, location: String) = {
+    val defaultFSConf = spark.sessionState.newHadoopConf().get("fs.defaultFS")
+    val fsConf = if (location.startsWith("file:")) {
+      "file:///"
+    } else {
+      defaultFSConf
+    }
+    val conf = new Configuration()
+    conf.set("fs.defaultFS", fsConf)
+    val fs = FileSystem.get(conf)
+
+    fs.delete(new Path(location), true)
+  }
+
+  def getHiveLocation(spark: SparkSession, tableName: String) = {
+    val path = spark
+      .sql(s"describe extended ${tableName}")
+      .filter("col_name = 'Location'")
+      .select("data_type")
+      .collect()
+      .map(row => row.getString(0))
+      .mkString
+    require(path.startsWith("hdfs://"))
+    path
+  }
+
 }

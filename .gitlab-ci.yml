@@ -93,9 +93,6 @@ job_deploy_artifact:
         - spark-*/pom.xml
         - spark-*/src/**/*
     - if: '$CI_COMMIT_TAG != "" || $CI_COMMIT_BRANCH == "dev"'
-  except:
-    refs:
-      - master
   retry:
     max: 2
     when: script_failure

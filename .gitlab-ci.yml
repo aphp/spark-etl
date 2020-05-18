@@ -88,17 +88,6 @@ job_deploy_artifact:
   script:
     - ./build.sh --deploy-artifact
 
-job_release:
-  dependencies:
-    - job_build
-  tags: *job_common_tags
-  stage: release
-  cache: *job_common_m2_cache
-  rules:
-    - if: *job_common_condition_for_releasing
-  script:
-    - ./build.sh --prepare-release
-
 job_end:
   tags: *job_common_tags
   stage: .post

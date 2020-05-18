@@ -82,6 +82,8 @@ job_deploy_artifact:
       changes: *job_common_changes_condition
     - if: '$CI_COMMIT_TAG != "" && $CI_COMMIT_BRANCH == "dev"'
       changes: *job_common_changes_condition
+    - if: '$CI_COMMIT_TAG != ""'
+      changes: *job_common_changes_condition
   retry:
     max: 2
     when: script_failure

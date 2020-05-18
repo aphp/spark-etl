@@ -179,13 +179,11 @@ then
   done
 else
   echo -e "Provided one of these options to the script $0:\n\
-\t- --build-docker
 \t- --clean
 \t- --deploy-artifact
 \t- --install
 \t- --package-artifact
 \t- --prepare-release
-\t- --push-docker
 \t- --test
 "
    exit 1

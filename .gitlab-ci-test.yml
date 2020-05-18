@@ -13,7 +13,7 @@
     - |
       MODULE_NAME=$(echo $CI_JOB_NAME | cut -d_ -f3)
       mvn -pl "${MODULE_NAME}" test
-      test -d "${MODULE_NAME}"/target/surefire-reports && (cd "${MODULE_NAME}"/target/ ; zip -r "${MODULE_NAME}"-test-suites.zip surefire-reports) || :;
+      test -d "${MODULE_NAME}/target/surefire-reports" && (cd "${MODULE_NAME}/target/" ; zip -r "${MODULE_NAME}"-test-suites.zip surefire-reports) || :;
 
 job_test_spark-csv:
   <<: *job_test_definition

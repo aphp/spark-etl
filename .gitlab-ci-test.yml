@@ -20,6 +20,9 @@
   - pom.xml
   - build.sh
 
+.job_common_rules_if: &job_common_rules_if
+  '$CI_COMMIT_BRANCH != "master" && $CI_COMMIT_TAG == ""'
+
 job_test_spark-csv:
   <<: *job_test_definition
   rules:
@@ -27,7 +30,7 @@ job_test_spark-csv:
         - << *job_test_common_rules_changes
         - spark-csv/pom.xml
         - spark-csv/**/*
-    - if: '$CI_COMMIT_BRANCH != "master" && $CI_COMMIT_TAG == ""'
+    - if: *job_common_rules_if
 
 job_test_spark-dataframe:
   <<: *job_test_definition
@@ -36,7 +39,7 @@ job_test_spark-dataframe:
         - << *job_test_common_rules_changes
         - spark-dataframe/pom.xml
         - spark-dataframe/**/*
-    - if: '$CI_COMMIT_BRANCH != "master" && $CI_COMMIT_TAG == ""'
+    - if: *job_common_rules_if
 
 job_test_spark-hive:
   <<: *job_test_definition
@@ -45,7 +48,7 @@ job_test_spark-hive:
         - << *job_test_common_rules_changes
         - spark-hive/pom.xml
         - spark-hive/**/*
-    - if: '$CI_COMMIT_BRANCH != "master" && $CI_COMMIT_TAG == ""'
+    - if: *job_common_rules_if
 
 job_test_spark-meta:
   <<: *job_test_definition
@@ -54,7 +57,7 @@ job_test_spark-meta:
         - << *job_test_common_rules_changes
         - spark-meta/pom.xml
         - spark-meta/**/*
-    - if: '$CI_COMMIT_BRANCH != "master" && $CI_COMMIT_TAG == ""'
+    - if: *job_common_rules_if
 
 job_test_spark-postgres:
   <<: *job_test_definition
@@ -63,7 +66,7 @@ job_test_spark-postgres:
         - << *job_test_common_rules_changes
         - spark-postgres/pom.xml
         - spark-postgres/**/*
-    - if: '$CI_COMMIT_BRANCH != "master" && $CI_COMMIT_TAG == ""'
+    - if: *job_common_rules_if
 
 job_test_spark-quality:
   <<: *job_test_definition
@@ -72,7 +75,7 @@ job_test_spark-quality:
         - << *job_test_common_rules_changes
         - spark-quality/pom.xml
         - spark-quality/**/*
-    - if: '$CI_COMMIT_BRANCH != "master" && $CI_COMMIT_TAG == ""'
+    - if: *job_common_rules_if
 
 job_test_spark-query:
   <<: *job_test_definition
@@ -81,7 +84,7 @@ job_test_spark-query:
         - << *job_test_common_rules_changes
         - spark-query/pom.xml
         - spark-query/**/*
-    - if: '$CI_COMMIT_BRANCH != "master" && $CI_COMMIT_TAG == ""'
+    - if: *job_common_rules_if
 
 job_test_spark-sync:
   <<: *job_test_definition
@@ -90,4 +93,4 @@ job_test_spark-sync:
         - << *job_test_common_rules_changes
         - spark-sync/pom.xml
         - spark-sync/**/*
-    - if: '$CI_COMMIT_BRANCH != "master" && $CI_COMMIT_TAG == ""'
+    - if: *job_common_rules_if

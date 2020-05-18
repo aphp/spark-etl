@@ -126,6 +126,9 @@ __prepare_release() {
     git checkout -B "${CI_BUILD_REF_NAME}"
   fi
 
+  find . -name "pom.xml.releaseBackup" | xargs rm
+  rm release.properties
+
   mvn \
     -Dpassword="${GIT_PASSWORD}" \
     -Dusername="${GIT_USER}" \

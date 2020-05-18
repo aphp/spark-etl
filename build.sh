@@ -110,19 +110,18 @@ __prepare_release() {
     exit 1
   fi
 
-  RELEASE_NAME=$(cicd_release \
-    --gitlab-server "${CI_SERVER_URL}" \
-    --gitlab-token "${GIT_PASSWORD}" \
-    --full-path-project "${CI_PROJECT_PATH}" \
-    --generate-release-name | \
-    sed -re 's/^.*: (.*)$/\1/')
+  CURRENT_VERSION=$(mvn help:evaluate -Dexpression=pom.version | egrep -v "^\[")
+  echo -e "The current version is: ${CURRENT_VERSION}\n"
 
-  SNAPSHOT_NAME=$(cicd_release \
-    --gitlab-server "${CI_SERVER_URL}" \
-    --gitlab-token "${GIT_PASSWORD}" \
-    --full-path-project "${CI_PROJECT_PATH}" \
-    --generate-snapshot-name | \
-    sed -re 's/^.*: (.*)$/\1/')
+  echo "Provide the release name"
+  read -r RELEASE_NAME
+
+  echo "Provide the snapshot name"
+  read -r SNAPSHOT_NAME
+
+  echo "${SNAPSHOT_NAME}" | grep -i snapshot || SNAPSHOT_NAME="${SNAPSHOT_NAME}-SNAPSHOT"
+
+  echo "${SNAPSHOT_NAME^^}"
 
   if [[ "${CI}" = "true" ]]
   then

@@ -464,13 +464,8 @@ https://dzone.com/articles/deploy-maven-central -->
                 <execution>
                   <goals>
                     <goal>compile</goal>
+                    <goal>testCompile</goal>
                   </goals>
-                  <configuration>
-                    <args>
-                      <arg>-dependencyfile</arg>
-                      <arg>${project.build.directory}/.scala_dependencies</arg>
-                    </args>
-                  </configuration>
                 </execution>
               </executions>
             </plugin>
@@ -479,6 +474,7 @@ https://dzone.com/articles/deploy-maven-central -->
               <artifactId>maven-surefire-plugin</artifactId>
               <version>3.0.0-M4</version>
               <configuration>
+                <skipTests>false</skipTests>
                 <useFile>false</useFile>
                 <disableXmlReport>true</disableXmlReport>
                 <!-- If you have classpath issue like NoDefClassError,... -->

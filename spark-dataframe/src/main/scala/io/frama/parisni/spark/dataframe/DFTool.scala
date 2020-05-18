@@ -457,4 +457,43 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
     path
   }
 
+  def getArchived(colJoin: Seq[String], newDf: DataFrame, dfs: DataFrame*): DataFrame = {
+    var tmp: DataFrame = newDf
+    dfs.foreach { oldDf =>
+      tmp = getArch(tmp, oldDf, colJoin)
+    }
+    tmp
+  }
+
+  def getArch(newDf: DataFrame, oldDf: DataFrame, colJoin: Seq[String]): DataFrame = {
+    val archRows = oldDf // prendre les lignes qui ne sont pas dans la nouvelle table recuperee
+      .join(newDf
+        , colJoin
+        , "left_anti")
+    unionPro(newDf :: archRows :: Nil)
+  }
+
+  def unionPro(DFList: List[DataFrame]): DataFrame = {
+
+    /**
+     * This Function Accepts DataFrame with same or Different Schema/Column Order.With some or none common columns
+     * Creates a Unioned DataFrame
+     */
+
+    val spark = DFList.head.sparkSession
+
+    val MasterColList: Array[String] = DFList.map(_.columns).reduce((x, y) => (x.union(y))).distinct
+
+    def unionExpr(myCols: Seq[String], allCols: Seq[String]): Seq[org.apache.spark.sql.Column] = {
+      allCols.toList.map(x => x match {
+        case x if myCols.contains(x) => col(x)
+        case _ => lit(null).as(x)
+      })
+    }
+
+    // Create EmptyDF , ignoring different Datatype in StructField and treating them same based on Name ignoring cases
+    val masterSchema = StructType(DFList.map(_.schema.fields).reduce((x, y) => (x.union(y))).groupBy(_.name.toUpperCase).map(_._2.head).toArray)
+    val masterEmptyDF = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], masterSchema).select(MasterColList.head, MasterColList.tail: _*)
+    DFList.map(df => df.select(unionExpr(df.columns, MasterColList): _*)).foldLeft(masterEmptyDF)((x, y) => x.union(y))
+  }
 }

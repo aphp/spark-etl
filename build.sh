@@ -14,9 +14,9 @@ export MAVEN_CLI_OPTS
 
 # Those check are only useful when you want to build the docker image from your workstation
 __check() {
-  if [[ "${DOCKER_REGISTRY}" = "" ]]
+  if [[ "${MVN_GROUP_REPOSITORY}" = "" ]]
   then
-    echo "The environment variable DOCKER_REGISTRY is not set. Set it please."
+    echo "The environment variable MVN_GROUP_REPOSITORY is not set. Set it please."
     exit 1
   fi
 
@@ -67,17 +67,6 @@ __init() {
   SHORT_COMMIT_ID=$(echo "${CI_COMMIT_SHA}" | cut -c 1-7)
   export SHORT_COMMIT_ID
 
-  DOCKER_IMAGE_BASE=$(echo "${DOCKER_REGISTRY}" | sed "s/\/$//")
-  export DOCKER_IMAGE_BASE
-  if ! [[ "${CI_COMMIT_TAG}" = "" ]]
-  then
-    export TYPE=release
-    export ID=${CI_COMMIT_TAG}
-  else
-    export TYPE=snapshot
-    export ID=${CI_COMMIT_BRANCH}-${SHORT_COMMIT_ID}
-  fi
-
   # Count the number of thread to use for maven
   OS_TYPE=$(uname -s)
   case ${OS_TYPE} in
@@ -94,24 +83,6 @@ __init() {
   export NB_THREAD_TO_USE
 #  MAVEN_CLI_OPTS="${MAVEN_CLI_OPTS} --threads ${NB_THREAD_TO_USE}"
 
-  DOCKER_IMAGE_NAME=$(mvn help:evaluate \
-    -B \
-    -Dexpression=project.artifactId \
-    -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn | \
-    grep -v -E "^\[")
-  export DOCKER_IMAGE_NAME
-
-  DOCKER_IMAGE_ID=${DOCKER_IMAGE_BASE}/${DOCKER_IMAGE_NAME}:${TYPE}--${ID}
-  export DOCKER_IMAGE_ID
-
-  if [[ "${CI_COMMIT_TAG}" = "" ]]
-  then
-    DOCKER_LATEST_IMAGE_ID=${DOCKER_IMAGE_BASE}/${DOCKER_IMAGE_NAME}:${TYPE}--${CI_COMMIT_BRANCH}--latest
-  else
-    DOCKER_LATEST_IMAGE_ID=${DOCKER_IMAGE_BASE}/${DOCKER_IMAGE_NAME}:${TYPE}--latest
-  fi
-  export DOCKER_LATEST_IMAGE_ID
-
   if [[ "${CI}" = "true" ]]
   then
     git config user.email "${GITLAB_USER_EMAIL}"
@@ -120,6 +91,7 @@ __init() {
     MAVEN_CLI_OPTS="${MAVEN_CLI_OPTS} --settings ci/settings.xml
       -Dnexus.user=${NEXUS_USER} \
       -Dnexus.password=${NEXUS_PASSWORD} \
+      -Dnexus.group.url=${MVN_GROUP_REPOSITORY} \
       -Dnexus.snapshot.url=${MVN_SNAPSHOT_REPOSITORY} \
       -Dnexus.release.url=${MVN_RELEASE_REPOSITORY}"
   fi
@@ -127,13 +99,6 @@ __init() {
   export MAVEN_CLI_OPTS
 }
 
-__login_docker() {
-  echo "${NEXUS_PASSWORD}" | docker login --username "${NEXUS_USER}" --password-stdin "${DOCKER_REGISTRY}"
-}
-
-__build_docker() {
-  docker build -t "${DOCKER_IMAGE_ID}" .
-}
 
 __prepare_release() {
   if [[ -z "${CI_PROJECT_PATH}" || -z "${GIT_USER}" || -z "${GIT_PASSWORD}" ]]
@@ -172,17 +137,6 @@ __prepare_release() {
     release:prepare
 }
 
-__push_docker() {
-  docker tag "${DOCKER_IMAGE_ID}" "${DOCKER_LATEST_IMAGE_ID}"
-  docker push "${DOCKER_LATEST_IMAGE_ID}"
-  docker rmi "${DOCKER_LATEST_IMAGE_ID}"
-  echo "Docker image successfully pushed: ${DOCKER_LATEST_IMAGE_ID}"
-
-  docker push "${DOCKER_IMAGE_ID}"
-  docker rmi "${DOCKER_IMAGE_ID}"
-  echo "Docker image successfully pushed: ${DOCKER_IMAGE_ID}"
-}
-
 # Main
 __check
 __init
@@ -193,11 +147,6 @@ then
   while [[ -n ${ARGUMENT} ]];
   do
     case "${ARGUMENT}" in
-      --build-docker)
-        __login_docker
-        __build_docker
-        break
-        ;;
       --clean)
         mvn ${MAVEN_CLI_OPTS} clean
         break
@@ -216,11 +165,6 @@ then
         ;;
       --prepare-release)
         __prepare_release
-        break
-        ;;
-      --push-docker)
-        __login_docker
-        __push_docker
         break
         ;;
       --test)

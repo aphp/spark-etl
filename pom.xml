@@ -286,6 +286,8 @@ https://dzone.com/articles/deploy-maven-central -->
 
       <solr.version>8.5.1</solr.version>
       <fasterxml.version>2.6.7</fasterxml.version>
+    <release.name>RELEASE</release.name>
+    <snapshot.name>SNAPSHOT</snapshot.name>
   </properties>
   <build>
     <sourceDirectory>src/main/scala</sourceDirectory>
@@ -301,6 +303,10 @@ https://dzone.com/articles/deploy-maven-central -->
       </plugin>
       <plugin>
         <artifactId>maven-deploy-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-release-plugin</artifactId>
       </plugin>
     </plugins>
   </build>
@@ -479,6 +485,21 @@ https://dzone.com/articles/deploy-maven-central -->
                 <serverId>nexus</serverId>
                 <nexusUrl>http://10.188.192.40:8081/</nexusUrl>
                 <skipStaging>true</skipStaging>
+              </configuration>
+            </plugin>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-release-plugin</artifactId>
+              <version>3.0.0-M1</version>
+              <configuration>
+                <arguments>-DskipTests</arguments>
+                <developmentVersion>${snapshot.name}</developmentVersion>
+                <releaseVersion>${release.name}</releaseVersion>
+                <scmCommentPrefix>[CICD]</scmCommentPrefix>
+                <scmDevelopmentCommitComment>@{prefix} Snapshot: ${snapshot.name}</scmDevelopmentCommitComment>
+                <scmReleaseCommitComment>@{prefix} Release: ${release.name}</scmReleaseCommitComment>
+                <tag>${release.name}</tag>
+                <tagNameFormat>@{project.version}</tagNameFormat>
               </configuration>
             </plugin>
           </plugins>

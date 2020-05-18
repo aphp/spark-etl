@@ -127,7 +127,7 @@ __prepare_release() {
   fi
 
   find . -name "pom.xml.releaseBackup" | xargs rm
-  rm release.properties
+  test -f release.properties && rm release.properties
 
   mvn \
     -Dpassword="${GIT_PASSWORD}" \

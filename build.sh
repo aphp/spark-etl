@@ -121,8 +121,6 @@ __prepare_release() {
 
   echo "${SNAPSHOT_NAME}" | grep -i snapshot || SNAPSHOT_NAME="${SNAPSHOT_NAME}-SNAPSHOT"
 
-  echo "${SNAPSHOT_NAME^^}"
-
   if [[ "${CI}" = "true" ]]
   then
     git checkout -B "${CI_BUILD_REF_NAME}"

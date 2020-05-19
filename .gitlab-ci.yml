@@ -21,11 +21,11 @@ stages:
   - release
 
 .job_common_changes_condition: &job_common_changes_condition
-  - .gitlab-ci*yml
-  - build.sh
-  - pom.xml
-  - spark-*/pom.xml
-  - spark-*/src/**/*
+  - ./.gitlab-ci*yml
+  - ./build.sh
+  - ./pom.xml
+  - ./spark-*/pom.xml
+  - ./spark-*/src/**/*
 
 .job_common_condition_for_releasing: &job_common_condition_for_releasing
   '$CI_COMMIT_BRANCH == "master" && $CI_COMMIT_MESSAGE !~ /^\[CICD\]/'

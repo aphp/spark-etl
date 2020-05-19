@@ -52,6 +52,7 @@ job_install:
     - if: '$CI_COMMIT_TAG =~ /^[0-9]+\.[0-9]+\.[0-9]+/'
   script:
     - ./build.sh --install
+    - ./build.sh --package-artifact
 
 include:
   local: '.gitlab-ci-test.yml'

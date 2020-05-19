@@ -6,7 +6,10 @@
     - cicd
     - rsareth
   stage: test
-  <<: *job_common_m2_cache
+  cache:
+    key: "${CI_PROJECT_PATH}-${CI_BUILD_REF_SLUG}"
+    paths:
+      - .m2/repository
   artifacts:
     expire_in: 1 month
     paths:

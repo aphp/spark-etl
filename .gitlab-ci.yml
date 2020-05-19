@@ -53,6 +53,8 @@ include:
   local: '.gitlab-ci-test.yml'
 
 job_deploy_artifact:
+  dependencies:
+    - job_install
   tags: *job_common_tags
   stage: deploy
   <<: *job_common_m2_cache

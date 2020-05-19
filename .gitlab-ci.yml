@@ -5,7 +5,7 @@ workflow:
     - if: '$CI_COMMIT_BRANCH != "master"'
 
 variables:
-  DEBUG: "false"
+  DEBUG: "true"
   MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
 
 cache:

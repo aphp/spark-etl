@@ -7,6 +7,7 @@
     - rsareth
   stage: test
   artifacts:
+    expire_in: 1 week
     paths:
       - spark-*/target/*-test-suites.zip
   script:

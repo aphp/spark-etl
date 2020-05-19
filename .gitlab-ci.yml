@@ -9,7 +9,7 @@ variables:
   MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
 
 cache:
-  key: "${CI_PROJECT_PATH_SLUG}"
+  key: "${CI_PROJECT_PATH_SLUG}-${CI_BUILD_REF_SLUG}"
   paths:
     - .m2/repository
 
@@ -36,7 +36,7 @@ stages:
   - rsareth
 
 .job_common_m2_cache: &job_common_m2_cache
-  key: "${CI_PROJECT_PATH}-${CI_JOB_NAME}"
+  key: "${CI_PROJECT_PATH}-${CI_JOB_NAME}-${CI_BUILD_REF_SLUG}"
   paths:
     - .m2/repository
 

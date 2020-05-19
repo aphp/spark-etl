@@ -52,6 +52,11 @@ job_start:
 job_install:
   tags: *job_common_tags
   stage: install
+  cache: *job_common_m2_cache
+  artifacts:
+    expire_in: 1 week
+    paths:
+      - ./spark-*/target/*.jar
   rules:
     - changes: *job_common_changes_condition
   script:
@@ -60,23 +65,9 @@ job_install:
 include:
   local: '.gitlab-ci-test.yml'
 
-job_build:
-  tags: *job_common_tags
-  stage: build
-  cache: *job_common_m2_cache
-  artifacts:
-    expire_in: 1 week
-    paths:
-      - ./spark-*/target/*.jar
-  rules:
-    - changes: *job_common_changes_condition
-    - if: *job_common_condition_for_releasing
-  script:
-    - ./build.sh --package-artifact
-
 job_deploy_artifact:
   dependencies:
-    - job_build
+    - job_install
   tags: *job_common_tags
   stage: deploy
   cache: *job_common_m2_cache

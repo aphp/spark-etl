@@ -52,14 +52,11 @@ job_install:
     - if: '$CI_COMMIT_TAG =~ /^[0-9]+\.[0-9]+\.[0-9]+/'
   script:
     - ./build.sh --install
-    - ./build.sh --package-artifact
 
 include:
   local: '.gitlab-ci-test.yml'
 
 job_deploy_artifact:
-  dependencies:
-    - job_install
   tags: *job_common_tags
   stage: deploy
   cache: *job_common_m2_cache
@@ -70,6 +67,7 @@ job_deploy_artifact:
     max: 2
     when: script_failure
   script:
+    - ./build.sh --package-artifact
     - ./build.sh --deploy-artifact
 
 job_end:

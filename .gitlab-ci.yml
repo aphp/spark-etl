@@ -16,9 +16,10 @@ stages:
   - release
 
 .job_common_tags: &job_common_tags
-  - aphp
-  - cicd
-  - rsareth
+  tags:
+    - aphp
+    - cicd
+    - rsareth
 
 .job_common_m2_cache: &job_common_m2_cache
   cache:
@@ -27,8 +28,8 @@ stages:
       - .m2/repository
 
 job_start:
+  <<: *job_common_tags
   image: busybox:latest
-  tags: *job_common_tags
   stage: .pre
   script:
     - echo "Start the build"
@@ -36,9 +37,9 @@ job_start:
     - mount
 
 job_install:
-  tags: *job_common_tags
-  stage: install
+  <<: *job_common_tags
   <<: *job_common_m2_cache
+  stage: install
   artifacts:
     expire_in: 1 week
     paths:
@@ -53,11 +54,11 @@ include:
   local: '.gitlab-ci-test.yml'
 
 job_deploy_artifact:
+  <<: *job_common_tags
+  <<: *job_common_m2_cache
   dependencies:
     - job_install
-  tags: *job_common_tags
   stage: deploy
-  <<: *job_common_m2_cache
   rules:
     - if: '$CI_COMMIT_BRANCH == "dev"'
     - if: '$CI_COMMIT_TAG =~ /^[0-9]+\.[0-9]+\.[0-9]+/'
@@ -68,7 +69,7 @@ job_deploy_artifact:
     - ./build.sh --deploy-artifact
 
 job_end:
-  tags: *job_common_tags
+  <<: *job_common_tags
   stage: .post
   script:
     - echo "End"

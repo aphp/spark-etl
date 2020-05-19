@@ -20,17 +20,6 @@ stages:
   - deploy
   - release
 
-.job_common_rule: &job_common_rule
-  rules:
-    - if: '$CI_COMMIT_BRANCH != "" || $CI_COMMIT_TAG =~ "/^[0-9]+\.[0-9]+\.[0-9]+/"'
-      changes:
-        - .gitlab-ci.yml
-        - .gitlab-ci-test.yml
-        - build.sh
-        - pom.xml
-        - spark-*/pom.xml
-        - spark-*/src/**/*
-
 .job_common_tags: &job_common_tags
   - aphp
   - cicd
@@ -58,7 +47,15 @@ job_install:
     expire_in: 1 week
     paths:
       - ./spark-*/target/*.jar
-  <<: *job_common_rule
+  rules:
+    - if: '$CI_COMMIT_BRANCH != "" || $CI_COMMIT_TAG =~ "/^[0-9]+\.[0-9]+\.[0-9]+/"'
+      changes:
+        - .gitlab-ci.yml
+        - .gitlab-ci-test.yml
+        - build.sh
+        - pom.xml
+        - spark-*/pom.xml
+        - spark-*/src/**/*
   script:
     - ./build.sh --install
 
@@ -71,7 +68,15 @@ job_deploy_artifact:
   tags: *job_common_tags
   stage: deploy
   cache: *job_common_m2_cache
-  <<: *job_common_rule
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_TAG =~ "/^[0-9]+\.[0-9]+\.[0-9]+/"'
+      changes:
+        - .gitlab-ci.yml
+        - .gitlab-ci-test.yml
+        - build.sh
+        - pom.xml
+        - spark-*/pom.xml
+        - spark-*/src/**/*
   retry:
     max: 2
     when: script_failure

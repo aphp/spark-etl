@@ -53,6 +53,11 @@
 
     <repositories>
         <repository>
+            <id>central</id>
+            <name>central</name>
+            <url>https://repo1.maven.org/maven2/</url>
+        </repository>
+        <repository>
             <id>nexus-group</id>
             <name>nexus-group</name>
             <url>${nexus.group.url}</url>

@@ -48,14 +48,8 @@ job_install:
     paths:
       - ./spark-*/target/*.jar
   rules:
-    - if: '$CI_COMMIT_BRANCH != "" || $CI_COMMIT_TAG =~ "/^[0-9]+\.[0-9]+\.[0-9]+/"'
-      changes:
-        - .gitlab-ci.yml
-        - .gitlab-ci-test.yml
-        - build.sh
-        - pom.xml
-        - spark-*/pom.xml
-        - spark-*/src/**/*
+    - if: '$CI_COMMIT_BRANCH != ""'
+    - if: '$CI_COMMIT_TAG =~ "/^[0-9]+\.[0-9]+\.[0-9]+/"'
   script:
     - ./build.sh --install
 
@@ -69,14 +63,8 @@ job_deploy_artifact:
   stage: deploy
   cache: *job_common_m2_cache
   rules:
-    - if: '$CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_TAG =~ "/^[0-9]+\.[0-9]+\.[0-9]+/"'
-      changes:
-        - .gitlab-ci.yml
-        - .gitlab-ci-test.yml
-        - build.sh
-        - pom.xml
-        - spark-*/pom.xml
-        - spark-*/src/**/*
+    - if: '$CI_COMMIT_BRANCH == "dev"'
+    - if: '$CI_COMMIT_TAG =~ "/^[0-9]+\.[0-9]+\.[0-9]+/"'
   retry:
     max: 2
     when: script_failure

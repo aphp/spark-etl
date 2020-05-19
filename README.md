@@ -51,7 +51,23 @@ $ git branch
 * master
 [...]
 $ git checkout dev
+Switched to branch 'dev'
+Your branch is up to date with 'origin/dev'.
 $ git merge master
-[...]
+Updating a4d31db..dec4851
+Fast-forward
+ pom.xml                 | 2 +-
+ spark-csv/pom.xml       | 4 ++--
+ spark-dataframe/pom.xml | 4 ++--
+ spark-hive/pom.xml      | 4 ++--
+ spark-meta/pom.xml      | 4 ++--
+ spark-postgres/pom.xml  | 4 ++--
+ spark-quality/pom.xml   | 4 ++--
+ spark-query/pom.xml     | 4 ++--
+ spark-sync/pom.xml      | 4 ++--
+ 9 files changed, 17 insertions(+), 17 deletions(-)
 $ git push
+Total 0 (delta 0), reused 0 (delta 0), pack-reused 0
+To gitlab-rsareth:rsareth-aphp/data/spark-etl.git
+   a4d31db..dec4851  dev -> dev
 ```

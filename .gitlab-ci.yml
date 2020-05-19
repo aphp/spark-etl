@@ -49,7 +49,7 @@ job_install:
       - ./spark-*/target/*.jar
   rules:
     - if: '$CI_COMMIT_BRANCH != null'
-    - if: '$CI_COMMIT_TAG =~ "/^[0-9]+\.[0-9]+\.[0-9]+/"'
+    - if: '$CI_COMMIT_TAG =~ /^[0-9]+\.[0-9]+\.[0-9]+/'
   script:
     - ./build.sh --install
 
@@ -64,7 +64,7 @@ job_deploy_artifact:
   cache: *job_common_m2_cache
   rules:
     - if: '$CI_COMMIT_BRANCH == "dev"'
-    - if: '$CI_COMMIT_TAG != null'
+    - if: '$CI_COMMIT_TAG != /^[0-9]+\.[0-9]+\.[0-9]+/'
   retry:
     max: 2
     when: script_failure

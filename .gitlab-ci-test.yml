@@ -1,6 +1,4 @@
 .job_test_template: &job_test_definition
-  dependencies:
-    - job_install
   tags:
     - aphp
     - cicd

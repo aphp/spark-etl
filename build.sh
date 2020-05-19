@@ -148,11 +148,11 @@ then
   do
     case "${ARGUMENT}" in
       --clean)
-        mvn ${MAVEN_CLI_OPTS} clean
+        mvn ${MAVEN_CLI_OPTS} --threads ${NB_THREAD_TO_USE} clean
         break
         ;;
       --deploy-artifact)
-        mvn ${MAVEN_CLI_OPTS} -DskipTests deploy
+        mvn ${MAVEN_CLI_OPTS} --threads ${NB_THREAD_TO_USE} -DskipTests deploy
         break
         ;;
       --install)

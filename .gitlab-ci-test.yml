@@ -24,85 +24,93 @@ job_test_spark-csv:
   rules:
     - if: *job_common_rules_if
     - changes:
-        - ./.gitlab-ci*yml
-        - ./pom.xml
-        - ./build.sh
-        - ./spark-csv/pom.xml
-        - ./spark-csv/**/*
+        - .gitlab-ci.yml
+        - .gitlab-ci-test.yml
+        - pom.xml
+        - build.sh
+        - spark-csv/pom.xml
+        - spark-csv/**/*
 
 job_test_spark-dataframe:
   <<: *job_test_definition
   rules:
     - if: *job_common_rules_if
     - changes:
-        - ./.gitlab-ci*yml
-        - ./pom.xml
-        - ./build.sh
-        - ./spark-dataframe/pom.xml
-        - ./spark-dataframe/**/*
+        - .gitlab-ci.yml
+        - .gitlab-ci-test.yml
+        - pom.xml
+        - build.sh
+        - spark-dataframe/pom.xml
+        - spark-dataframe/**/*
 
 job_test_spark-hive:
   <<: *job_test_definition
   rules:
     - if: *job_common_rules_if
     - changes:
-        - ./.gitlab-ci*yml
-        - ./pom.xml
-        - ./build.sh
-        - ./spark-hive/pom.xml
-        - ./spark-hive/**/*
+        - .gitlab-ci.yml
+        - .gitlab-ci-test.yml
+        - pom.xml
+        - build.sh
+        - spark-hive/pom.xml
+        - spark-hive/**/*
 
 job_test_spark-meta:
   <<: *job_test_definition
   rules:
     - if: *job_common_rules_if
     - changes:
-        - ./.gitlab-ci*yml
-        - ./pom.xml
-        - ./build.sh
-        - ./spark-meta/pom.xml
-        - ./spark-meta/**/*
+        - .gitlab-ci.yml
+        - .gitlab-ci-test.yml
+        - pom.xml
+        - build.sh
+        - spark-meta/pom.xml
+        - spark-meta/**/*
 
 job_test_spark-postgres:
   <<: *job_test_definition
   rules:
     - if: *job_common_rules_if
     - changes:
-        - ./.gitlab-ci*yml
-        - ./pom.xml
-        - ./build.sh
-        - ./spark-postgres/pom.xml
-        - ./spark-postgres/**/*
+        - .gitlab-ci.yml
+        - .gitlab-ci-test.yml
+        - pom.xml
+        - build.sh
+        - spark-postgres/pom.xml
+        - spark-postgres/**/*
 
 job_test_spark-quality:
   <<: *job_test_definition
   rules:
     - if: *job_common_rules_if
     - changes:
-        - ./.gitlab-ci*yml
-        - ./pom.xml
-        - ./build.sh
-        - ./spark-quality/pom.xml
-        - ./spark-quality/**/*
+        - .gitlab-ci.yml
+        - .gitlab-ci-test.yml
+        - pom.xml
+        - build.sh
+        - spark-quality/pom.xml
+        - spark-quality/**/*
 
 job_test_spark-query:
   <<: *job_test_definition
   rules:
     - if: *job_common_rules_if
     - changes:
-        - ./.gitlab-ci*yml
-        - ./pom.xml
-        - ./build.sh
-        - ./spark-query/pom.xml
-        - ./spark-query/**/*
+        - .gitlab-ci.yml
+        - .gitlab-ci-test.yml
+        - pom.xml
+        - build.sh
+        - spark-query/pom.xml
+        - spark-query/**/*
 
 job_test_spark-sync:
   <<: *job_test_definition
   rules:
     - if: *job_common_rules_if
     - changes:
-        - ./.gitlab-ci*yml
-        - ./pom.xml
-        - ./build.sh
-        - ./spark-sync/pom.xml
-        - ./spark-sync/**/*
+        - .gitlab-ci.yml
+        - .gitlab-ci-test.yml
+        - pom.xml
+        - build.sh
+        - spark-sync/pom.xml
+        - spark-sync/**/*

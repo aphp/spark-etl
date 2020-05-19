@@ -65,7 +65,6 @@ job_deploy_artifact:
     max: 2
     when: script_failure
   script:
-    - ./build.sh --package-artifact
     - ./build.sh --deploy-artifact
 
 job_end:

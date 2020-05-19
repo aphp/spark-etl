@@ -23,7 +23,7 @@ job_test_spark-csv:
   <<: *job_test_definition
   rules:
     - if: *job_common_rules_if
-      changes:
+    - changes:
         - ./.gitlab-ci*yml
         - ./pom.xml
         - ./build.sh
@@ -34,7 +34,7 @@ job_test_spark-dataframe:
   <<: *job_test_definition
   rules:
     - if: *job_common_rules_if
-      changes:
+    - changes:
         - ./.gitlab-ci*yml
         - ./pom.xml
         - ./build.sh
@@ -45,7 +45,7 @@ job_test_spark-hive:
   <<: *job_test_definition
   rules:
     - if: *job_common_rules_if
-      changes:
+    - changes:
         - ./.gitlab-ci*yml
         - ./pom.xml
         - ./build.sh
@@ -56,7 +56,7 @@ job_test_spark-meta:
   <<: *job_test_definition
   rules:
     - if: *job_common_rules_if
-      changes:
+    - changes:
         - ./.gitlab-ci*yml
         - ./pom.xml
         - ./build.sh
@@ -67,7 +67,7 @@ job_test_spark-postgres:
   <<: *job_test_definition
   rules:
     - if: *job_common_rules_if
-      changes:
+    - changes:
         - ./.gitlab-ci*yml
         - ./pom.xml
         - ./build.sh
@@ -78,7 +78,7 @@ job_test_spark-quality:
   <<: *job_test_definition
   rules:
     - if: *job_common_rules_if
-      changes:
+    - changes:
         - ./.gitlab-ci*yml
         - ./pom.xml
         - ./build.sh
@@ -89,7 +89,7 @@ job_test_spark-query:
   <<: *job_test_definition
   rules:
     - if: *job_common_rules_if
-      changes:
+    - changes:
         - ./.gitlab-ci*yml
         - ./pom.xml
         - ./build.sh
@@ -100,7 +100,7 @@ job_test_spark-sync:
   <<: *job_test_definition
   rules:
     - if: *job_common_rules_if
-      changes:
+    - changes:
         - ./.gitlab-ci*yml
         - ./pom.xml
         - ./build.sh

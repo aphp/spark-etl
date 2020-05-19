@@ -20,17 +20,16 @@ stages:
   - deploy
   - release
 
-.job_common_changes_condition: &job_common_changes_condition
-  changes:
-    - .gitlab-ci.yml
-    - .gitlab-ci-test.yml
-    - build.sh
-    - pom.xml
-    - spark-*/pom.xml
-    - spark-*/src/**/*
-
-.job_common_condition_for_releasing: &job_common_condition_for_releasing
-                                       '$CI_COMMIT_BRANCH == "master" && $CI_COMMIT_MESSAGE !~ /^\[CICD\]/'
+.job_common_rule: &job_common_rule
+  rules:
+    - if: '$CI_COMMIT_BRANCH != "" || $CI_COMMIT_TAG =~ "/^[0-9]+\.[0-9]+\.[0-9]+/"'
+      changes:
+        - .gitlab-ci.yml
+        - .gitlab-ci-test.yml
+        - build.sh
+        - pom.xml
+        - spark-*/pom.xml
+        - spark-*/src/**/*
 
 .job_common_tags: &job_common_tags
   - aphp
@@ -59,9 +58,7 @@ job_install:
     expire_in: 1 week
     paths:
       - ./spark-*/target/*.jar
-  rules:
-    - if: '$CI_COMMIT_BRANCH != "" || $CI_COMMIT_TAG =~ "/^[0-9]+\.[0-9]+\.[0-9]+/"'
-      <<: *job_common_changes_condition
+  <<: *job_common_rule
   script:
     - ./build.sh --install
 
@@ -74,11 +71,7 @@ job_deploy_artifact:
   tags: *job_common_tags
   stage: deploy
   cache: *job_common_m2_cache
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "dev"'
-      <<: *job_common_changes_condition
-    - if: '$CI_COMMIT_TAG =~ /^[0-9]+\.[0-9]+\.[0-9]+/'
-      <<: *job_common_changes_condition
+  <<: *job_common_rule
   retry:
     max: 2
     when: script_failure

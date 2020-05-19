@@ -21,13 +21,13 @@
 job_test_spark-csv:
   <<: *job_test_definition
   rules:
-    - changes:
+    - if: *job_common_rules_if
+      changes:
         - .gitlab-ci*yml
         - pom.xml
         - build.sh
         - spark-csv/pom.xml
         - spark-csv/**/*
-    - if: *job_common_rules_if
 
 job_test_spark-dataframe:
   <<: *job_test_definition

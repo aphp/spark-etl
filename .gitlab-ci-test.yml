@@ -23,7 +23,7 @@ job_test_spark-csv:
   <<: *job_test_definition
   rules:
     - if: *job_common_rules_if
-    - changes:
+      changes:
         - .gitlab-ci.yml
         - .gitlab-ci-test.yml
         - pom.xml

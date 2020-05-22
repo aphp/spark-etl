@@ -422,7 +422,7 @@
 
     <profiles>
         <!--
-          By default, it is always activated.
+              By default, it is always activated.
         -->
         <profile>
             <id>default</id>
@@ -612,9 +612,12 @@
                                 <developmentVersion>${snapshot.name}</developmentVersion>
                                 <releaseVersion>${release.name}</releaseVersion>
                                 <scmCommentPrefix>[CICD]</scmCommentPrefix>
-                                <scmDevelopmentCommitComment>@{prefix} Snapshot: ${snapshot.name}
+                                <scmDevelopmentCommitComment>
+                                    @{prefix} Snapshot: ${snapshot.name}
                                 </scmDevelopmentCommitComment>
-                                <scmReleaseCommitComment>@{prefix} Release: ${release.name}</scmReleaseCommitComment>
+                                <scmReleaseCommitComment>
+                                    @{prefix} Release: ${release.name}
+                                </scmReleaseCommitComment>
                                 <tag>${release.name}</tag>
                                 <tagNameFormat>@{project.version}</tagNameFormat>
                             </configuration>
@@ -659,7 +662,7 @@
         </profile>
 
         <!--
-          Only for generating the javadoc
+            Only for generating the javadoc
         -->
         <profile>
             <id>javadoc</id>
@@ -725,22 +728,22 @@
                             </configuration>
                         </plugin>
                         <!--<plugin>
-                          <groupId>org.apache.maven.plugins</groupId>
-                          <artifactId>maven-gpg-plugin</artifactId>
-                          <version>1.6</version>
-                          <executions>
-                            <execution>
-                              <id>sign-artifacts</id>
-                              <phase>verify</phase>
-                              <goals>
-                                <goal>sign</goal>
-                              </goals>
-                              <configuration>
-                                <keyname>${gpg.keyname}</keyname>
-                                <passphraseServerId>${gpg.keyname}</passphraseServerId>
-                              </configuration>
-                            </execution>
-                          </executions>
+                            <groupId>org.apache.maven.plugins</groupId>
+                            <artifactId>maven-gpg-plugin</artifactId>
+                            <version>1.6</version>
+                            <executions>
+                                <execution>
+                                    <id>sign-artifacts</id>
+                                    <phase>verify</phase>
+                                    <goals>
+                                        <goal>sign</goal>
+                                    </goals>
+                                    <configuration>
+                                        <keyname>${gpg.keyname}</keyname>
+                                        <passphraseServerId>${gpg.keyname}</passphraseServerId>
+                                    </configuration>
+                                </execution>
+                            </executions>
                         </plugin>-->
                     </plugins>
                 </pluginManagement>

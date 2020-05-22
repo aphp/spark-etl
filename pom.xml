@@ -672,26 +672,29 @@
                             <artifactId>scala-maven-plugin</artifactId>
                             <version>3.2.0</version>
                             <executions>
+                                <!--
+                                    generate-sources
+                                -->
                                 <execution>
                                     <id>doc</id>
                                     <phase>generate-sources</phase>
                                     <goals>
                                         <goal>compile</goal>
                                     </goals>
+                                    <configuration>
+                                        <args>
+                                            <arg>-P:genjavadoc:out=${project.build.directory}/genjavadoc</arg>
+                                        </args>
+                                        <compilerPlugins>
+                                            <compilerPlugin>
+                                                <groupId>com.typesafe.genjavadoc</groupId>
+                                                <artifactId>genjavadoc-plugin_${scala.version}</artifactId>
+                                                <version>0.13</version>
+                                            </compilerPlugin>
+                                        </compilerPlugins>
+                                    </configuration>
                                 </execution>
                             </executions>
-                            <configuration>
-                                <args>
-                                    <arg>-P:genjavadoc:out=${project.build.directory}/genjavadoc</arg>
-                                </args>
-                                <compilerPlugins>
-                                    <compilerPlugin>
-                                        <groupId>com.typesafe.genjavadoc</groupId>
-                                        <artifactId>genjavadoc-plugin_2.12.12</artifactId>
-                                        <version>0.13</version>
-                                    </compilerPlugin>
-                                </compilerPlugins>
-                            </configuration>
                         </plugin>
                         <plugin>
                             <groupId>org.codehaus.mojo</groupId>

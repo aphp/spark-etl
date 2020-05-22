@@ -99,6 +99,26 @@ __init() {
   export MAVEN_CLI_OPTS
 }
 
+__code_quality() {
+  if [[ "${CI}" = "true" ]]
+  then
+    if [[ "${SONAR_HOST}" = "" || "${SONAR_TOKEN}" = "" ]]
+    then
+      echo -e "You need to provide those variables:\n
+      - SONAR_HOST
+      - SONAR_TOKEN
+      "
+      exit 1
+    fi
+
+    mvn dependency-check:check \
+        sonar:sonar \
+        -Dsonar.host.url="${SONAR_HOST}" \
+        -Dsonar.login="${SONAR_TOKEN}"
+  else
+    mvn dependency-check:check sonar:sonar
+  fi
+}
 
 __prepare_release() {
   if [[ -z "${CI_PROJECT_PATH}" || -z "${GIT_USER}" || -z "${GIT_PASSWORD}" ]]
@@ -148,11 +168,15 @@ then
   do
     case "${ARGUMENT}" in
       --clean)
-        mvn ${MAVEN_CLI_OPTS} --threads ${NB_THREAD_TO_USE} clean
+        mvn ${MAVEN_CLI_OPTS} clean
+        break
+        ;;
+      --code-quality)
+        __code_quality
         break
         ;;
       --deploy-artifact)
-        mvn ${MAVEN_CLI_OPTS} --threads ${NB_THREAD_TO_USE} -DskipTests deploy
+        mvn ${MAVEN_CLI_OPTS} -DskipTests deploy
         break
         ;;
       --install)
@@ -180,6 +204,7 @@ then
 else
   echo -e "Provided one of these options to the script $0:\n\
 \t- --clean
+\t- --code-quality
 \t- --deploy-artifact
 \t- --install
 \t- --package-artifact

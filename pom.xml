@@ -156,11 +156,11 @@
             <scope>test</scope>
             <classifier>tests</classifier>
         </dependency>
-        <dependency>
+        <!--dependency>
             <groupId>com.sksamuel.scapegoat</groupId>
             <artifactId>scalac-scapegoat-plugin_${scala.tools.version}</artifactId>
             <scope>provided</scope>
-        </dependency>
+        </dependency-->
     </dependencies>
 
     <dependencyManagement>
@@ -375,11 +375,11 @@
                 <version>3.7.6</version>
                 <scope>test</scope>
             </dependency>
-            <dependency>
+            <!--dependency>
                 <groupId>com.sksamuel.scapegoat</groupId>
                 <artifactId>scalac-scapegoat-plugin_${scala.tools.version}</artifactId>
                 <version>${scapegoat.version}</version>
-            </dependency>
+            </dependency-->
         </dependencies>
     </dependencyManagement>
 

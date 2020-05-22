@@ -156,6 +156,11 @@
             <scope>test</scope>
             <classifier>tests</classifier>
         </dependency>
+        <dependency>
+            <groupId>com.sksamuel.scapegoat</groupId>
+            <artifactId>scalac-scapegoat-plugin_${scala.tools.version}</artifactId>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <dependencyManagement>
@@ -365,6 +370,11 @@
                 <version>3.7.6</version>
                 <scope>test</scope>
             </dependency>
+            <dependency>
+                <groupId>com.sksamuel.scapegoat</groupId>
+                <artifactId>scalac-scapegoat-plugin_${scala.tools.version}</artifactId>
+                <version>1.3.10</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -525,6 +535,8 @@
                                     </goals>
                                     <configuration>
                                         <args>
+                                            <arg>-dependencyfile</arg>
+                                            <arg>${project.build.directory}/.scala_dependencies</arg>
                                             <arg>-P:scapegoat:dataDir:${project.build.directory}</arg>
                                             <arg>-P:scapegoat:reports:xml</arg>
                                         </args>

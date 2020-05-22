@@ -546,24 +546,6 @@
                             <version>3.0.0-M4</version>
                             <configuration>
                                 <skipTests>true</skipTests>
-                                <useFile>false</useFile>
-                                <disableXmlReport>true</disableXmlReport>
-                                <!-- If you have classpath issue like NoDefClassError,... -->
-                                <!-- useManifestOnlyJar>false</useManifestOnlyJar -->
-                                <includes>
-                                    <include>**/*Test.*</include>
-                                    <include>**/*Suite.*</include>
-                                </includes>
-                                <filters>
-                                    <filter>
-                                        <artifact>*:*</artifact>
-                                        <excludes>
-                                            <exclude>META-INF/*.SF</exclude>
-                                            <exclude>META-INF/*.DSA</exclude>
-                                            <exclude>META-INF/*.RSA</exclude>
-                                        </excludes>
-                                    </filter>
-                                </filters>
                             </configuration>
                         </plugin>
                         <plugin>

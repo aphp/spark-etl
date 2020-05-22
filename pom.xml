@@ -3,7 +3,7 @@
     <groupId>io.frama.parisni</groupId>
     <artifactId>spark-etl</artifactId>
     <packaging>pom</packaging>
-    <version>1.0.10-SNAPSHOT</version>
+    <version>1.0.11-SNAPSHOT</version>
     <name>Spark ETL Parent</name>
     <url>http://maven.apache.org</url>
     <licenses>
@@ -188,6 +188,11 @@
             <dependency>
                 <groupId>io.frama.parisni</groupId>
                 <artifactId>spark-postgres</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.frama.parisni</groupId>
+                <artifactId>spark-quality</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

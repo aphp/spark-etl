@@ -11,6 +11,8 @@ import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 import io.delta.tables.DeltaTable
+import io.frama.parisni.spark.quality.Constraints._
+import io.frama.parisni.spark.quality.Constraints
 
 import scala.util.Try
 
@@ -495,5 +497,23 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
     val masterSchema = StructType(DFList.map(_.schema.fields).reduce((x, y) => (x.union(y))).groupBy(_.name.toUpperCase).map(_._2.head).toArray)
     val masterEmptyDF = spark.createDataFrame(spark.sparkContext.emptyRDD[Row], masterSchema).select(MasterColList.head, MasterColList.tail: _*)
     DFList.map(df => df.select(unionExpr(df.columns, MasterColList): _*)).foldLeft(masterEmptyDF)((x, y) => x.union(y))
+  }
+
+  def saveAndValidate(hiveTable: String, df: DataFrame, schema: Schema) = {
+    val spark = df.sparkSession
+    save(hiveTable, df)
+    validate(spark, hiveTable, schema)
+  }
+
+  def save(hiveTable: String, df: DataFrame): Unit = {
+    val spark = df.sparkSession
+    logger.warn(s"persisting $hiveTable")
+    df.write.mode(org.apache.spark.sql.SaveMode.Overwrite)
+      .format("parquet").saveAsTable(hiveTable)
+  }
+
+  def validate(spark: SparkSession, hiveTable: String, schema: Schema): Unit = {
+    logger.warn(s"validating $hiveTable")
+    assert(Constraints.fromSchema(schema)(spark.table(hiveTable)).isSuccess)
   }
 }

@@ -45,6 +45,12 @@
    	<version>0.6.0</version>
    </dependency>
 
+   <dependency>
+       <groupId>io.frama.parisni</groupId>
+       <artifactId>spark-quality</artifactId>
+       <version>0.0.1</version>
+   </dependency>
+
   </dependencies>
   <build>
     <sourceDirectory>src/main/scala</sourceDirectory>

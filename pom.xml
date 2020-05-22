@@ -388,6 +388,15 @@
         <release.name>RELEASE</release.name>
         <snapshot.name>SNAPSHOT</snapshot.name>
         <hadoop.version>2.6.5</hadoop.version>
+        <scapegoat.version>1.3.9</scapegoat.version>
+
+        <!-- Sonar -->
+        <sonar.junit.reportsPath>target/surefire-reports</sonar.junit.reportsPath>
+        <sonar.sourceEncoding>UTF-8</sonar.sourceEncoding>
+        <sonar.scala.version>${scala.tools.version}</sonar.scala.version>
+        <sonar.scala.scapegoat.reportPath>${project.build.directory}/scapegoat.xml</sonar.scala.scapegoat.reportPath>
+        <sonar.dependencyCheck.htmlReportPath>${project.build.directory}/dependency-check-report.html</sonar.dependencyCheck.htmlReportPath>
+        <sonar.exclusions>src/test/**</sonar.exclusions>
     </properties>
     <build>
         <sourceDirectory>src/main/scala</sourceDirectory>
@@ -496,20 +505,38 @@
                             <artifactId>scala-maven-plugin</artifactId>
                             <version>3.2.0</version>
                             <executions>
+                                <!--
+                                    compile
+                                -->
                                 <execution>
                                     <id>compile</id>
+                                    <phase>process-resources</phase>
                                     <goals>
                                         <goal>compile</goal>
-                                        <goal>testCompile</goal>
                                     </goals>
                                 </execution>
+                                <!--
+                                    test
+                                -->
                                 <execution>
-                                    <id>test</id>
-                                    <phase>test</phase>
+                                    <id>testCompile</id>
+                                    <phase>process-test-resources</phase>
                                     <goals>
-                                        <goal>compile</goal>
                                         <goal>testCompile</goal>
                                     </goals>
+                                    <configuration>
+                                        <args>
+                                            <arg>-P:scapegoat:dataDir:${project.build.directory}</arg>
+                                            <arg>-P:scapegoat:reports:xml</arg>
+                                        </args>
+                                        <compilerPlugins>
+                                            <compilerPlugin>
+                                                <groupId>com.sksamuel.scapegoat</groupId>
+                                                <artifactId>scalac-scapegoat-plugin_${scala.tools.version}</artifactId>
+                                                <version>${scapegoat.version}</version>
+                                            </compilerPlugin>
+                                        </compilerPlugins>
+                                    </configuration>
                                 </execution>
                             </executions>
                         </plugin>
@@ -609,6 +636,40 @@
                                 <scmReleaseCommitComment>@{prefix} Release: ${release.name}</scmReleaseCommitComment>
                                 <tag>${release.name}</tag>
                                 <tagNameFormat>@{project.version}</tagNameFormat>
+                            </configuration>
+                        </plugin>
+                        <plugin>
+                            <groupId>org.sonarsource.scanner.maven</groupId>
+                            <artifactId>sonar-maven-plugin</artifactId>
+                            <version>3.7.0.1746</version>
+                        </plugin>
+                        <plugin>
+                            <groupId>org.jacoco</groupId>
+                            <artifactId>jacoco-maven-plugin</artifactId>
+                            <version>0.8.5</version>
+                            <executions>
+                                <execution>
+                                    <id>pre-test</id>
+                                    <goals>
+                                        <goal>prepare-agent</goal>
+                                    </goals>
+                                </execution>
+                                <execution>
+                                    <id>report</id>
+                                    <phase>prepare-package</phase>
+                                    <goals>
+                                        <goal>report</goal>
+                                    </goals>
+                                </execution>
+                            </executions>
+                        </plugin>
+                        <plugin>
+                            <groupId>org.owasp</groupId>
+                            <artifactId>dependency-check-maven</artifactId>
+                            <version>5.3.2</version>
+                            <configuration>
+                                <outputDirectory>${project.build.directory}</outputDirectory>
+                                <skipSystemScope>true</skipSystemScope>
                             </configuration>
                         </plugin>
                     </plugins>

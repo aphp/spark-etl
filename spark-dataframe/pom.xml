@@ -32,6 +32,10 @@
       <groupId>io.delta</groupId>
       <artifactId>delta-core_${scala.tools.version}</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.frama.parisni</groupId>
+      <artifactId>spark-quality</artifactId>
+    </dependency>
   </dependencies>
 
   <build>

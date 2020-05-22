@@ -144,7 +144,7 @@ class ConstraintsTest extends QueryTest with SparkSessionTestWrapper {
   private def assertFailure(expectedViolations: Int, result: Try[DataFrame]) = {
     assert(result.isFailure)
     assertResult(expectedViolations) {
-      result.failed.get match {
+      result.failed.getOrElse(None) match {
         case e: ConstraintException => e.failed().size
         case _                      => -1
       }

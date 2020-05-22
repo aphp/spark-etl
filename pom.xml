@@ -538,7 +538,7 @@
                                     <goals>
                                         <goal>testCompile</goal>
                                     </goals>
-                                    <configuration>
+                                    <!--configuration>
                                         <args>
                                             <arg>-P:scapegoat:dataDir:${project.build.directory}</arg>
                                             <arg>-P:scapegoat:reports:xml</arg>
@@ -550,7 +550,7 @@
                                                 <version>${scapegoat.version}</version>
                                             </compilerPlugin>
                                         </compilerPlugins>
-                                    </configuration>
+                                    </configuration-->
                                 </execution>
                             </executions>
                         </plugin>

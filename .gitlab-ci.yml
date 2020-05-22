@@ -14,6 +14,7 @@ stages:
   - build
   - deploy
   - release
+  - codeQuality
 
 .job_common_tags: &job_common_tags
   tags:
@@ -67,6 +68,17 @@ job_deploy_artifact:
     when: script_failure
   script:
     - ./build.sh --deploy-artifact
+
+job_sonar:
+  <<: *job_common_tags
+  <<: *job_common_m2_cache
+  dependencies:
+    - job_install
+  stage: codeQuality
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "dev"'
+  script:
+    - ./build.sh --code-quality
 
 job_end:
   <<: *job_common_tags

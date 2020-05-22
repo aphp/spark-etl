@@ -414,8 +414,6 @@
         <sonar.exclusions>src/test/**</sonar.exclusions>
     </properties>
     <build>
-        <sourceDirectory>src/main/scala</sourceDirectory>
-        <testSourceDirectory>src/test/scala</testSourceDirectory>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -553,6 +551,10 @@
                                     </configuration-->
                                 </execution>
                             </executions>
+                            <configuration>
+                                <sourceDir>${project.basedir}/src/main/scala</sourceDir>
+                                <testSourceDir>${project.basedir}/src/test/scala</testSourceDir>
+                            </configuration>
                         </plugin>
                         <plugin>
                             <groupId>org.apache.maven.plugins</groupId>

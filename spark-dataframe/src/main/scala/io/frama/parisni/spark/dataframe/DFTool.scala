@@ -6,7 +6,7 @@ import java.util.regex.Pattern
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.spark.sql.{Column, DataFrame, Row, SaveMode, SparkSession}
+import org.apache.spark.sql.{AnalysisException, Column, DataFrame, Row, SaveMode, SparkSession}
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
@@ -420,16 +420,31 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
    * @param tableName
    */
   def saveHive(df: DataFrame, tableName: String): Unit = {
-    def write() = df.write.format("parquet").mode(SaveMode.Overwrite)
+    logger.warn(s"persisting $tableName")
+
+    def write() = df.write
+      .format("parquet").mode(SaveMode.Overwrite)
       .saveAsTable(tableName)
 
-    if (Try {
+    val res = Try {
       write()
-    }.isFailure) { // the hdfs files apparently already exist
-      val location = getHiveLocation(df.sparkSession, tableName)
-      logger.warn(s"${location} already exists")
-      removeHiveLocation(df.sparkSession, location)
-      write()
+    }
+    res.failed.getOrElse(None) match {
+      case e: AnalysisException => {
+        val location = getHiveLocation(e.getMessage())
+        logger.warn(s"${location} already exists")
+        removeHiveLocation(df.sparkSession, location)
+        write()
+      }
+      case _ =>
+    }
+  }
+
+  def getHiveLocation(errorMessage: String) = {
+    val reg = """.*The associated location\('([^']+)'\) already exists.*""".r
+    errorMessage match {
+      case reg(url) => url
+      case _ => throw new RuntimeException(errorMessage)
     }
   }
 
@@ -444,19 +459,8 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
     conf.set("fs.defaultFS", fsConf)
     val fs = FileSystem.get(conf)
 
+    logger.warn(s"removing ${location}")
     fs.delete(new Path(location), true)
-  }
-
-  def getHiveLocation(spark: SparkSession, tableName: String) = {
-    val path = spark
-      .sql(s"describe extended ${tableName}")
-      .filter("col_name = 'Location'")
-      .select("data_type")
-      .collect()
-      .map(row => row.getString(0))
-      .mkString
-    require(path.startsWith("hdfs://"))
-    path
   }
 
   def getArchived(colJoin: Seq[String], newDf: DataFrame, dfs: DataFrame*): DataFrame = {
@@ -501,13 +505,12 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
 
   def saveAndValidate(hiveTable: String, df: DataFrame, schema: Schema) = {
     val spark = df.sparkSession
-    save(hiveTable, df)
+    saveHive(df, hiveTable)
     validate(spark, hiveTable, schema)
   }
 
   def save(hiveTable: String, df: DataFrame): Unit = {
     val spark = df.sparkSession
-    logger.warn(s"persisting $hiveTable")
     df.write.mode(org.apache.spark.sql.SaveMode.Overwrite)
       .format("parquet").saveAsTable(hiveTable)
   }
@@ -516,4 +519,6 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
     logger.warn(s"validating $hiveTable")
     assert(Constraints.fromSchema(schema)(spark.table(hiveTable)).isSuccess)
   }
+
+  def getDbTable(table: String, db: String = "default") = s"`${db}`.`${table}`"
 }

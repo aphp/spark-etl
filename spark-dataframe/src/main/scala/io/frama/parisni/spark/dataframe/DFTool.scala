@@ -420,11 +420,13 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
    * @param tableName
    */
   def saveHive(df: DataFrame, tableName: String): Unit = {
-    logger.warn(s"persisting $tableName")
 
-    def write() = df.write
-      .format("parquet").mode(SaveMode.Overwrite)
-      .saveAsTable(tableName)
+    def write() = {
+      logger.warn(s"persisting $tableName")
+      df.write
+        .format("parquet").mode(SaveMode.Overwrite)
+        .saveAsTable(tableName)
+    }
 
     val res = Try {
       write()
@@ -507,12 +509,6 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
     val spark = df.sparkSession
     saveHive(df, hiveTable)
     validate(spark, hiveTable, schema)
-  }
-
-  def save(hiveTable: String, df: DataFrame): Unit = {
-    val spark = df.sparkSession
-    df.write.mode(org.apache.spark.sql.SaveMode.Overwrite)
-      .format("parquet").saveAsTable(hiveTable)
   }
 
   def validate(spark: SparkSession, hiveTable: String, schema: Schema): Unit = {

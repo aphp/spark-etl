@@ -98,6 +98,7 @@ object PostgresToHive extends App with LazyLogging {
               pgTable.write.format("delta").mode(Overwrite).save(deltaPath)
             }
           }
+          case "parquet" => DFTool.saveHive(pgTable, DFTool.getDbTable(table.tableHive, table.schemaHive))
           case format => pgTable.write.format(format).mode(Overwrite).saveAsTable(f"${table.schemaHive}.${table.tableHive}")
         }
       }

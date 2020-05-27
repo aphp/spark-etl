@@ -29,4 +29,5 @@ object Constants {
   final val IS_PK:String = "is_pk"
   final val IS_FK:String = "is_fk"
   final val STTS:String = "stts"
+  final val IS_ACTIVE:String = "is_active"
 }

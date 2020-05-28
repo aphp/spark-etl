@@ -511,6 +511,16 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
     validate(spark, hiveTable, schema)
   }
 
+  /**
+   * TODO: remove this in favour of saveHive()
+   *
+   * @param hiveTable
+   * @deprecated
+   */
+  def save(hiveTable: String, df: DataFrame): Unit = {
+    saveHive(df, hiveTable)
+  }
+
   def validate(spark: SparkSession, hiveTable: String, schema: Schema): Unit = {
     logger.warn(s"validating $hiveTable")
     assert(Constraints.fromSchema(schema)(spark.table(hiveTable)).isSuccess)

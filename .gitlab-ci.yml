@@ -16,12 +16,6 @@ stages:
   - release
   - codeQuality
 
-.job_common_tags: &job_common_tags
-  tags:
-    - aphp
-    - cicd
-    - rsareth
-
 .job_common_m2_cache: &job_common_m2_cache
   cache:
     key: "${CI_PROJECT_PATH}-${CI_BUILD_REF_SLUG}"
@@ -29,7 +23,6 @@ stages:
       - .m2/repository
 
 job_start:
-  <<: *job_common_tags
   image: busybox:latest
   stage: .pre
   script:
@@ -38,7 +31,6 @@ job_start:
     - mount
 
 job_install:
-  <<: *job_common_tags
   <<: *job_common_m2_cache
   stage: install
   artifacts:
@@ -55,7 +47,6 @@ include:
   local: '.gitlab-ci-test.yml'
 
 job_deploy_artifact:
-  <<: *job_common_tags
   <<: *job_common_m2_cache
   dependencies:
     - job_install
@@ -70,7 +61,6 @@ job_deploy_artifact:
     - ./build.sh --deploy-artifact
 
 job_sonar:
-  <<: *job_common_tags
   <<: *job_common_m2_cache
   dependencies:
     - job_install
@@ -81,7 +71,6 @@ job_sonar:
     - ./build.sh --code-quality
 
 job_end:
-  <<: *job_common_tags
   stage: .post
   script:
     - echo "End"

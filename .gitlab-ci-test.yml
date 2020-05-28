@@ -1,8 +1,4 @@
 .job_test_template: &job_test_definition
-  tags:
-    - aphp
-    - cicd
-    - rsareth
   stage: test
   cache:
     key: "${CI_PROJECT_PATH}-${CI_BUILD_REF_SLUG}"

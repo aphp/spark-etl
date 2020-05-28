@@ -376,16 +376,40 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
     expr("TO_timestamp(CAST(UNIX_TIMESTAMP(`" + c.toString() + "`, '" + format + "') AS TIMESTAMP))")
   }
 
-  def deltaScd1(candidate: DataFrame, table: String, primaryKeys: List[String], deltaPath: String) = {
+  def getHiveLocation(spark: SparkSession, tableName: String) = {
+    Try {
+      val path = spark
+        .sql(s"describe extended ${tableName}")
+        .filter("col_name = 'Location'")
+        .select("data_type")
+        .collect()
+        .map(row => row.getString(0))
+        .mkString
+      //require(path.startsWith("hdfs://"))
+      path
+    }
+  }
+
+  def deltaScd1(df: DataFrame, table: String, primaryKeys: List[String], database: String) = {
+
+    val spark = df.sparkSession
+    val candidate = if (!df.columns.contains("hash")) dfAddHash(df) else df
+
+    val (isHive, isTableExists, deltaPath) = if (spark.catalog.databaseExists(database)) {
+      val hiveLoc = getHiveLocation(spark, getDbTable(table)).getOrElse("nothingNeeded")
+      (true, spark.catalog.tableExists(database, table), hiveLoc)
+    } else (false, tableExists(spark, database, table), database + "/" + table)
+
 
     val query = primaryKeys.map(x => (f"t.${x} = s.${x}")).mkString(" AND ")
-    if (!tableExists(candidate.sparkSession, deltaPath, table)) {
-      logger.warn("Table %s does not yet exists".format(deltaPath + table))
-      candidate.write.mode(org.apache.spark.sql.SaveMode.Overwrite).format("delta").save(deltaPath + table)
-    }
-    else {
+    if (!isTableExists) {
+      logger.warn("Table %s does not yet exists".format(deltaPath))
+      if (isHive) saveHive(candidate, getDbTable(table, database), "delta")
+      else candidate.write.mode(SaveMode.Overwrite).format("delta").save(deltaPath)
+
+    } else {
       logger.warn("Merging table %s with table of %d rows".format(deltaPath + table, candidate.count))
-      DeltaTable.forPath(candidate.sparkSession, deltaPath + table)
+      DeltaTable.forPath(spark, deltaPath)
         .as("t")
         .merge(
           candidate.as("s"), query)
@@ -395,20 +419,25 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
         .insertAll()
         .execute()
     }
+
   }
 
   def tableExists(spark: SparkSession, deltaPath: String, tablePath: String): Boolean = {
-    val defaultFSConf = spark.sessionState.newHadoopConf().get("fs.defaultFS")
-    val fsConf = if (deltaPath.startsWith("file:")) {
-      "file:///"
-    } else {
-      defaultFSConf
-    }
-    val conf = new Configuration()
-    conf.set("fs.defaultFS", fsConf)
-    val fs = FileSystem.get(conf)
+    if (spark.catalog.databaseExists(deltaPath))
+      spark.catalog.tableExists(tablePath)
+    else {
+      val defaultFSConf = spark.sessionState.newHadoopConf().get("fs.defaultFS")
+      val fsConf = if (deltaPath.startsWith("file:")) {
+        "file:///"
+      } else {
+        defaultFSConf
+      }
+      val conf = new Configuration()
+      conf.set("fs.defaultFS", fsConf)
+      val fs = FileSystem.get(conf)
 
-    fs.exists(new Path(deltaPath + tablePath))
+      fs.exists(new Path(deltaPath + tablePath))
+    }
   }
 
   /**
@@ -419,12 +448,12 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
    * @param df
    * @param tableName
    */
-  def saveHive(df: DataFrame, tableName: String): Unit = {
+  def saveHive(df: DataFrame, tableName: String, format: String = "parquet"): Unit = {
 
     def write() = {
       logger.warn(s"persisting $tableName")
       df.write
-        .format("parquet").mode(SaveMode.Overwrite)
+        .format(format).mode(SaveMode.Overwrite)
         .saveAsTable(tableName)
     }
 
@@ -519,6 +548,11 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
    */
   def save(hiveTable: String, df: DataFrame): Unit = {
     saveHive(df, hiveTable)
+  }
+
+  def read(spark: SparkSession, databaseOrPath: String, table: String, format: String = "parquet") = {
+    if (spark.catalog.databaseExists(databaseOrPath)) spark.table(getDbTable(table, databaseOrPath))
+    else spark.read.format(format).load(databaseOrPath + "/" + table)
   }
 
   def validate(spark: SparkSession, hiveTable: String, schema: Schema): Unit = {

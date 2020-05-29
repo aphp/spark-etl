@@ -396,14 +396,14 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
     val candidate = if (!df.columns.contains("hash")) dfAddHash(df) else df
 
     val (isHive, isTableExists, deltaPath) = if (spark.catalog.databaseExists(database)) {
-      val hiveLoc = getHiveLocation(spark, getDbTable(table)).getOrElse("nothingNeeded")
+      val hiveLoc = getHiveLocation(spark, getDbTable(table, database)).getOrElse("nothingNeeded")
       (true, spark.catalog.tableExists(database, table), hiveLoc)
     } else (false, tableExists(spark, database, table), database + "/" + table)
 
 
     val query = primaryKeys.map(x => (f"t.${x} = s.${x}")).mkString(" AND ")
     if (!isTableExists) {
-      logger.warn("Table %s does not yet exists".format(deltaPath))
+      logger.warn("Table %s does not yet exists".format(getDbTable(table, database)))
       if (isHive) saveHive(candidate, getDbTable(table, database), "delta")
       else candidate.write.mode(SaveMode.Overwrite).format("delta").save(deltaPath)
 
@@ -423,8 +423,7 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
   }
 
   def tableExists(spark: SparkSession, deltaPath: String, tablePath: String): Boolean = {
-    if (spark.catalog.databaseExists(deltaPath))
-      spark.catalog.tableExists(tablePath)
+    if (spark.catalog.databaseExists(deltaPath)) spark.catalog.tableExists(getDbTable(tablePath, deltaPath))
     else {
       val defaultFSConf = spark.sessionState.newHadoopConf().get("fs.defaultFS")
       val fsConf = if (deltaPath.startsWith("file:")) {

@@ -71,15 +71,12 @@ class DeltaConf(config: Map[String, String], dates: List[String], pks: List[Stri
                   , hash_field: String = "hash"): Unit = {
 
     logger.warn("Writing data into Delta table ---------")
-    val deltaPath = "%s/%s".format(path, t_table)
 
     //Add hash field to DF
     val hashedDF = DFTool.dfAddHash(s_df)
 
     load_type match {
-      case "full" =>
-        if (spark.catalog.databaseExists(path)) DFTool.saveHive(hashedDF, DFTool.getDbTable(t_table, path))
-        else hashedDF.write.format("delta").mode("overwrite").save(deltaPath)
+      case "full" => DFTool.saveHive(hashedDF, DFTool.getDbTable(t_table, path), "delta")
       case "scd1" => DFTool.deltaScd1(hashedDF, t_table, getSourcePK, path)
     }
   }

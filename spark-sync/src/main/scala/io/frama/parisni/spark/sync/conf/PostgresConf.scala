@@ -35,14 +35,15 @@ class PostgresConf(config: Map[String, String], dates: List[String], pks: List[S
       logger.warn("Reading data from Postgres table ---------")
       val url = f"jdbc:postgresql://${host}:${port}/${db}?user=${user}&currentSchema=${schema}"
 
-      if (!checkTableExists(spark, url, schema, s_table)) {
-        logger.warn(s"Postgres Table ${s_table} doesn't exist")
-        return spark.emptyDataFrame
-      }
+      //if (!checkTableExists(spark, url, schema, s_table)) {
+      //  logger.warn(s"Postgres Table ${s_table} doesn't exist")
+      //  return spark.emptyDataFrame
+      //}
+      val dateFilter = dates.map(x => s""" "${x}" >= '${date_Max}'""").mkString(" OR ")
 
       var query = f"select * from ${s_table}"
       if (load_type != "full" && date_Max != "")
-        query += f""" where "${s_date_field}" > '${date_Max}'"""
+        query += f""" where $dateFilter"""
 
       logger.warn("query: " + query)
 
@@ -85,8 +86,7 @@ class PostgresConf(config: Map[String, String], dates: List[String], pks: List[S
       f"${getDB.getOrElse("postgres")}?user=${getUser.getOrElse("postgres")}&currentSchema=${getSchema.getOrElse("public")}/"
 
     val result = config.get(T_DATE_MAX) match {
-      case Some("") => if (!checkTableExists(spark, url, getSchema.getOrElse("public"), getTargetTableName.getOrElse(""))) "1900-01-01 00:00:00"
-      else calculDateMax(spark, url, getTargetTableType.getOrElse(""), getTargetTableName.getOrElse(""), getDateFields)
+      case Some("") => calculDateMax(spark, url, getTargetTableType.getOrElse(""), getTargetTableName.getOrElse(""), getDateFields)
       case Some(_) => config.get(T_DATE_MAX).get
     }
     logger.warn(s"getting the maxdate : ${result}")

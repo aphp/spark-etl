@@ -34,7 +34,6 @@ stages:
 
 job_start:
   <<: *job_common_tags
-  image: busybox:latest
   stage: .pre
   script:
     - echo "Start the build"

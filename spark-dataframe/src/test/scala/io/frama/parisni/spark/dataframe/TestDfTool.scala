@@ -190,4 +190,21 @@ class TestDfTool extends QueryTest with SparkSessionTestWrapper {
     checkAnswer(result, DFTool.getArchived(Seq("id"), newDf))
   }
 
+  test("test scd1 delta") {
+    import spark.implicits._
+    val newDf = List((1, 2, 3), (4, 5, 6)).toDF("id", "cd", "value")
+    val newDf2 = List((1, 2, 3), (5, 5, 8)).toDF("id", "cd", "value")
+    val newDf3 = List((1, 2, 3), (4, 5, 6), (5, 5, 8)).toDF("id", "cd", "value")
+    DFTool.deltaScd1(newDf, "testTable", List("id"), "default")
+
+    checkAnswer(spark.table("testTable"), dfTool.dfAddHash(newDf))
+
+    DFTool.deltaScd1(newDf, "testTable", List("id"), "default")
+
+    checkAnswer(spark.table("testTable"), dfTool.dfAddHash(newDf))
+
+    DFTool.deltaScd1(newDf2, "testTable", List("id"), "default")
+
+    checkAnswer(spark.table("testTable"), dfTool.dfAddHash(newDf3))
+  }
 }

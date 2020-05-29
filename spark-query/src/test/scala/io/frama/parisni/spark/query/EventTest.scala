@@ -27,13 +27,13 @@ class EventTest extends QueryBaseTest {
   }
 
   test("filter: events") {
-    assertQuery(messages) {
+    assertQuery(messages +1) {
       message | message.happens
     }
-    assertQuery(messages) {
+    assertQuery(messages +1) {
       message | message.happens.before(Event.now)
     }
-    assertQuery(messages) {
+    assertQuery(messages +1) {
       message | message.happens.before(Event.now - "1 day")
     }
   }

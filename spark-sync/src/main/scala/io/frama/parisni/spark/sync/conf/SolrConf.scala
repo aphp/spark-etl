@@ -75,6 +75,7 @@ class SolrConf(config: Map[String, String], dates: List[String], pks: List[Strin
       case Some("") => if (!checkCollectionExists(getTargetTableName.getOrElse(""), getZkHost.getOrElse(""))) ""
       else calculDateMax(spark, getZkHost.getOrElse(""), getTargetTableType.getOrElse(""), getTargetTableName.getOrElse(""), getDateFields)
       case Some(_) => config.get(T_DATE_MAX).get
+      case None => ""
     }
     logger.warn(s"getting the maxdate : ${result}")
     result

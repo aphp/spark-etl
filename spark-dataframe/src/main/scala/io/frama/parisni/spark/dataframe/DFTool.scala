@@ -408,7 +408,7 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
       else candidate.write.mode(SaveMode.Overwrite).format("delta").save(deltaPath)
 
     } else {
-      logger.warn("Merging table %s with table of %d rows".format(deltaPath + table, candidate.count))
+      logger.warn("Merging table %s with table of %d rows".format(deltaPath, candidate.count))
       DeltaTable.forPath(spark, deltaPath)
         .as("t")
         .merge(

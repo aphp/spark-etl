@@ -2,14 +2,14 @@
   <proxies>
     <proxy>
       <id>proxy-http</id>
-      <active>${proxy.enabled}</active>
+      <active>true</active>
       <protocol>https</protocol>
       <host>proxym-inter.aphp.fr</host>
       <port>8080</port>
     </proxy>
     <proxy>
       <id>proxy-https</id>
-      <active>${proxy.enabled}</active>
+      <active>true</active>
       <protocol>http</protocol>
       <host>proxym-inter.aphp.fr</host>
       <port>8080</port>

@@ -177,7 +177,7 @@ then
         break
         ;;
       --deploy-artifact)
-        mvn ${MAVEN_CLI_OPTS} -DskipTests deploy -Dproxy.enabled=false
+        mvn ${MAVEN_CLI_OPTS} -DskipTests deploy -Dmaven.wagon.http.ssl.insecure=true -Dmaven.wagon.http.ssl.allowall=true -Dmaven.wagon.http.ssl.ignore.validity.dates=true # TODO: FIX ssl pki for nexus deploy
         break
         ;;
       --install)

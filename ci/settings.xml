@@ -8,13 +8,13 @@
       <port>8080</port>
     </proxy>
     <proxy>
-      <id>proxy-https</id>    
-      <active>${proxy.enabled}</active>    
-      <protocol>http</protocol>    
-      <host>proxym-inter.aphp.fr</host>    
+      <id>proxy-https</id>
+      <active>${proxy.enabled}</active>
+      <protocol>http</protocol>
+      <host>proxym-inter.aphp.fr</host>
       <port>8080</port>
-    </proxy>    
-  </proxies>    
+    </proxy>
+  </proxies>
   <servers>
     <server>
       <id>nexus-group</id>

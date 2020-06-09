@@ -192,14 +192,13 @@ then
         break
         ;;
       --test)
-        if [[ $# -eq 0 ]]
+	if [[ ! $# -eq 0 ]]
         then
-          mvn ${MAVEN_CLI_OPTS} test
-        else
           shift
           MODULE_NAME=$1
-          mvn ${MAVEN_CLI_OPTS} -pl "${MODULE_NAME}" test
+          MODULE_OPTION="-pl ${MODULE_NAME}"
         fi
+        mvn ${MAVEN_CLI_OPTS} test ${MODULE_OPTION}
         break
         ;;
       *)

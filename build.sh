@@ -157,6 +157,19 @@ __prepare_release() {
     release:prepare
 }
 
+__test() {
+  if [[ "${CI}" = "true" ]]
+  then
+    NO_CHECK_SSL_OPTS="-Dmaven.wagon.http.ssl.allowall=true -Dmaven.wagon.http.ssl.ignore.validity.dates=true" # TODO: FIX ssl pki for nexus deploy
+  fi
+  if [[ ! $# -eq 0 ]]
+  then
+    shift
+    MODULE_NAME=$1
+    MODULE_OPTION="-pl ${MODULE_NAME}"
+  fi
+  mvn ${MAVEN_CLI_OPTS} ${NO_CHECK_SSL_OPTS} test ${MODULE_OPTION}
+}
 # Main
 __check
 __init
@@ -192,13 +205,7 @@ then
         break
         ;;
       --test)
-	if [[ ! $# -eq 0 ]]
-        then
-          shift
-          MODULE_NAME=$1
-          MODULE_OPTION="-pl ${MODULE_NAME}"
-        fi
-        mvn ${MAVEN_CLI_OPTS} test ${MODULE_OPTION}
+	__test $*
         break
         ;;
       *)

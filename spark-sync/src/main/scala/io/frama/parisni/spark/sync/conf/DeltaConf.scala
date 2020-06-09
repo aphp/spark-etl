@@ -3,6 +3,8 @@ package io.frama.parisni.spark.sync.conf
 import io.frama.parisni.spark.dataframe.DFTool
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
+import scala.util.Try
+
 
 class DeltaConf(config: Map[String, String], dates: List[String], pks: List[String])
   extends SourceAndTarget { //io.frama.parisni.spark.sync.conf.TargetConf with io.frama.parisni.spark.sync.conf.SourceConf with LazyLogging{
@@ -16,25 +18,15 @@ class DeltaConf(config: Map[String, String], dates: List[String], pks: List[Stri
   def readSource(spark: SparkSession, path: String, s_table: String,
                  s_date_field: String, date_Max: String, load_type: String): DataFrame = {
 
-    try {
-      logger.warn("Reading data from Delta table ---------")
+    logger.warn("Reading data from Delta table ---------")
 
-      if (!checkTableExists(spark, path, s_table)) {
-        logger.warn(s"Delta Table ${s_table} doesn't exist")
-        return spark.emptyDataFrame
-      }
+    var dfDelta = Try(DFTool.read(spark, path, s_table, "delta"))
+      .getOrElse(spark.emptyDataFrame)
 
-      val deltaPath = "%s/%s".format(path, s_table)
-      var dfDelta = spark.read.format("delta").load(deltaPath)
+    if (load_type != "full" && date_Max != "")
+      dfDelta = dfDelta.filter(f"${s_date_field} >= '${date_Max}'")
 
-      if (load_type != "full" && date_Max != "")
-        dfDelta = dfDelta.filter(f"${s_date_field} >= '${date_Max}'")
-
-      dfDelta
-    } catch {
-      case re: RuntimeException => throw re
-      case e: Exception => throw new RuntimeException(e)
-    }
+    dfDelta
   }
 
 
@@ -58,8 +50,7 @@ class DeltaConf(config: Map[String, String], dates: List[String], pks: List[Stri
   override def getDateMax(spark: SparkSession): String = {
 
     val result = config.get(T_DATE_MAX) match {
-      case Some("") => if (!checkTableExists(spark, getPath.getOrElse(""), getTargetTableName.getOrElse(""))) ""
-      else calculDateMax(spark, getPath.getOrElse(""), getTargetTableType.getOrElse(""), getTargetTableName.getOrElse(""), getDateFields)
+      case Some("") => calculDateMax(spark, getPath.getOrElse(""), getTargetTableType.getOrElse(""), getTargetTableName.getOrElse(""), getDateFields)
       case Some(_) => config.get(T_DATE_MAX).get
     }
     logger.warn(s"getting the maxdate : ${result}")
@@ -72,51 +63,21 @@ class DeltaConf(config: Map[String, String], dates: List[String], pks: List[Stri
    *  - DataFrame column data types must match the column data types in the target table.
    *  - DataFrame column names cannot differ only by case.
    */
-  def writeSource(spark: SparkSession, s_df: DataFrame, path: String, t_table: String, load_type: String,
-                  hash_field: String = "hash"): Unit = {
+  def writeSource(spark: SparkSession
+                  , s_df: DataFrame
+                  , path: String
+                  , t_table: String
+                  , load_type: String
+                  , hash_field: String = "hash"): Unit = {
 
-    try {
-      logger.warn("Writing data into Delta table ---------")
-      val deltaPath = "%s/%s".format(path, t_table)
+    logger.warn("Writing data into Delta table ---------")
 
-      //Add hash field to DF
-      val hashedDF = DFTool.dfAddHash(s_df)
+    //Add hash field to DF
+    val hashedDF = DFTool.dfAddHash(s_df)
 
-      if (!checkTableExists(spark, path, t_table)) {
-        logger.warn(s"Creating delta table ${deltaPath} from scratch")
-        hashedDF.write.format("delta").save(deltaPath)
-      }
-      else {
-
-        load_type match {
-          case "full" => {
-            hashedDF.write.format("delta")
-              .mode("overwrite")
-              .save(deltaPath)
-          }
-          case "scd1" => {
-
-            val pks = getSourcePK
-            DFTool.deltaScd1(hashedDF, t_table, pks, path)
-
-          }
-        }
-      }
-    } catch {
-      case re: RuntimeException => throw re
-      case e: Exception => throw new RuntimeException(e)
+    load_type match {
+      case "full" => DFTool.saveHive(hashedDF, DFTool.getDbTable(t_table, path), "delta")
+      case "scd1" => DFTool.deltaScd1(hashedDF, t_table, getSourcePK, path)
     }
   }
-
-
-  def checkTableExists(spark: SparkSession, path: String, table: String): Boolean = {
-
-    val conf = spark.sparkContext.hadoopConfiguration
-    val fs = org.apache.hadoop.fs.FileSystem.get(conf)
-    val deltaPath = path + "/" + table
-    val res = fs.exists(new org.apache.hadoop.fs.Path(deltaPath))
-    logger.warn(s"Delta Table ${deltaPath} exists = " + res)
-    return res
-  }
-
 }

@@ -35,11 +35,14 @@ object TargetConf extends LazyLogging {
 
   def getDeltaMaxDate(spark: SparkSession, url: String, t_table_name: String, date_fields: List[String]): String = {
 
-    if (!DFTool.tableExists(spark, url, t_table_name))
+    if (!DFTool.tableExists(spark, url, t_table_name)) {
+      logger.warn(s"table ${url}.${t_table_name} does not exist")
       return ""
+    }
 
-    val deltaPath = "%s/%s".format(url, t_table_name) //Url = Path
-    val result = spark.read.format("delta").load(deltaPath)
+    // val deltaPath = "%s/%s".format(url, t_table_name) //Url = Path
+    //val result = spark.read.format("delta").load(deltaPath)
+    val result = DFTool.read(spark, url, t_table_name, "delta")
 
     val maxDate = date_fields.size match {
       case 1 => col(date_fields(0))

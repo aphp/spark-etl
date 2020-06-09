@@ -8,6 +8,10 @@ variables:
   DEBUG: "false"
   MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
 
+before_script:
+  - apt update
+  - apt install -y zip
+
 stages:
   - install
   - test
@@ -23,7 +27,7 @@ stages:
       - .m2/repository
 
 job_start:
-  image: busybox:latest
+  <<: *job_common_tags
   stage: .pre
   script:
     - echo "Start the build"

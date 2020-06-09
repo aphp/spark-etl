@@ -168,7 +168,9 @@ __test() {
     MODULE_NAME=$1
     MODULE_OPTION="-pl ${MODULE_NAME}"
   fi
+  set -x
   mvn -X ${MAVEN_CLI_OPTS} ${NO_CHECK_SSL_OPTS} test ${MODULE_OPTION}
+  set +x
 }
 # Main
 __check

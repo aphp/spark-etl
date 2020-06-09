@@ -11,7 +11,7 @@
   script:
     - |
       MODULE_NAME=$(echo $CI_JOB_NAME | cut -d_ -f3)
-      mvn -pl "${MODULE_NAME}" test
+      build.sh --test "${MODULE_NAME}"
       test -d "${MODULE_NAME}/target/surefire-reports" && (cd "${MODULE_NAME}/target/" ; zip -r "${MODULE_NAME}"-test-suites.zip surefire-reports) || :;
 
 .job_common_rules_if: &job_common_rules_if

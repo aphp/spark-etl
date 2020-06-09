@@ -93,7 +93,8 @@ __init() {
       -Dnexus.password=${NEXUS_PASSWORD} \
       -Dnexus.group.url=${MVN_GROUP_REPOSITORY} \
       -Dnexus.snapshot.url=${MVN_SNAPSHOT_REPOSITORY} \
-      -Dnexus.release.url=${MVN_RELEASE_REPOSITORY}"
+      -Dnexus.release.url=${MVN_RELEASE_REPOSITORY} \
+      -Dproxy.enabled=true"
   fi
 
   export MAVEN_CLI_OPTS
@@ -176,7 +177,7 @@ then
         break
         ;;
       --deploy-artifact)
-        mvn ${MAVEN_CLI_OPTS} -DskipTests deploy
+        mvn ${MAVEN_CLI_OPTS} -DskipTests deploy -Dproxy.enabled=false
         break
         ;;
       --install)

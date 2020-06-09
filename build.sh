@@ -160,7 +160,7 @@ __prepare_release() {
 __test() {
   if [[ "${CI}" = "true" ]]
   then
-    NO_CHECK_SSL_OPTS="-Dmaven.wagon.http.ssl.allowall=true -Dmaven.wagon.http.ssl.ignore.validity.dates=true" # TODO: FIX ssl pki for nexus deploy
+    NO_CHECK_SSL_OPTS="-Dcom.sun.net.ssl.checkRevocation=false -Dmaven.wagon.http.ssl.allowall=true -Dmaven.wagon.http.ssl.ignore.validity.dates=true" # TODO: FIX ssl pki for nexus deploy
   fi
   if [[ ! $# -eq 0 ]]
   then

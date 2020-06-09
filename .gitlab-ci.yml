@@ -27,7 +27,6 @@ stages:
       - .m2/repository
 
 job_start:
-  <<: *job_common_tags
   stage: .pre
   script:
     - echo "Start the build"

@@ -3,12 +3,12 @@
     <proxy>
       <id>proxy-http</id>
       <active>true</active>
-      <protocol>https</protocol>
+      <protocol>http</protocol>
       <host>proxym-inter.aphp.fr</host>
       <port>8080</port>
     </proxy>
     <proxy>
-      <id>proxy-http</id>
+      <id>proxy-https</id>
       <active>true</active>
       <protocol>http</protocol>
       <host>proxym-inter.aphp.fr</host>

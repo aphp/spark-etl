@@ -49,9 +49,9 @@ object TargetConf extends LazyLogging {
       case _ => greatest(date_fields.map(x => col(x)): _*)
     }
     // get just date columns
-    result.withColumn("MaxDate", maxDate)
+    Try(result.withColumn("MaxDate", maxDate)
       .selectExpr("max(MaxDate) + interval 1 second").first.get(0)
-      .toString
+      .toString).getOrElse("")
   }
 }
 

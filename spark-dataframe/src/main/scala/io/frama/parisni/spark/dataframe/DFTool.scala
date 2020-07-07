@@ -4,15 +4,15 @@ import java.text.Normalizer
 import java.util.regex.Pattern
 
 import com.typesafe.scalalogging.LazyLogging
+import io.delta.tables.DeltaTable
+import io.frama.parisni.spark.quality.Constraints
+import io.frama.parisni.spark.quality.Constraints._
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
-import org.apache.spark.sql.{AnalysisException, Column, DataFrame, Row, SaveMode, SparkSession}
+import org.apache.spark.sql._
 import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
-import io.delta.tables.DeltaTable
-import io.frama.parisni.spark.quality.Constraints._
-import io.frama.parisni.spark.quality.Constraints
 
 import scala.util.Try
 
@@ -83,37 +83,6 @@ object DFTool extends LazyLogging {
     df.select(reorderedColumnNames.head, reorderedColumnNames.tail: _*)
   }
 
-
-  /**
-   * Apply a schema on the given DataFrame. It casts the columns.
-   *
-   * @param df     their name
-   * @param schema the schema as a StructType
-   * @return a validated DataFrame
-   *
-   */
-  def castColumns(df: DataFrame, schema: StructType): DataFrame = {
-    val newDf = validateNull(df, schema)
-    val trDf = newDf.schema.fields.foldLeft(df) {
-      (df, s) => df.withColumn(s.name, df(s.name).cast(s.dataType))
-    }
-    validateNull(trDf, schema)
-  }
-
-  /**
-   * Apply a schema on the given DataFrame. It validates
-   * the non-null columns.
-   *
-   * @param df     their name
-   * @param schema the schema as a StructType
-   * @return a validated DataFrame
-   *
-   */
-  def validateNull(df: DataFrame, schema: StructType): DataFrame = {
-    df.sparkSession.createDataFrame(df.rdd, schema)
-
-  }
-
   /**
    * Validate schema on the given DataFrame. It verifies if
    * the columns exists independently on the schema.
@@ -182,6 +151,56 @@ object DFTool extends LazyLogging {
     result
   }
 
+  /**
+   * Remove unspecified columns
+   *
+   * @param df     : a DataFrame
+   * @param schema : StructType
+   * @return a DataFrame
+   *
+   */
+  def removeBadColumns(df: DataFrame, schema: StructType): DataFrame = {
+    var result = df
+    val dfSchema = df.schema
+    dfSchema.fields.foreach(
+      f => {
+        logger.debug(f"Added ${f.name} column")
+        if (!schema.fieldNames.contains(f.name))
+          result = result.drop("`" + f.name + "`")
+      })
+    result
+  }
+
+  /**
+   * Apply a schema on the given DataFrame. It casts the columns.
+   *
+   * @param df     their name
+   * @param schema the schema as a StructType
+   * @return a validated DataFrame
+   *
+   */
+  def castColumns(df: DataFrame, schema: StructType): DataFrame = {
+    val newDf = validateNull(df, schema)
+    val trDf = newDf.schema.fields.foldLeft(df) {
+      (df, s) => df.withColumn(s.name, df(s.name).cast(s.dataType))
+    }
+    validateNull(trDf, schema)
+  }
+
+  /**
+   * Apply a schema on the given DataFrame. It validates
+   * the non-null columns.
+   *
+   * @param df     their name
+   * @param schema the schema as a StructType
+   * @return a validated DataFrame
+   *
+   */
+  def validateNull(df: DataFrame, schema: StructType): DataFrame = {
+    df.sparkSession.createDataFrame(df.rdd, schema)
+
+  }
+
   def unionDataFrame(sourceDf: DataFrame, targetDf: DataFrame): DataFrame = {
     val missingLeft = getMissingColumns(sourceDf, targetDf)
     val missingRight = getMissingColumns(targetDf, sourceDf)
@@ -203,26 +222,6 @@ object DFTool extends LazyLogging {
         targetFields
       }
     )
-  }
-
-  /**
-   * Remove unspecified columns
-   *
-   * @param df     : a DataFrame
-   * @param schema : StructType
-   * @return a DataFrame
-   *
-   */
-  def removeBadColumns(df: DataFrame, schema: StructType): DataFrame = {
-    var result = df
-    val dfSchema = df.schema
-    dfSchema.fields.foreach(
-      f => {
-        logger.debug(f"Added ${f.name} column")
-        if (!schema.fieldNames.contains(f.name))
-          result = result.drop("`" + f.name + "`")
-      })
-    result
   }
 
   /**
@@ -271,20 +270,6 @@ object DFTool extends LazyLogging {
       df.except(tmp).show
     }
     tmp
-  }
-
-  /**
-   * Adds a hash column based on several other columns
-   *
-   * @param df               DataFrame
-   * @param columnsToExclude List[String] the columns not to be hashed
-   * @return DataFrame
-   *
-   */
-  def dfAddHash(df: DataFrame, columnsToExclude: List[String] = Nil): DataFrame = {
-
-    df.withColumn("hash", hash(df.columns.filter(x => !columnsToExclude.contains(x)).map(x => col("`" + x + "`")): _*))
-
   }
 
   /**
@@ -371,23 +356,8 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
     })
   }
 
-
   def toDate(c: Column, format: String): Column = {
     expr("TO_timestamp(CAST(UNIX_TIMESTAMP(`" + c.toString() + "`, '" + format + "') AS TIMESTAMP))")
-  }
-
-  def getHiveLocation(spark: SparkSession, tableName: String) = {
-    Try {
-      val path = spark
-        .sql(s"describe extended ${tableName}")
-        .filter("col_name = 'Location'")
-        .select("data_type")
-        .collect()
-        .map(row => row.getString(0))
-        .mkString
-      //require(path.startsWith("hdfs://"))
-      path
-    }
   }
 
   def deltaScd1(df: DataFrame, table: String, primaryKeys: List[String], database: String) = {
@@ -422,6 +392,34 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
 
   }
 
+  /**
+   * Adds a hash column based on several other columns
+   *
+   * @param df               DataFrame
+   * @param columnsToExclude List[String] the columns not to be hashed
+   * @return DataFrame
+   *
+   */
+  def dfAddHash(df: DataFrame, columnsToExclude: List[String] = Nil): DataFrame = {
+
+    df.withColumn("hash", hash(df.columns.filter(x => !columnsToExclude.contains(x)).map(x => col("`" + x + "`")): _*))
+
+  }
+
+  def getHiveLocation(spark: SparkSession, tableName: String) = {
+    Try {
+      val path = spark
+        .sql(s"describe extended ${tableName}")
+        .filter("col_name = 'Location'")
+        .select("data_type")
+        .collect()
+        .map(row => row.getString(0))
+        .mkString
+      //require(path.startsWith("hdfs://"))
+      path
+    }
+  }
+
   def tableExists(spark: SparkSession, deltaPath: String, tablePath: String): Boolean = {
     if (spark.catalog.databaseExists(deltaPath)) spark.catalog.tableExists(getDbTable(tablePath, deltaPath))
     else {
@@ -438,6 +436,8 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
       fs.exists(new Path(deltaPath + tablePath))
     }
   }
+
+  def getDbTable(table: String, db: String = "default") = s"`${db}`.`${table}`"
 
   /**
    * Writes a parquet table even if the table already exists
@@ -539,25 +539,22 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
     validate(spark, hiveTable, schema)
   }
 
-  /**
-   * TODO: remove this in favour of saveHive()
-   *
-   * @param hiveTable
-   * @deprecated
-   */
-  def save(hiveTable: String, df: DataFrame): Unit = {
-    saveHive(df, hiveTable)
+  def validate(spark: SparkSession, hiveTable: String, schema: Schema): Unit = {
+    logger.warn(s"validating $hiveTable")
+    assert(Constraints.fromSchema(schema)(spark.table(hiveTable)).isSuccess)
+  }
+
+  def save(hiveTable: String, df: DataFrame, format: String = "parquet"): Unit = {
+    if (hiveTable.contains("/")) saveFile(hiveTable, df, format)
+    else saveHive(df, hiveTable, format)
+  }
+
+  def saveFile(file: String, df: DataFrame, format: String = "parquet") = {
+    df.write.format(format).mode(SaveMode.Overwrite).save(file)
   }
 
   def read(spark: SparkSession, databaseOrPath: String, table: String, format: String = "parquet") = {
     if (spark.catalog.databaseExists(databaseOrPath)) spark.table(getDbTable(table, databaseOrPath))
     else spark.read.format(format).load(databaseOrPath + "/" + table)
   }
-
-  def validate(spark: SparkSession, hiveTable: String, schema: Schema): Unit = {
-    logger.warn(s"validating $hiveTable")
-    assert(Constraints.fromSchema(schema)(spark.table(hiveTable)).isSuccess)
-  }
-
-  def getDbTable(table: String, db: String = "default") = s"`${db}`.`${table}`"
 }

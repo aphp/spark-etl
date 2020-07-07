@@ -33,7 +33,7 @@ class PostgresConf(config: Map[String, String], dates: List[String], pks: List[S
 
     try {
       logger.warn("Reading data from Postgres table ---------")
-      val url = f"jdbc:postgresql://${host}:${port}/${db}?user=${user}&currentSchema=${schema}"
+      val url = f"jdbc:postgresql://${host}:${port}/${db}?user=${user}&currentSchema=${schema},public"
 
       //if (!checkTableExists(spark, url, schema, s_table)) {
       //  logger.warn(s"Postgres Table ${s_table} doesn't exist")

@@ -18,7 +18,7 @@ stages:
   - build
   - deploy
   - release
-  - codeQuality
+#  - codeQuality
 
 .job_common_m2_cache: &job_common_m2_cache
   cache:
@@ -63,15 +63,15 @@ job_deploy_artifact:
   script:
     - ./build.sh --deploy-artifact
 
-job_sonar:
-  <<: *job_common_m2_cache
-  dependencies:
-    - job_install
-  stage: codeQuality
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "dev"'
-  script:
-    - ./build.sh --code-quality
+#job_sonar:
+#  <<: *job_common_m2_cache
+#  dependencies:
+#    - job_install
+#  stage: codeQuality
+#  rules:
+#    - if: '$CI_COMMIT_BRANCH == "dev"'
+#  script:
+#    - ./build.sh --code-quality
 
 job_end:
   stage: .post

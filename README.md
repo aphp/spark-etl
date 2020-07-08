@@ -23,12 +23,12 @@ This process is semi-automated. Follow these steps:
 - Type this:
 
 ```shell
-$ export MVN_GROUP_REPOSITORY=https://nexus.rsareth.dil.services/repository/rsareth-aphp-mvn
-$ export MVN_RELEASE_REPOSITORY=https://nexus.rsareth.dil.services/repository/rsareth-aphp-mvn-release
-$ export MVN_SNAPSHOT_REPOSITORY=https://nexus.rsareth.dil.services/repository/rsareth-aphp-mvn-snapshot
+$ export MVN_GROUP_REPOSITORY=https://nexus.eds.aphp.fr/repository/nparis-mvn
+$ export MVN_RELEASE_REPOSITORY=https://nexus.eds.aphp.fr/repository/nparis-mvn-release
+$ export MVN_SNAPSHOT_REPOSITORY=https://nexus.eds.aphp.fr/repository/nparis-mvn-snapshot
 $ export NEXUS_USER=<NEXUS_USER>
 $ export NEXUS_PASSWORD=<NEXUS_PASSWORD>
-$ export CI_PROJECT_PATH=rsareth-aphp/data/spark-etl
+$ export CI_PROJECT_PATH=edsBigData/spark-etl
 $ export GIT_USER=<GIT_USER>
 $ export GIT_PASSWORD=<GIT_PASSWORD>
 $ ./build.sh --prepare-release

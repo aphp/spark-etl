@@ -14,7 +14,7 @@ before_script:
 
 stages:
   - install
-    # - test
+  - test
   - build
   - deploy
   - release
@@ -46,8 +46,8 @@ job_install:
   script:
     - ./build.sh --install
 
-      #include:
-      #  local: '.gitlab-ci-test.yml'
+include:
+  local: '.gitlab-ci-test.yml'
 
 job_deploy_artifact:
   <<: *job_common_m2_cache

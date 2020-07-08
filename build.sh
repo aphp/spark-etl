@@ -114,12 +114,12 @@ __code_quality() {
       exit 1
     fi
 
-    mvn dependency-check:check \
+    mvn ${MAVEN_CLI_OPTS} dependency-check:check \
         sonar:sonar \
         -Dsonar.host.url="${SONAR_HOST}" \
         -Dsonar.login="${SONAR_TOKEN}"
   else
-    mvn dependency-check:check sonar:sonar
+    mvn ${MAVEN_CLI_OPTS} dependency-check:check sonar:sonar
   fi
 }
 

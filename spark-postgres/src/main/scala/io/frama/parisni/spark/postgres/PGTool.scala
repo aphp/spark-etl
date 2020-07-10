@@ -392,17 +392,14 @@ object PGTool extends java.io.Serializable with LazyLogging {
 
   def parametrize(st: PreparedStatement, params: List[Any]) = {
     for ((obj, i) <- params.zipWithIndex) {
-      obj.getClass.getCanonicalName match {
-        case "java.lang.String" => st.setString(i + 1, obj.asInstanceOf[String])
-        case "java.lang.Boolean" =>
-          st.setBoolean(i + 1, obj.asInstanceOf[Boolean])
-        case "java.lang.Long"    => st.setLong(i + 1, obj.asInstanceOf[Long])
-        case "java.lang.Integer" => st.setInt(i + 1, obj.asInstanceOf[Int])
-        case "java.math.BigDecimal" =>
-          st.setDouble(i + 1, obj.asInstanceOf[Double])
-        case "java.sql.Date" => st.setDate(i + 1, obj.asInstanceOf[Date])
-        case "java.sql.Timestamp" =>
-          st.setTimestamp(i + 1, obj.asInstanceOf[Timestamp])
+      obj match {
+        case s: String               => st.setString(i + 1, s)
+        case b: Boolean              => st.setBoolean(i + 1, b)
+        case l: Long                 => st.setLong(i + 1, l)
+        case i: Integer              => st.setInt(i + 1, i)
+        case b: java.math.BigDecimal => st.setDouble(i + 1, b.doubleValue())
+        case d: java.sql.Date        => st.setDate(i + 1, d)
+        case t: Timestamp            => st.setTimestamp(i + 1, t)
         case _ =>
           throw new UnsupportedEncodingException(
             obj.getClass.getCanonicalName + " type not yet supported for prepared statements")

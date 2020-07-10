@@ -140,7 +140,7 @@ class PGTool(spark: SparkSession,
     PGTool.killLocks(url, table, password)
   }
 
-  def sqlExec(query: String, params: List[Any]): PGTool = {
+  def sqlExec(query: String, params: List[Any] = Nil): PGTool = {
     PGTool.sqlExec(url, query, password, params)
     this
   }
@@ -171,6 +171,10 @@ class PGTool(spark: SparkSession,
                             partitionColumn,
                             splitFactor.getOrElse(1),
                             password = password)
+  }
+
+  private def genPath: String = {
+    tmpPath + "/" + randomUUID.toString
   }
 
   /**
@@ -233,10 +237,6 @@ class PGTool(spark: SparkSession,
                                 password,
                                 bulkLoadMode,
                                 bulkLoadBufferSize)
-  }
-
-  private def genPath: String = {
-    tmpPath + "/" + randomUUID.toString
   }
 
   def outputScd1Hash(table: String,
@@ -378,51 +378,6 @@ object PGTool extends java.io.Serializable with LazyLogging {
       conn.close()
     }
     killed
-  }
-
-  def connOpen(url: String, password: String = ""): Connection = {
-    val prop = new Properties()
-    prop.put("password", passwordFromConn(url, password))
-    val dbc: Connection = DriverManager.getConnection(url, prop)
-    dbc
-  }
-
-  def passwordFromConn(url: String, password: String): String = {
-    if (!password.isEmpty) {
-      return password
-    }
-    val pattern = "jdbc:postgresql://(.*):(\\d+)/(\\w+)[?]user=(\\w+).*".r
-    val pattern(host, port, database, username) = url
-    dbPassword(host, port, database, username)
-  }
-
-  private def dbPassword(hostname: String,
-                         port: String,
-                         database: String,
-                         username: String): String = {
-    // Usage: val thatPassWord = dbPassword(hostname,port,database,username)
-    // .pgpass file format, hostname:port:database:username:password
-
-    val fs = FileSystem.get(new java.net.URI("file:///"), new Configuration)
-    val reader = new BufferedReader(
-      new InputStreamReader(
-        fs.open(new Path(scala.sys.env("HOME"), ".pgpass"))))
-    val content = Iterator
-      .continually(reader.readLine())
-      .takeWhile(_ != null)
-      .mkString("\n")
-    var passwd = ""
-    content.split("\n").foreach { line =>
-      val connCfg = line.split(":")
-      if (hostname == connCfg(0)
-          && port == connCfg(1)
-          && (database == connCfg(2) || connCfg(2) == "*")
-          && username == connCfg(3)) {
-        passwd = connCfg(4)
-      }
-    }
-    reader.close()
-    passwd
   }
 
   def sqlExec(url: String,
@@ -819,6 +774,51 @@ object PGTool extends java.io.Serializable with LazyLogging {
     val st: PreparedStatement = conn.prepareStatement(queryCreate)
     st.executeUpdate()
     conn.close()
+  }
+
+  def connOpen(url: String, password: String = ""): Connection = {
+    val prop = new Properties()
+    prop.put("password", passwordFromConn(url, password))
+    val dbc: Connection = DriverManager.getConnection(url, prop)
+    dbc
+  }
+
+  def passwordFromConn(url: String, password: String): String = {
+    if (!password.isEmpty) {
+      return password
+    }
+    val pattern = "jdbc:postgresql://(.*):(\\d+)/(\\w+)[?]user=(\\w+).*".r
+    val pattern(host, port, database, username) = url
+    dbPassword(host, port, database, username)
+  }
+
+  private def dbPassword(hostname: String,
+                         port: String,
+                         database: String,
+                         username: String): String = {
+    // Usage: val thatPassWord = dbPassword(hostname,port,database,username)
+    // .pgpass file format, hostname:port:database:username:password
+
+    val fs = FileSystem.get(new java.net.URI("file:///"), new Configuration)
+    val reader = new BufferedReader(
+      new InputStreamReader(
+        fs.open(new Path(scala.sys.env("HOME"), ".pgpass"))))
+    val content = Iterator
+      .continually(reader.readLine())
+      .takeWhile(_ != null)
+      .mkString("\n")
+    var passwd = ""
+    content.split("\n").foreach { line =>
+      val connCfg = line.split(":")
+      if (hostname == connCfg(0)
+          && port == connCfg(1)
+          && (database == connCfg(2) || connCfg(2) == "*")
+          && username == connCfg(3)) {
+        passwd = connCfg(4)
+      }
+    }
+    reader.close()
+    passwd
   }
 
   def inputQueryDf(spark: SparkSession,

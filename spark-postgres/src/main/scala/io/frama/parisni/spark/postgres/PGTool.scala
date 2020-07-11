@@ -335,6 +335,51 @@ object PGTool extends java.io.Serializable with LazyLogging {
     conn.close()
   }
 
+  def connOpen(url: String, password: String = ""): Connection = {
+    val prop = new Properties()
+    prop.put("password", passwordFromConn(url, password))
+    val dbc: Connection = DriverManager.getConnection(url, prop)
+    dbc
+  }
+
+  def passwordFromConn(url: String, password: String): String = {
+    if (!password.isEmpty) {
+      return password
+    }
+    val pattern = "jdbc:postgresql://(.*):(\\d+)/(\\w+)[?]user=(\\w+).*".r
+    val pattern(host, port, database, username) = url
+    dbPassword(host, port, database, username)
+  }
+
+  private def dbPassword(hostname: String,
+                         port: String,
+                         database: String,
+                         username: String): String = {
+    // Usage: val thatPassWord = dbPassword(hostname,port,database,username)
+    // .pgpass file format, hostname:port:database:username:password
+
+    val fs = FileSystem.get(new java.net.URI("file:///"), new Configuration)
+    val reader = new BufferedReader(
+      new InputStreamReader(
+        fs.open(new Path(scala.sys.env("HOME"), ".pgpass"))))
+    val content = Iterator
+      .continually(reader.readLine())
+      .takeWhile(_ != null)
+      .mkString("\n")
+    var passwd = ""
+    content.split("\n").foreach { line =>
+      val connCfg = line.split(":")
+      if (hostname == connCfg(0)
+          && port == connCfg(1)
+          && (database == connCfg(2) || connCfg(2) == "*")
+          && username == connCfg(3)) {
+        passwd = connCfg(4)
+      }
+    }
+    reader.close()
+    passwd
+  }
+
   def tableDrop(url: String, table: String, password: String = ""): Unit = {
     val conn = connOpen(url, password)
     val st: PreparedStatement =
@@ -388,85 +433,6 @@ object PGTool extends java.io.Serializable with LazyLogging {
     val st: PreparedStatement = conn.prepareStatement(s"$query")
     parametrize(st, params).executeUpdate()
     conn.close()
-  }
-
-  def parametrize(st: PreparedStatement, params: List[Any]) = {
-    for ((obj, i) <- params.zipWithIndex) {
-      obj match {
-        case s: String               => st.setString(i + 1, s)
-        case b: Boolean              => st.setBoolean(i + 1, b)
-        case l: Long                 => st.setLong(i + 1, l)
-        case i: Integer              => st.setInt(i + 1, i)
-        case b: java.math.BigDecimal => st.setDouble(i + 1, b.doubleValue())
-        case d: java.sql.Date        => st.setDate(i + 1, d)
-        case t: Timestamp            => st.setTimestamp(i + 1, t)
-        case _ =>
-          throw new UnsupportedEncodingException(
-            obj.getClass.getCanonicalName + " type not yet supported for prepared statements")
-      }
-    }
-    st
-  }
-
-  def sqlExecWithResult(spark: SparkSession,
-                        url: String,
-                        query: String,
-                        password: String = "",
-                        params: List[Any] = Nil): Dataset[Row] = {
-    val conn = connOpen(url, password)
-    try {
-
-      val st: PreparedStatement = conn.prepareStatement(query)
-      val rs = parametrize(st, params).executeQuery()
-
-      import scala.collection.mutable.ListBuffer
-      var c = new ListBuffer[Row]()
-      while (rs.next()) {
-        val b = (1 to rs.getMetaData.getColumnCount).map { idx =>
-          {
-            val res = rs.getMetaData.getColumnClassName(idx) match {
-              case "java.lang.String"     => rs.getString(idx)
-              case "java.lang.Boolean"    => rs.getBoolean(idx)
-              case "java.lang.Long"       => rs.getLong(idx)
-              case "java.lang.Integer"    => rs.getInt(idx)
-              case "java.math.BigDecimal" => rs.getDouble(idx)
-              case "java.sql.Date"        => rs.getDate(idx)
-              case "java.sql.Timestamp"   => rs.getTimestamp(idx)
-              case _                      => rs.getString(idx)
-            }
-            if (rs.wasNull()) null // test wether the value was null
-            else res
-          }
-        }
-        c += Row.fromSeq(b)
-      }
-      val b = spark.sparkContext.makeRDD(c)
-      val schema = jdbcMetadataToStructType(rs.getMetaData)
-
-      spark.createDataFrame(b, schema)
-    } finally {
-      conn.close()
-    }
-  }
-
-  def jdbcMetadataToStructType(meta: ResultSetMetaData): StructType = {
-    StructType((1 to meta.getColumnCount).map { idx =>
-      meta.getColumnClassName(idx) match {
-        case "java.lang.String" =>
-          StructField(meta.getColumnLabel(idx), StringType)
-        case "java.lang.Boolean" =>
-          StructField(meta.getColumnLabel(idx), BooleanType)
-        case "java.lang.Integer" =>
-          StructField(meta.getColumnLabel(idx), IntegerType)
-        case "java.lang.Long" => StructField(meta.getColumnLabel(idx), LongType)
-        case "java.math.BigDecimal" =>
-          StructField(meta.getColumnLabel(idx), DoubleType)
-        case "java.sql.Date" => StructField(meta.getColumnLabel(idx), DateType)
-        case "java.sql.Timestamp" =>
-          StructField(meta.getColumnLabel(idx), TimestampType)
-        case _ => StructField(meta.getColumnLabel(idx), StringType)
-      }
-    })
   }
 
   def copyTableOwner(url: String,
@@ -773,51 +739,6 @@ object PGTool extends java.io.Serializable with LazyLogging {
     conn.close()
   }
 
-  def connOpen(url: String, password: String = ""): Connection = {
-    val prop = new Properties()
-    prop.put("password", passwordFromConn(url, password))
-    val dbc: Connection = DriverManager.getConnection(url, prop)
-    dbc
-  }
-
-  def passwordFromConn(url: String, password: String): String = {
-    if (!password.isEmpty) {
-      return password
-    }
-    val pattern = "jdbc:postgresql://(.*):(\\d+)/(\\w+)[?]user=(\\w+).*".r
-    val pattern(host, port, database, username) = url
-    dbPassword(host, port, database, username)
-  }
-
-  private def dbPassword(hostname: String,
-                         port: String,
-                         database: String,
-                         username: String): String = {
-    // Usage: val thatPassWord = dbPassword(hostname,port,database,username)
-    // .pgpass file format, hostname:port:database:username:password
-
-    val fs = FileSystem.get(new java.net.URI("file:///"), new Configuration)
-    val reader = new BufferedReader(
-      new InputStreamReader(
-        fs.open(new Path(scala.sys.env("HOME"), ".pgpass"))))
-    val content = Iterator
-      .continually(reader.readLine())
-      .takeWhile(_ != null)
-      .mkString("\n")
-    var passwd = ""
-    content.split("\n").foreach { line =>
-      val connCfg = line.split(":")
-      if (hostname == connCfg(0)
-          && port == connCfg(1)
-          && (database == connCfg(2) || connCfg(2) == "*")
-          && username == connCfg(3)) {
-        passwd = connCfg(4)
-      }
-    }
-    reader.close()
-    passwd
-  }
-
   def inputQueryDf(spark: SparkSession,
                    url: String,
                    query: String,
@@ -852,6 +773,29 @@ object PGTool extends java.io.Serializable with LazyLogging {
         .option("password", passwordFromConn(url, password))
         .load
     }
+  }
+
+  private def getMinMaxForColumn(spark: SparkSession,
+                                 url: String,
+                                 query: String,
+                                 partitionColumn: String,
+                                 password: String = ""): (Long, Long) = {
+    val min_max_query =
+      s"""(SELECT
+         |coalesce(cast(min("$partitionColumn") as bigint), 0) as min,
+         |coalesce(cast(max("$partitionColumn") as bigint),0) as max
+         |FROM $query) AS tmp1""".stripMargin
+    val row = spark.read
+      .format("jdbc")
+      .option("url", url)
+      .option("driver", "org.postgresql.Driver")
+      .option("dbtable", min_max_query)
+      .option("password", passwordFromConn(url, password))
+      .load
+      .first
+    val lowerBound = row.getLong(0)
+    val upperBound = row.getLong(1)
+    (lowerBound, upperBound)
   }
 
   def outputBulk(spark: SparkSession,
@@ -1304,14 +1248,27 @@ object PGTool extends java.io.Serializable with LazyLogging {
                             partitionColumn: String,
                             splitFactor: Int = 1,
                             password: String = "") = {
+    val columnType =
+      getSqlColumnType(spark, url, query, partitionColumn, password)
     val queryStr = s"($query) as tmp"
-    val (lowerBound, upperBound) =
-      getMinMaxForColumn(spark, url, queryStr, partitionColumn)
     val rdd =
-      getPartitions(spark, lowerBound, upperBound, numPartitions, splitFactor)
-    rdd.foreachPartition(x => {
+      if ("Long" :: "Integer" :: Nil contains columnType) {
+        val (lowerBound, upperBound) =
+          getMinMaxForColumn(spark, url, queryStr, partitionColumn)
+        getPartitions(spark, lowerBound, upperBound, numPartitions, splitFactor)
+      } else {
+        val (lowerBound, upperBound) =
+          getMinMaxForColumnString(spark, url, queryStr, partitionColumn)
+        getPartitionsString(spark,
+                            lowerBound,
+                            upperBound,
+                            numPartitions,
+                            splitFactor)
+      }
+
+    rdd.foreachPartition(rddPart => {
       val conn = connOpen(url, password)
-      x.foreach { s =>
+      rddPart.foreach { s =>
         {
           val queryPart =
             s"""SELECT * FROM $queryStr WHERE "$partitionColumn" ${s._2}"""
@@ -1319,8 +1276,27 @@ object PGTool extends java.io.Serializable with LazyLogging {
         }
       }
       conn.close()
-      x.toIterator
+      rddPart.toIterator
     })
+  }
+
+  def getSqlColumnType(spark: SparkSession,
+                       url: String,
+                       query: String,
+                       column: String,
+                       password: String = "") = {
+    val stmt = s"""select "${column}" from (${query}) t limit 0"""
+    val res = sqlExecWithResult(spark, url, stmt, password)
+    val columnType: Array[String] =
+      res.schema.fields.map(f => f.dataType.typeName)
+    columnType(0) match {
+      case "string"  => "String"
+      case "long"    => "Long"
+      case "integer" => "Integer"
+      case e =>
+        throw new UnsupportedOperationException(
+          s"${e} not supported for partition column")
+    }
   }
 
   def inputQueryBulkCsv(fsConf: String,
@@ -1600,7 +1576,9 @@ object PGTool extends java.io.Serializable with LazyLogging {
                                     queryFetch1,
                                     path,
                                     isMultiline = true,
-                                    1,
+                                    partitions,
+                                    key(0),
+                                    40,
                                     password)
 
       // 2.1 produce insert
@@ -1848,26 +1826,99 @@ object PGTool extends java.io.Serializable with LazyLogging {
     }
   }
 
-  private def getMinMaxForColumn(spark: SparkSession,
-                                 url: String,
-                                 query: String,
-                                 partitionColumn: String,
-                                 password: String = ""): (Long, Long) = {
+  def sqlExecWithResult(spark: SparkSession,
+                        url: String,
+                        query: String,
+                        password: String = "",
+                        params: List[Any] = Nil): Dataset[Row] = {
+    val conn = connOpen(url, password)
+    try {
+
+      val st: PreparedStatement = conn.prepareStatement(query)
+      val rs = parametrize(st, params).executeQuery()
+
+      import scala.collection.mutable.ListBuffer
+      var c = new ListBuffer[Row]()
+      while (rs.next()) {
+        val b = (1 to rs.getMetaData.getColumnCount).map { idx =>
+          {
+            val res = rs.getMetaData.getColumnClassName(idx) match {
+              case "java.lang.String"     => rs.getString(idx)
+              case "java.lang.Boolean"    => rs.getBoolean(idx)
+              case "java.lang.Long"       => rs.getLong(idx)
+              case "java.lang.Integer"    => rs.getInt(idx)
+              case "java.math.BigDecimal" => rs.getDouble(idx)
+              case "java.sql.Date"        => rs.getDate(idx)
+              case "java.sql.Timestamp"   => rs.getTimestamp(idx)
+              case _                      => rs.getString(idx)
+            }
+            if (rs.wasNull()) null // test wether the value was null
+            else res
+          }
+        }
+        c += Row.fromSeq(b)
+      }
+      val b = spark.sparkContext.makeRDD(c)
+      val schema = jdbcMetadataToStructType(rs.getMetaData)
+
+      spark.createDataFrame(b, schema)
+    } finally {
+      conn.close()
+    }
+  }
+
+  def parametrize(st: PreparedStatement, params: List[Any]) = {
+    for ((obj, i) <- params.zipWithIndex) {
+      obj match {
+        case s: String               => st.setString(i + 1, s)
+        case b: Boolean              => st.setBoolean(i + 1, b)
+        case l: Long                 => st.setLong(i + 1, l)
+        case i: Integer              => st.setInt(i + 1, i)
+        case b: java.math.BigDecimal => st.setDouble(i + 1, b.doubleValue())
+        case d: java.sql.Date        => st.setDate(i + 1, d)
+        case t: Timestamp            => st.setTimestamp(i + 1, t)
+        case _ =>
+          throw new UnsupportedEncodingException(
+            obj.getClass.getCanonicalName + " type not yet supported for prepared statements")
+      }
+    }
+    st
+  }
+
+  def jdbcMetadataToStructType(meta: ResultSetMetaData): StructType = {
+    StructType((1 to meta.getColumnCount).map { idx =>
+      meta.getColumnClassName(idx) match {
+        case "java.lang.String" =>
+          StructField(meta.getColumnLabel(idx), StringType)
+        case "java.lang.Boolean" =>
+          StructField(meta.getColumnLabel(idx), BooleanType)
+        case "java.lang.Integer" =>
+          StructField(meta.getColumnLabel(idx), IntegerType)
+        case "java.lang.Long" => StructField(meta.getColumnLabel(idx), LongType)
+        case "java.math.BigDecimal" =>
+          StructField(meta.getColumnLabel(idx), DoubleType)
+        case "java.sql.Date" => StructField(meta.getColumnLabel(idx), DateType)
+        case "java.sql.Timestamp" =>
+          StructField(meta.getColumnLabel(idx), TimestampType)
+        case _ => StructField(meta.getColumnLabel(idx), StringType)
+      }
+    })
+  }
+
+  private def getMinMaxForColumnString(
+      spark: SparkSession,
+      url: String,
+      query: String,
+      partitionColumn: String,
+      password: String = ""): (String, String) = {
     val min_max_query =
-      s"""(SELECT
-         |coalesce(cast(min("$partitionColumn") as bigint), 0) as min,
-         |coalesce(cast(max("$partitionColumn") as bigint),0) as max
-         |FROM $query) AS tmp1""".stripMargin
-    val row = spark.read
-      .format("jdbc")
-      .option("url", url)
-      .option("driver", "org.postgresql.Driver")
-      .option("dbtable", min_max_query)
-      .option("password", passwordFromConn(url, password))
-      .load
-      .first
-    val lowerBound = row.getLong(0)
-    val upperBound = row.getLong(1)
+      s"""SELECT
+         |min("$partitionColumn") as min,
+         |max("$partitionColumn") as max
+         |FROM $query""".stripMargin
+    val row = sqlExecWithResult(spark, url, min_max_query, password).first
+    val lowerBound = row.getString(0)
+    val upperBound = row.getString(1)
     (lowerBound, upperBound)
   }
 
@@ -1899,13 +1950,82 @@ object PGTool extends java.io.Serializable with LazyLogging {
       .map { i =>
         val start = lowerBound + (i * length / splitPartitions)
         val end = lowerBound + ((i + 1) * length / splitPartitions) - 1
-        f"between $start AND $end"
+        (start, end)
       }
+      .filter { case (x, y) => x <= y } // remove the cases x > y
+      .map { case (start, end) => f"between $start AND $end" }
       .zipWithIndex
       .map(_.swap)
       .toDS
+      .dropDuplicates("_2") // remove the duplicated predicate, in case the splitfactor is too high
       .rdd
       .partitionBy(new ExactPartitioner(numPartitions))
+    partitions
+  }
+
+  /**
+   * The below implementation wont work for utf8 characters. It only suppoert ascii charsets
+   * It will split numbers better than alpha chars.
+   * It is possible to extend this behavior by adding several elements in the ascii array
+   * @see https://www.cs.cmu.edu/~pattis/15-1XX/common/handouts/ascii.html
+   * @param spark
+   * @param lowerString
+   * @param upperString
+   * @param numPartitions
+   * @param splitFactor
+   * @return
+   */
+  private def getPartitionsString(spark: SparkSession,
+                                  lowerString: String,
+                                  upperString: String,
+                                  numPartitions: Int,
+                                  splitFactor: Int = 1): RDD[(Int, String)] = {
+
+    import spark.implicits._
+    if (lowerString == upperString)
+      return ((1, s"between '${lowerString}' and '${upperString}'") :: Nil).toDS.rdd
+
+    val commonStart = (lowerString, upperString).zipped.toIterator
+      .takeWhile { case (l: Char, u: Char) => l == u }
+      .map(x => x._1)
+      .toList
+      .mkString("")
+
+    val lowerBound =
+      lowerString.substring(commonStart.length, lowerString.length)
+    val upperBound =
+      upperString.substring(commonStart.length, upperString.length)
+
+    import spark.implicits._
+    val partitionsTmp = List((lowerBound, "/"),
+                             ("0", "0"),
+                             ("1", "1"),
+                             ("2", "2"),
+                             ("3", "3"),
+                             ("4", "4"), //
+                             ("5", "5"),
+                             ("6", "6"),
+                             ("7", "7"),
+                             ("8", "8"),
+                             ("9", "9"),
+                             (":", upperBound))
+      .filterNot { case (_, end) => end > upperBound }
+
+    val partitionsLast = List(partitionsTmp.last._1 -> upperBound)
+
+    val partitions =
+      (partitionsTmp.reverse.drop(1) ++ partitionsLast)
+        .map {
+          case (start: String, end: String) =>
+            val startString = commonStart + start
+            val endString = commonStart + end
+            f"between '$startString' AND '$endString'"
+        }
+        .zipWithIndex
+        .map(_.swap)
+        .toDS
+        .rdd
+        .partitionBy(new ExactPartitioner(numPartitions))
     partitions
   }
 

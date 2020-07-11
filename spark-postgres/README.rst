@@ -9,13 +9,16 @@ spark-postgres is designed for **large datasets**. It outperforms Apache Sqoop b
 factor 8 for both reading/writing to postgres.
 
 - use of pg COPY statements
-- parallel reads/writes
-- use of hdfs to store intermediary csv [optional]
+- parallel writes with csv/binary stream methods
+- parallel reads based on numeric/string key
+- optional use of hdfs to store intermediary csv
 - reindex after bulk-loading
 - SCD1 computations done on the spark side
 - use unlogged tables when needed
+- prepared statements made easy
+- spark datasource for high level API
 
-spark-postgres is **reliable** and handles  array types and also multiline text
+spark-postgres is **reliable** and handles array types and also multiline text
 columns.
 
 It can be used from **scala-spark** and **pySpark**
@@ -39,7 +42,7 @@ Datasource Usage
       .option("partitionColumn","id")
       .load
 
-      // optionally use jdbc url
+      // optionaly use jdbc url
       val data = spark.read.format("postgres")
       .option("url","jdbc:postgres://localhost:5432/postgres?user=postgres&currentSchema=public")
       .option("password","myUnsecuredPassword")     
@@ -106,7 +109,7 @@ Datasource Usage
       .option("schema","mySchema")
       .save
       
-Complete API Scala
+Low level API Scala
 +++++++++++++++++++
 .. code-block:: scala
 	
@@ -133,7 +136,7 @@ Complete API Scala
           .tableCopy("note","note_tmp") // duplicate the table without data
           .inputBulk(query="select * from note",  isMultiline=true, numPartitions=4, splitFactor=10, partitionColumn="note_id") // get a df from the table
 
-Complete API pySpark
+Low level API pySpark
 +++++++++++++++++++++
 
 .. code-block:: python

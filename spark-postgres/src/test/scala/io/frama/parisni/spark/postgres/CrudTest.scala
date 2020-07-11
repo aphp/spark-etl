@@ -44,4 +44,36 @@ class CrudTest extends QueryTest with SparkSessionTestWrapper {
     checkAnswer(result, wanted)
   }
 
+  @Test
+  def verifyGetColumnType(): Unit = {
+    import spark.implicits._
+
+    val df: DataFrame = (("bob", 2, 3L, true) ::
+      Nil).toDF("colstring", "colint", "colong", "colboolean")
+    getPgTool().tableCreate("get_table_test", df.schema)
+    val query =
+      """
+        |select *
+        |from get_table_test
+        |""".stripMargin
+    val resultString =
+      PGTool.getSqlColumnType(spark, getPgUrl, query, "colstring", "postgres")
+    assert(resultString == "String")
+
+    val resultLong =
+      PGTool.getSqlColumnType(spark, getPgUrl, query, "colong", "postgres")
+    assert(resultLong == "Long")
+
+    val resultInt =
+      PGTool.getSqlColumnType(spark, getPgUrl, query, "colint", "postgres")
+    assert(resultInt == "Integer")
+
+    assertThrows[UnsupportedOperationException] {
+      val resultBool = PGTool.getSqlColumnType(spark,
+                                               getPgUrl,
+                                               query,
+                                               "colboolean",
+                                               "postgres")
+    }
+  }
 }

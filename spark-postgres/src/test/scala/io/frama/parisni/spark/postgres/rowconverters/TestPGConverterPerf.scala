@@ -1,7 +1,7 @@
 /**
- * Commenting this class as the performance gain is only visible when
- * writing at least some amount of data, meaning tests are long.
- */
+  * Commenting this class as the performance gain is only visible when
+  * writing at least some amount of data, meaning tests are long.
+  */
 /*
 package io.frama.parisni.spark.postgres.rowconverters
 
@@ -132,4 +132,4 @@ class TestPGConverterPerf extends QueryTest with SparkSessionTestWrapper {
   }
 
 }
-*/
+ */

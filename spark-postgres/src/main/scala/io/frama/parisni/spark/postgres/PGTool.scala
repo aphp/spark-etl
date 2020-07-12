@@ -173,10 +173,6 @@ class PGTool(spark: SparkSession,
                             password = password)
   }
 
-  private def genPath: String = {
-    tmpPath + "/" + randomUUID.toString
-  }
-
   /**
     * Write a spark dataframe into a postgres table using
     * the built-in COPY
@@ -237,6 +233,10 @@ class PGTool(spark: SparkSession,
                                 password,
                                 bulkLoadMode,
                                 bulkLoadBufferSize)
+  }
+
+  private def genPath: String = {
+    tmpPath + "/" + randomUUID.toString
   }
 
   def outputScd1Hash(table: String,
@@ -1964,23 +1964,24 @@ object PGTool extends java.io.Serializable with LazyLogging {
   }
 
   /**
-   * The below implementation wont work for utf8 characters. It only suppoert ascii charsets
-   * It will split numbers better than alpha chars.
-   * It is possible to extend this behavior by adding several elements in the ascii array
-   * @see https://www.cs.cmu.edu/~pattis/15-1XX/common/handouts/ascii.html
-   * @param spark
-   * @param lowerString
-   * @param upperString
-   * @param numPartitions
-   * @param splitFactor
-   * @return
-   */
+    * The below implementation wont work for utf8 characters. It only suppoert ascii charsets
+    * It will split numbers better than alpha chars.
+    * It is possible to extend this behavior by adding several elements in the ascii array
+    * @see https://www.cs.cmu.edu/~pattis/15-1XX/common/handouts/ascii.html
+    * @param spark
+    * @param lowerString
+    * @param upperString
+    * @param numPartitions
+    * @param splitFactor
+    * @return
+    */
   private def getPartitionsString(spark: SparkSession,
                                   lowerString: String,
                                   upperString: String,
                                   numPartitions: Int,
                                   splitFactor: Int = 1): RDD[(Int, String)] = {
 
+    logger.debug(s"low:${lowerString} up:${upperString}")
     import spark.implicits._
     if (lowerString == upperString)
       return ((1, s"between '${lowerString}' and '${upperString}'") :: Nil).toDS.rdd
@@ -1991,6 +1992,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
       .toList
       .mkString("")
 
+    logger.debug(s"common: ${commonStart}")
     val lowerBound =
       lowerString.substring(commonStart.length, lowerString.length)
     val upperBound =
@@ -2026,6 +2028,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
         .toDS
         .rdd
         .partitionBy(new ExactPartitioner(numPartitions))
+    logger.debug(partitions.take(1000).mkString("\n"))
     partitions
   }
 

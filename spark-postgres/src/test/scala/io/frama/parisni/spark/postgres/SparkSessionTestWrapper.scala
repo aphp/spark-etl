@@ -19,7 +19,6 @@ trait SparkSessionTestWrapper {
       .config("spark.sql.shuffle.partitions", "4")
      .config("spark.ui.enabled", "false")
      .getOrCreate()
-    spark.sparkContext.setLogLevel("WARN")
     spark
 
   }

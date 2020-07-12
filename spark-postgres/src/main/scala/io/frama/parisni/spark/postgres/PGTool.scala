@@ -400,7 +400,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
   }
 
   def killLocks(url: String, table: String, password: String): Int = {
-    logger.warn(s"Looking for locks")
+    logger.info(s"Looking for locks")
     var killed = 0
     val conn = connOpen(url, password)
     try {
@@ -859,7 +859,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
                     password: String = "",
                     reindex: Boolean = false,
                     bulkLoadBufferSize: Int = defaultBulkLoadBufferSize) = {
-    logger.warn("using CSV strategy")
+    logger.info("using CSV strategy")
     try {
       if (reindex)
         indexDeactivate(url, table, password)
@@ -971,7 +971,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
       reindex: Boolean = false,
       bulkLoadBufferSize: Int = defaultBulkLoadBufferSize,
       copyTimeoutMs: Long = defaultStreamBulkLoadTimeoutMs) = {
-    logger.warn("using STREAM strategy")
+    logger.info("using STREAM strategy")
     try {
       if (reindex)
         indexDeactivate(url, table, password)
@@ -1090,7 +1090,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
       reindex: Boolean = false,
       bulkLoadBufferSize: Int = defaultBulkLoadBufferSize
   ) = {
-    logger.warn("using PG Binary stream strategy")
+    logger.info("using PG Binary stream strategy")
     try {
       if (reindex)
         indexDeactivate(url, table, password)
@@ -1162,7 +1162,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
       reindex: Boolean = false,
       bulkLoadBufferSize: Int = defaultBulkLoadBufferSize
   ) = {
-    logger.warn("using PG-Binary files strategy")
+    logger.info("using PG-Binary files strategy")
     try {
       if (reindex)
         indexDeactivate(url, table, password)
@@ -1345,7 +1345,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
     WHERE relname='$table' and nspname = '$schema' )
     """
     sqlExec(url, query, password)
-    logger.warn(s"Deactivating indexes from $schema.$table")
+    logger.info(s"Deactivating indexes from $schema.$table")
   }
 
   def indexReactivate(url: String, table: String, password: String = "") = {
@@ -1361,7 +1361,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
       WHERE relname='$table' and nspname = '$schema' )
     """
     sqlExec(url, query, password)
-    logger.warn(s"Reactivating indexes from $schema.$table")
+    logger.info(s"Reactivating indexes from $schema.$table")
 
     val query2 =
       s"""
@@ -1519,7 +1519,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
                      password: String,
                      bulkLoadMode: BulkLoadMode): Boolean = {
     if (tableEmpty(spark, url, table, password)) {
-      logger.warn("Loading directly data")
+      logger.info("Loading directly data")
       outputBulk(spark,
                  url,
                  table,
@@ -1557,7 +1557,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
                        bulkLoadMode))
       return
 
-    logger.warn("The postgres table is not empty")
+    logger.info("The postgres table is not empty")
 
     val insertTmp = getTmpTable("ins_")
     val updateTmp = getTmpTable("upd_")
@@ -1695,7 +1695,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
          |SELECT $insertCol
          |FROM "$insertTmp"
          |""".stripMargin
-    logger.info(query)
+    logger.debug(query)
     query
   }
 
@@ -1721,7 +1721,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
          |SELECT $insertCol, null as "$endDatetimeCol"
          |FROM "$insertTmp"
          |""".stripMargin
-    logger.info(query)
+    logger.debug(query)
     query
   }
 

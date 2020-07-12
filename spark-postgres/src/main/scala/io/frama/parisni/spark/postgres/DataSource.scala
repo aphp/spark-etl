@@ -135,7 +135,7 @@ class PostgresRelation(val parameters: Map[String, String],
       pk: Option[String] = None,
       endCol: Option[String] = None
   ): Unit = {
-    logger.warn("overwrite + swap loading")
+    logger.info("overwrite + swap loading")
 
     // Overwrite-Swap bulk-loading strategy:
     // Copy a temporary table  frgom the original table,
@@ -185,8 +185,8 @@ class PostgresRelation(val parameters: Map[String, String],
       pk: Option[String] = None,
       endCol: Option[String] = None
   ): Unit = {
-    logger.warn("in-place loading")
-    logger.warn("is_overwrite " + overwrite)
+    logger.info("in-place loading")
+    logger.info("is_overwrite " + overwrite)
 
     // Kill locks before dropping in case of overwrite
     if (overwrite) {

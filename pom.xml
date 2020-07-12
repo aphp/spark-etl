@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.frama.parisni</groupId>
     <artifactId>spark-etl</artifactId>
@@ -411,7 +412,8 @@
         <sonar.sourceEncoding>UTF-8</sonar.sourceEncoding>
         <sonar.scala.version>${scala.tools.version}</sonar.scala.version>
         <sonar.scala.scapegoat.reportPath>${project.build.directory}/scapegoat.xml</sonar.scala.scapegoat.reportPath>
-        <sonar.dependencyCheck.htmlReportPath>${project.build.directory}/dependency-check-report.html</sonar.dependencyCheck.htmlReportPath>
+        <sonar.dependencyCheck.htmlReportPath>${project.build.directory}/dependency-check-report.html
+        </sonar.dependencyCheck.htmlReportPath>
         <sonar.exclusions>src/test/**</sonar.exclusions>
     </properties>
     <build>

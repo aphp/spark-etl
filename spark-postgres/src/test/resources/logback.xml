@@ -1,0 +1,24 @@
+<configuration>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%date{ISO8601} %highlight([%-5level]): %cyan(%logger{15}) %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="WARN">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+<logger name="org.apache.hadoop" level="WARN" includeLocation="true"/>
+<logger name="org.apache.spark" level="OFF" includeLocation="true"/>
+<logger name="org.apache.hadoop.hive" level="WARN" includeLocation="true"/>
+<logger name="org.apache.spark.repl.SparkILoop$SparkILoopInterpreter" level="WARN" includeLocation="true"/>
+<logger name="apache.spark.repl.SparkIMain$exprTyper" level="WARN" includeLocation="true"/>
+<logger name="org.eclipse.jetty.util.component.AbstractLifeCycle" level="WARN" includeLocation="true"/>
+<logger name="org.eclipse.jetty" level="WARN" includeLocation="true"/>
+<logger name="io.frama.parisni.spark.postgres" level="DEBUG" includeLocation="true"/>
+<logger name="org.apache.spark.repl.SparkILoop$SparkILoopInterpreter" level="WARN" includeLocation="true"/>
+<logger name="org.apache.spark.repl.SparkIMain$exprType" level="WARN" includeLocation="true"/>
+<logger name="com.opentable.db.postgres.embedded.EmbeddedPostgres" level="WARN" includeLocation="true"/>
+
+</configuration>

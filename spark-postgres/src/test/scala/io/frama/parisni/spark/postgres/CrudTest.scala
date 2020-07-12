@@ -1,5 +1,7 @@
 package io.frama.parisni.spark.postgres
 
+import java.sql.Timestamp
+
 import org.apache.spark.sql.{DataFrame, QueryTest}
 import org.junit.Test
 
@@ -75,5 +77,38 @@ class CrudTest extends QueryTest with SparkSessionTestWrapper {
                                                "colboolean",
                                                "postgres")
     }
+  }
+
+  @Test
+  def verifyBulkInputStringColumn(): Unit = {
+
+    import spark.implicits._
+
+    val table = "crud_table_bulk_string"
+    List(
+      (1L, "pref_abbé", "bob", new Timestamp(1), 1),
+      (2L, "pref_abcd", "bob", null, 2),
+      (3L, "pref_abcde", "bob", null, 2),
+      (4L, "pref_abcdef", "bob", null, 2),
+      (5L, "pref_abcdefg", "bob", null, 2),
+      (6L, "pref_abcdefg", "bob", null, 2),
+      (7L, "pref_abcdefgh", "bob", null, 2),
+      (8L, "pref_abcdefghiá", "bob", null, 2)
+    ).toDF("id", "key", "cd", "end_date", "hash")
+      .write
+      .format("io.frama.parisni.spark.postgres")
+      .option("url", getPgUrl)
+      .option("table", table)
+      .save
+
+    assert(
+      spark.read
+        .format("postgres")
+        .option("url", getPgUrl)
+        .option("query", s"select * from ${table}")
+        .option("partitions", "8")
+        .option("partitionColumn", "key")
+        .load
+        .count === 8)
   }
 }

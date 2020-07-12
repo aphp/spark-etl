@@ -2,7 +2,9 @@ package io.frama.parisni.spark.postgres
 
 import com.typesafe.scalalogging.LazyLogging
 
-class PostgresConf(config: Map[String, String]) extends Serializable with LazyLogging {
+class PostgresConf(config: Map[String, String])
+    extends Serializable
+    with LazyLogging {
 
   val PG_NUM_PARTITION = "partitions"
   val PG_REINDEX = "reindex"
@@ -33,8 +35,12 @@ class PostgresConf(config: Map[String, String]) extends Serializable with LazyLo
   require(config != null, "Config cannot be null")
   require(config.nonEmpty, "Config cannot be empty")
 
-  require(config.get(PG_TYPE).isEmpty || (config.get(PG_TYPE).isDefined
-    && ("full" :: "megafull" :: "scd1" :: "scd2" :: Nil).contains(config.get(PG_TYPE).get)), "type shall be in full, scd1")
+  require(
+    config.get(PG_TYPE).isEmpty || (config.get(PG_TYPE).isDefined
+      && ("full" :: "megafull" :: "scd1" :: "scd2" :: Nil)
+        .contains(config.get(PG_TYPE).get)),
+    "type shall be in full, scd1"
+  )
 
   def getQuery: Option[String] = config.get(PG_QUERY)
 
@@ -42,21 +48,24 @@ class PostgresConf(config: Map[String, String]) extends Serializable with LazyLo
 
   def getPassword: Option[String] = config.get(PG_PASSWORD)
 
-
   def getPrimaryKey: Option[String] = config.get(PG_PK)
 
   def getJoinKey: Option[Seq[String]] =
-    if (config.get(PG_JOIN_KEY).isDefined) Some(config(PG_JOIN_KEY).split(",").toSeq) else None
+    if (config.get(PG_JOIN_KEY).isDefined)
+      Some(config(PG_JOIN_KEY).split(",").toSeq)
+    else None
 
   def getPartitionColumn: Option[String] = config.get(PG_PARTITION_COLUMN)
 
   def getEndColumn: Option[String] = config.get(PG_END_COLUMN)
 
   def getIsMultiline: Option[Boolean] =
-    if (config.get(PG_MULTILINE).isDefined) Some(config(PG_MULTILINE).toBoolean) else Some(false)
+    if (config.get(PG_MULTILINE).isDefined) Some(config(PG_MULTILINE).toBoolean)
+    else Some(false)
 
   def getNumSplits: Option[Int] =
-    if (config.get(PG_NUM_SPLITS).isDefined) Some(config(PG_NUM_SPLITS).toInt) else Some(4)
+    if (config.get(PG_NUM_SPLITS).isDefined) Some(config(PG_NUM_SPLITS).toInt)
+    else Some(4)
 
   def getTemp: Option[String] = config.get(PG_TEMP)
 
@@ -75,25 +84,32 @@ class PostgresConf(config: Map[String, String]) extends Serializable with LazyLo
   def getType: Option[String] = config.get(PG_TYPE)
 
   def getNumPartition: Option[Int] =
-    if (config.get(PG_NUM_PARTITION).isDefined) Some(config(PG_NUM_PARTITION).toInt) else Some(1)
+    if (config.get(PG_NUM_PARTITION).isDefined)
+      Some(config(PG_NUM_PARTITION).toInt)
+    else Some(1)
 
   def getIsReindex: Option[Boolean] =
-    if (config.get(PG_REINDEX).isDefined) Some(config(PG_REINDEX).toBoolean) else Some(false)
+    if (config.get(PG_REINDEX).isDefined) Some(config(PG_REINDEX).toBoolean)
+    else Some(false)
 
   def getFilter: Option[String] = config.get(PG_FILTER)
 
   def getDeleteSet: Option[String] = config.get(PG_DELETE_SET)
 
   def getKillLocks: Option[Boolean] =
-    if (config.get(PG_KILL_LOCKS).isDefined) Some(config(PG_KILL_LOCKS).toBoolean) else Some(false)
+    if (config.get(PG_KILL_LOCKS).isDefined)
+      Some(config(PG_KILL_LOCKS).toBoolean)
+    else Some(false)
 
   def getSwapLoad: Option[Boolean] =
-    if (config.get(PG_SWAP_LOAD).isDefined) Some(config(PG_SWAP_LOAD).toBoolean) else Some(false)
+    if (config.get(PG_SWAP_LOAD).isDefined) Some(config(PG_SWAP_LOAD).toBoolean)
+    else Some(false)
 
   def getBulkLoadMode: Option[String] = config.get(PG_BULK_LOAD_MODE)
 
   def getBulkLoadBufferSize: Option[Int] =
-    if (config.get(PG_BULK_LOAD_BUFFER_SIZE).isDefined) Some(config(PG_BULK_LOAD_BUFFER_SIZE).toInt) else None
+    if (config.get(PG_BULK_LOAD_BUFFER_SIZE).isDefined)
+      Some(config(PG_BULK_LOAD_BUFFER_SIZE).toInt)
+    else None
 
 }
-

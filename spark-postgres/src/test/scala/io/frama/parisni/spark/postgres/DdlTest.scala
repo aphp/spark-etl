@@ -983,7 +983,7 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
                                                     "LONG_COL",
                                                     "ERR_COL")
     val schema = data.schema
-    val tableName = s"TEST_SWAP_BASE"
+    val tableName = "TEST_SWAP_BASE"
     getPgTool().tableCreate(tableName, schema, isUnlogged = true)
 
     data.write

@@ -25,9 +25,9 @@
  -->
 
     <scm>
-        <connection>scm:git:https://gitlab.com/rsareth-aphp/data/spark-etl.git</connection>
-        <developerConnection>scm:git:https://gitlab.com/rsareth-aphp/data/spark-etl.git</developerConnection>
-        <url>https://gitlab.com/rsareth-aphp/data/spark-etl</url>
+        <connection>scm:git:https://gitlab.eds.aphp.fr/edsbigdata/spark-etl.git</connection>
+        <developerConnection>scm:git:https://gitlab.eds.aphp.fr/edsbigdata/spark-etl.git</developerConnection>
+        <url>https://gitlab.eds.aphp.fr/edsbigdata/spark-etl</url>
         <tag>HEAD</tag>
     </scm>
 
@@ -209,72 +209,84 @@
                 <version>1.56</version>
                 <classifier>standalone</classifier>
             </dependency>
+
             <dependency>
                 <groupId>io.delta</groupId>
                 <artifactId>delta-core_${scala.tools.version}</artifactId>
                 <version>0.6.1</version>
             </dependency>
+
             <dependency>
                 <groupId>org.postgresql</groupId>
                 <artifactId>postgresql</artifactId>
                 <version>${postgres.version}</version>
             </dependency>
+
             <dependency>
                 <groupId>com.esotericsoftware</groupId>
                 <artifactId>kryo-shaded</artifactId>
                 <version>4.0.2</version>
             </dependency>
+
             <dependency>
                 <groupId>org.apache.solr</groupId>
                 <artifactId>solr-solrj</artifactId>
                 <version>${solr.version}</version>
             </dependency>
+
             <dependency>
                 <groupId>org.apache.solr</groupId>
                 <artifactId>solr-core</artifactId>
                 <version>${solr.version}</version>
             </dependency>
+
             <dependency>
                 <groupId>org.apache.solr</groupId>
                 <artifactId>solr-test-framework</artifactId>
                 <version>${solr.version}</version>
             </dependency>
+
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
                 <version>${fasterxml.version}</version>
             </dependency>
+
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
                 <version>${fasterxml.version}</version>
             </dependency>
+
             <dependency>
                 <groupId>com.fasterxml.jackson.module</groupId>
                 <artifactId>jackson-module-scala_${scala.tools.version}</artifactId>
                 <version>${fasterxml.version}</version>
             </dependency>
+
             <dependency>
                 <groupId>org.joda</groupId>
                 <artifactId>joda-convert</artifactId>
                 <version>1.2</version>
             </dependency>
+
             <dependency>
                 <groupId>com.amazon.deequ</groupId>
                 <artifactId>deequ</artifactId>
                 <version>1.0.2</version>
             </dependency>
+
             <dependency>
                 <groupId>net.jcazevedo</groupId>
                 <artifactId>moultingyaml_${scala.tools.version}</artifactId>
                 <version>${scala-yaml.version}</version>
             </dependency>
+
             <dependency>
                 <groupId>de.bytefish</groupId>
                 <artifactId>pgbulkinsert</artifactId>
                 <version>4.1</version>
             </dependency>
-
 
             <dependency>
                 <groupId>com.typesafe.scala-logging</groupId>
@@ -308,6 +320,7 @@
                 <version>${hadoop.version}</version>
                 <scope>provided</scope>
             </dependency>
+
             <dependency>
                 <groupId>org.apache.hadoop</groupId>
                 <artifactId>hadoop-common</artifactId>
@@ -337,6 +350,7 @@
                 <version>${scalatest.version}</version>
                 <scope>test</scope>
             </dependency>
+
             <dependency>
                 <groupId>org.apache.spark</groupId>
                 <artifactId>spark-core_${scala.tools.version}</artifactId>
@@ -344,6 +358,7 @@
                 <scope>test</scope>
                 <classifier>tests</classifier>
             </dependency>
+
             <dependency>
                 <groupId>org.apache.spark</groupId>
                 <artifactId>spark-sql_${scala.tools.version}</artifactId>
@@ -351,6 +366,7 @@
                 <scope>test</scope>
                 <classifier>tests</classifier>
             </dependency>
+
             <dependency>
                 <groupId>org.apache.spark</groupId>
                 <artifactId>spark-catalyst_${scala.tools.version}</artifactId>
@@ -358,6 +374,7 @@
                 <scope>test</scope>
                 <classifier>tests</classifier>
             </dependency>
+
             <dependency>
                 <groupId>com.opentable.components</groupId>
                 <artifactId>otj-pg-embedded</artifactId>
@@ -365,23 +382,27 @@
                 <scope>test</scope>
                 <classifier>tests</classifier>
             </dependency>
+
             <dependency>
                 <groupId>com.opentable.components</groupId>
                 <artifactId>otj-pg-embedded</artifactId>
                 <version>0.13.3</version>
                 <scope>provided</scope>
             </dependency>
+
             <dependency>
                 <groupId>com.lucidworks.spark</groupId>
                 <artifactId>spark-solr</artifactId>
                 <version>3.7.6</version>
                 <scope>test</scope>
             </dependency>
+
             <!--dependency>
                 <groupId>com.sksamuel.scapegoat</groupId>
                 <artifactId>scalac-scapegoat-plugin_${scala.tools.version}</artifactId>
                 <version>${scapegoat.version}</version>
             </dependency-->
+
         </dependencies>
     </dependencyManagement>
 
@@ -619,7 +640,7 @@
                             <version>1.6.8</version>
                             <configuration>
                                 <serverId>nexus</serverId>
-                                <nexusUrl>http://10.188.192.40:8081/</nexusUrl>
+                                <nexusUrl>https://nexus.eds.aphp.fr/</nexusUrl>
                                 <skipStaging>true</skipStaging>
                             </configuration>
                         </plugin>

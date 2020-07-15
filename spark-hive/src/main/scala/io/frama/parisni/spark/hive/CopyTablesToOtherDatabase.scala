@@ -1,6 +1,7 @@
 package io.frama.parisni.spark.hive
 
 import com.typesafe.scalalogging.LazyLogging
+import io.frama.parisni.spark.dataframe.DFTool
 import org.apache.spark.sql.{SaveMode, SparkSession}
 
 /**
@@ -29,7 +30,6 @@ object CopyTablesToOtherDatabase extends App with LazyLogging {
       implicit spark: SparkSession) = {
     for {
       table <- listTables(fromDb)
-      if !table.contains("_tmp")
     }(
       copyTable(fromDb, toDb, table, format)(spark)
     )
@@ -37,7 +37,12 @@ object CopyTablesToOtherDatabase extends App with LazyLogging {
 
   def listTables(fromDb: String)(implicit ss: SparkSession) = {
     val tables: Array[String] =
-      ss.catalog.listTables(fromDb).collect().map(table => table.name)
+      ss.catalog
+        .listTables(fromDb)
+        .filter("tableType = 'MANAGED'") // remove tabel
+        .filter("name not rlike 'tmp|[0-7]'") // keep table _d8
+        .collect()
+        .map(table => table.name)
     logger.info(s"Listed ${tables.size} tables to copy")
     tables
   }
@@ -48,10 +53,8 @@ object CopyTablesToOtherDatabase extends App with LazyLogging {
                 format: String = "parquet")(implicit ss: SparkSession) = {
     logger.info(s"Copying ${fromDb}.${table} TO ${toDb}.${table}")
     val copyTable = ss.table(s"${fromDb}.${table}")
-    copyTable.write
-      .format(format)
-      .mode(SaveMode.Overwrite)
-      .saveAsTable(s"${toDb}.${table}")
+        .repartition(200) // compaction of tables
+    DFTool.saveHive(copyTable, s"${toDb}.${table}", format)
   }
 
 }

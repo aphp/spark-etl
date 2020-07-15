@@ -563,7 +563,7 @@
                                     <configuration>
                                         <args>
                                             <arg>-P:scapegoat:dataDir:${project.build.directory}</arg>
-                                            <arg>-P:scapegoat:reports:xml</arg>
+                                            <arg>-P:scapegoat:reports:html</arg>
                                         </args>
                                         <compilerPlugins>
                                             <compilerPlugin>

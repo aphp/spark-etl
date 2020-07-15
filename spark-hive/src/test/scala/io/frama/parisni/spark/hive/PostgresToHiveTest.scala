@@ -16,7 +16,7 @@ class PostgresToHiveTest extends FunSuite {
     
     
     for (pal <- palette.tables.getOrElse(Nil)) {
-      println("bob" + pal.isActive.get)
+      println("bob" + pal.isActive.getOrElse(""))
     }
    println(palette.toYaml.prettyPrint)
 

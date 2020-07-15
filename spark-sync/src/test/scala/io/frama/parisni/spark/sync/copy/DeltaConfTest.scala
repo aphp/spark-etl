@@ -12,7 +12,6 @@ class DeltaConfTest extends QueryTest with SparkSessionTestWrapper {
 
     import spark.implicits._
 
-    println("Before: Table /tmp/source exists = "+ checkTableExists(spark, "/tmp", "source"))
     //val dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss")
     // Create table "source"
     val s_inputDF: DataFrame = (
@@ -35,8 +34,6 @@ class DeltaConfTest extends QueryTest with SparkSessionTestWrapper {
       .mode("overwrite")
       .save(sourceDeltaTable)
 
-    println("After: table /tmp/source exists = "+ checkTableExists(spark, "/tmp", "source"))
-    println(s"table /tmp/target exists = "+ checkTableExists(spark, "/tmp", "target"))
 
     val s_outputDF = spark.read.format("delta").load(sourceDeltaTable)
     s_outputDF.show()

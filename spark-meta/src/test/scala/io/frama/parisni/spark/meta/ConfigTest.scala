@@ -36,7 +36,7 @@ class ConfigTest extends QueryTest
     /**
       * First test with test strategy class
       */
-    var schema: ConfigMetaYaml.Schema = database.schemas.get.apply(0)
+    var schema: ConfigMetaYaml.Schema = database.schemas.getOrElse(null).apply(0)
     assert(MetaStrategyBuilder.build(schema.strategy).extractor.toString
       .equals(new TestFeatureExtractImpl().toString))
 
@@ -46,7 +46,7 @@ class ConfigTest extends QueryTest
     /**
       * Second test with empty strategy class -- we expect defaultStrategy
       */
-    schema = database.schemas.get.apply(1)
+    schema = database.schemas.getOrElse(null).apply(1)
     assert(MetaStrategyBuilder.build(schema.strategy).extractor.toString
       .equals(MetaStrategyBuilder.build().extractor.toString))
 
@@ -56,7 +56,7 @@ class ConfigTest extends QueryTest
     /**
       * Third test with test extractor strategy class only -- we expect default generator strategy class
       */
-    schema = database.schemas.get.apply(2)
+    schema = database.schemas.getOrElse(null).apply(2)
     assert(MetaStrategyBuilder.build(schema.strategy).extractor.toString
       .equals(new TestFeatureExtractImpl().toString))
 
@@ -66,7 +66,7 @@ class ConfigTest extends QueryTest
     /**
       * Fourth test with test generator strategy class only -- we expect default extractor strategy class
       */
-    schema = database.schemas.get.apply(3)
+    schema = database.schemas.getOrElse(null).apply(3)
     assert(MetaStrategyBuilder.build(schema.strategy).extractor.toString
       .equals(MetaStrategyBuilder.build().extractor.toString))
 

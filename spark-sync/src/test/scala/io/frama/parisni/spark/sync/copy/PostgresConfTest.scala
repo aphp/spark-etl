@@ -162,7 +162,7 @@ class PostgresConfTest extends QueryTest with SparkSessionTestWrapper {
     val database = yaml.convertTo[Database]
 
     for (pal <- database.tables.getOrElse(Nil)) {
-      println("bob" + pal.isActive.get.toString())
+      println("bob" + pal.isActive.getOrElse("").toString())
     }
     println(database.toYaml.prettyPrint)
     //println(pg.getEmbeddedPostgres.getJdbcUrl("postgres", "postgres"))

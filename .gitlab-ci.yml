@@ -1,4 +1,7 @@
-image: "$DOCKER_REGISTRY/$DOCKER_IMAGE_BUILD"
+image:
+  name: "$DOCKER_REGISTRY/$DOCKER_IMAGE_BUILD"
+  entrypoint: ['bash', '-c', 'useradd gitlabci && exec su gitlabci -c bash']
+
 
 workflow:
   rules:

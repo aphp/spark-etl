@@ -10,9 +10,13 @@ import org.apache.spark.sql.{SaveMode, SparkSession}
   */
 object CopyTablesToOtherDatabase extends App with LazyLogging {
 
-  val Array(fromDb: String, toDb: String, format: String) = args match {
-    case Array(_, _)    => (args(0), args(1), "parquet")
-    case Array(_, _, _) => args
+  val (fromDb: String,
+       toDb: String,
+       format: String,
+       tableList: Option[String]) = args match {
+    case Array(_, _)       => (args(0).toString, args(1).toString, "parquet", None)
+    case Array(_, _, _)    => (args(0), args(1), args(2), None)
+    case Array(_, _, _, _) => (args(0), args(1), args(2), Some(args(3)))
     case _ =>
       throw new UnsupportedOperationException(
         "shall specify fromDb, toDb and optionally the format")
@@ -24,12 +28,20 @@ object CopyTablesToOtherDatabase extends App with LazyLogging {
     .enableHiveSupport()
     .getOrCreate()
 
-  copyAllTables(fromDb, toDb, format)
+  copyAllTables(fromDb, toDb, format, tableList)
 
-  def copyAllTables(fromDb: String, toDb: String, format: String)(
-      implicit spark: SparkSession) = {
+  def copyAllTables(
+      fromDb: String,
+      toDb: String,
+      format: String,
+      listTable: Option[String] = None)(implicit spark: SparkSession) = {
+
+    val tbList = tableList match {
+      case Some(e) => e.split(",")
+      case _       => listTables(fromDb)
+    }
     for {
-      table <- listTables(fromDb)
+      table <- tbList
     }(
       copyTable(fromDb, toDb, table, format)(spark)
     )
@@ -52,8 +64,9 @@ object CopyTablesToOtherDatabase extends App with LazyLogging {
                 table: String,
                 format: String = "parquet")(implicit ss: SparkSession) = {
     logger.info(s"Copying ${fromDb}.${table} TO ${toDb}.${table}")
-    val copyTable = ss.table(s"${fromDb}.${table}")
-        .repartition(200) // compaction of tables
+    val copyTable = ss
+      .table(s"${fromDb}.${table}")
+      .repartition(200) // compaction of tables
     DFTool.saveHive(copyTable, s"${toDb}.${table}", format)
   }
 

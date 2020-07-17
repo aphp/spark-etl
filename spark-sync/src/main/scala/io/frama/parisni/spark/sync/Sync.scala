@@ -18,13 +18,13 @@ class Sync extends LazyLogging {
     val slc = new SolrConf(config, dates, pks)
     val plc = new ParquetConf(config, dates, pks)
 
-    /** Calculation of date_max: be sure that "target" table exists
-     * (in order to calculate date_max) or provide date_max **/
-    var date_max = ""
-    if (targetType == "postgres") date_max = pgc.getDateMax(spark)
-    else if (targetType == "delta") date_max = dc.getDateMax(spark)
-    else if (targetType == "solr") date_max = slc.getDateMax(spark)
-    else if (targetType == "parquet") date_max = plc.getDateMax(spark)
+    /** Calculation of dateMax: be sure that "target" table exists
+     * (in order to calculate dateMax) or provide dateMax **/
+    var dateMax = ""
+    if (targetType == "postgres") dateMax = pgc.getDateMax(spark)
+    else if (targetType == "delta") dateMax = dc.getDateMax(spark)
+    else if (targetType == "solr") dateMax = slc.getDateMax(spark)
+    else if (targetType == "parquet") dateMax = plc.getDateMax(spark)
 
     // Load table "source" as DF
     sourceType match {
@@ -35,37 +35,37 @@ class Sync extends LazyLogging {
         val db = pgc.getDB.getOrElse("postgres")
         val user = pgc.getUser.getOrElse("postgres")
         val schema = pgc.getSchema.getOrElse("public")
-        val s_table = pgc.getSourceTableName.getOrElse("")
-        val s_date_field = pgc.getSourceDateField.getOrElse("")
-        val load_type = pgc.getLoadType.getOrElse("")
+        val sTable = pgc.getSourceTableName.getOrElse("")
+        val sDateField = pgc.getSourceDateField.getOrElse("")
+        val loadType = pgc.getLoadType.getOrElse("")
 
-        sourceDF = pgc.readSource(spark, host, port, db, user, schema, s_table, s_date_field, date_max, load_type, pks)
+        sourceDF = pgc.readSource(spark, host, port, db, user, schema, sTable, sDateField, dateMax, loadType, pks)
       }
       case "delta" => {
 
         val path = dc.getPath.getOrElse("/tmp")
-        val s_table = dc.getSourceTableName.getOrElse("")
-        val s_date_field = dc.getSourceDateField.getOrElse("")
-        val load_type = dc.getLoadType.getOrElse("")
+        val sTable = dc.getSourceTableName.getOrElse("")
+        val sDateField = dc.getSourceDateField.getOrElse("")
+        val loadType = dc.getLoadType.getOrElse("")
 
-        sourceDF = dc.readSource(spark, path, s_table, s_date_field, date_max, load_type)
+        sourceDF = dc.readSource(spark, path, sTable, sDateField, dateMax, loadType)
       }
       case "parquet" => {
 
         val path = dc.getPath.getOrElse("/tmp")
-        val s_table = dc.getSourceTableName.getOrElse("")
-        val s_date_field = dc.getSourceDateField.getOrElse("")
-        val load_type = dc.getLoadType.getOrElse("")
+        val sTable = dc.getSourceTableName.getOrElse("")
+        val sDateField = dc.getSourceDateField.getOrElse("")
+        val loadType = dc.getLoadType.getOrElse("")
 
-        sourceDF = plc.readSource(spark, path, s_table, s_date_field, date_max, load_type)
+        sourceDF = plc.readSource(spark, path, sTable, sDateField, dateMax, loadType)
       }
       case "solr" => {
 
         val zkhost = slc.getZkHost.getOrElse("")
-        val s_collection = slc.getSourceTableName.getOrElse("")
-        val s_date_field = slc.getSourceDateField.getOrElse("")
+        val sCollection = slc.getSourceTableName.getOrElse("")
+        val sDateField = slc.getSourceDateField.getOrElse("")
 
-        sourceDF = slc.readSource(spark, zkhost, s_collection, s_date_field, date_max)
+        sourceDF = slc.readSource(spark, zkhost, sCollection, sDateField, dateMax)
       }
     }
 
@@ -82,35 +82,35 @@ class Sync extends LazyLogging {
           val db = pgc.getDB.getOrElse("postgres")
           val user = pgc.getUser.getOrElse("postgres")
           val schema = pgc.getSchema.getOrElse("public")
-          val t_table = pgc.getTargetTableName.getOrElse("")
-          val load_type = pgc.getLoadType.getOrElse("")
-          val hash_field = pgc.getSourcePK.mkString(",")
+          val tTable = pgc.getTargetTableName.getOrElse("")
+          val loadType = pgc.getLoadType.getOrElse("")
+          val hashField = pgc.getSourcePK.mkString(",")
 
-          pgc.writeSource(spark, sourceDF, host, port, db, user, schema, t_table, load_type, hash_field)
+          pgc.writeSource(spark, sourceDF, host, port, db, user, schema, tTable, loadType, hashField)
         }
 
         case "delta" => {
 
           val path = dc.getPath.getOrElse("/tmp")
-          val t_table = dc.getTargetTableName.getOrElse("")
-          val load_type = dc.getLoadType.getOrElse("")
+          val tTable = dc.getTargetTableName.getOrElse("")
+          val loadType = dc.getLoadType.getOrElse("")
 
-          dc.writeSource(spark, sourceDF, path, t_table, load_type)
+          dc.writeSource(spark, sourceDF, path, tTable, loadType)
         }
         case "parquet" => {
 
           val path = dc.getPath.getOrElse("/tmp")
-          val t_table = dc.getTargetTableName.getOrElse("")
-          val load_type = dc.getLoadType.getOrElse("")
+          val tTable = dc.getTargetTableName.getOrElse("")
+          val loadType = dc.getLoadType.getOrElse("")
 
-          plc.writeSource(spark, sourceDF, path, t_table, load_type)
+          plc.writeSource(spark, sourceDF, path, tTable, loadType)
         }
         case "solr" => {
 
           val zkhost = slc.getZkHost.getOrElse("")
-          val t_collection = slc.getTargetTableName.getOrElse("")
+          val tCollection = slc.getTargetTableName.getOrElse("")
 
-          slc.writeSource(sourceDF, zkhost, t_collection)
+          slc.writeSource(sourceDF, zkhost, tCollection)
         }
       }
     }

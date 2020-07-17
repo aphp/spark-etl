@@ -10,7 +10,7 @@ import org.apache.spark.sql.types.IntegerType
 import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
 
 class SolrConf(config: Map[String, String], dates: List[String], pks: List[String])
-  extends SourceAndTarget { //io.frama.parisni.spark.sync.conf.TargetConf with io.frama.parisni.spark.sync.conf.SourceConf with LazyLogging{
+  extends SourceAndTarget {
 
   checkTargetParams(config)
   checkSourceParams(config)
@@ -19,8 +19,8 @@ class SolrConf(config: Map[String, String], dates: List[String], pks: List[Strin
   val ZKHOST: String = "ZKHOST" // ZKHOST & Collection are used by Solr for connexion
   def getZkHost: Option[String] = config.get(ZKHOST)
 
-  def readSource(spark: SparkSession, zkhost: String, collection: String, //cloudClient: CloudSolrClient,
-                 s_date_field: String, date_Max: String, load_type: String = "full"): DataFrame = {
+  def readSource(spark: SparkSession, zkhost: String, collection: String,
+                 sDateField: String, dateMax: String, loadType: String = "full"): DataFrame = {
 
     import org.apache.spark.sql.functions._
     try {
@@ -37,8 +37,8 @@ class SolrConf(config: Map[String, String], dates: List[String], pks: List[Strin
       logger.warn("Full Solr DataFrame")
       dfSolr.show()
 
-      if (load_type != "full")
-        dfSolr = dfSolr.filter(f"${s_date_field} >= '${date_Max}'")
+      if (loadType != "full" && dateMax != "")
+        dfSolr = dfSolr.filter(f"${sDateField} >= '${dateMax}'")
 
       //change "id" type to Integer (Solr uses "id" as String)
       //val dfSolr2 = dfSolr.selectExpr("cast(id as int) id", "make")
@@ -83,7 +83,7 @@ class SolrConf(config: Map[String, String], dates: List[String], pks: List[Strin
   }
 
   // Write to Solr Collection
-  def writeSource(s_df: DataFrame, zkhost: String, collection: String, load_type: String = "full"): Unit = {
+  def writeSource(sDf: DataFrame, zkhost: String, collection: String, loadType: String = "full"): Unit = {
 
     try {
       logger.warn("Writing data into Solr collection---------")
@@ -99,9 +99,6 @@ class SolrConf(config: Map[String, String], dates: List[String], pks: List[Strin
         modParams.set(CoreAdminParams.ACTION, CollectionParams.CollectionAction.CREATE.name)
         modParams.set("name", collection)
         modParams.set("numShards", 1)
-        //modParams.set("replicationFactor", replicationFactor)
-        //modParams.set("maxShardsPerNode", maxShardsPerNode)
-        //modParams.set("collection.configName", confName)
         val request: QueryRequest = new QueryRequest(modParams)
         request.setPath("/admin/collections")
         solrClient.request(request)
@@ -111,7 +108,7 @@ class SolrConf(config: Map[String, String], dates: List[String], pks: List[Strin
       }
 
       val options = Map("collection" -> collection, "zkhost" -> zkhost, "commit_within" -> "5000") //, "soft_commit_secs"-> "10")
-      s_df.write.format("solr")
+      sDf.write.format("solr")
         .options(options)
         .mode(SaveMode.Overwrite)
         .save

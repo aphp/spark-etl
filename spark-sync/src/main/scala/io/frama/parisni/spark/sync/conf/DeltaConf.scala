@@ -79,7 +79,8 @@ class DeltaConf(config: Map[String, String], dates: List[String], pks: List[Stri
     val hashedDF = DFTool.dfAddHash(sDf)
 
     loadType match {
-      case "full" => DFTool.saveHiveFull(hashedDF, path, tTable, "delta")
+      case "full" => DFTool.saveHive(hashedDF, DFTool.getDbTable(tTable, path), "delta")
+      //case "full" => DFTool.saveHiveFull(hashedDF, path, tTable, "delta")
       case "scd1" => DFTool.deltaScd1(hashedDF, tTable, getSourcePK, path)
     }
   }

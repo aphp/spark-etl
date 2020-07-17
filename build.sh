@@ -93,7 +93,10 @@ __init() {
       -Dnexus.password=${NEXUS_PASSWORD} \
       -Dnexus.group.url=${MVN_GROUP_REPOSITORY} \
       -Dnexus.snapshot.url=${MVN_SNAPSHOT_REPOSITORY} \
-      -Dnexus.release.url=${MVN_RELEASE_REPOSITORY}"
+      -Dnexus.release.url=${MVN_RELEASE_REPOSITORY} \
+      -Dmaven.wagon.http.ssl.insecure=true \
+      -Dmaven.wagon.http.ssl.allowall=true \
+      -Dmaven.wagon.http.ssl.ignore.validity.dates=true"
   fi
 
   export MAVEN_CLI_OPTS

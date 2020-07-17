@@ -46,12 +46,12 @@ class CompactTable extends LazyLogging{
   val DATABASE_LIB = "lib_database"
   val DELTA_TABLE_LIB = "lib_table"
 
-  def compactTables(spark: SparkSession, deltaPath: String, partition: String = "", numFiles: Int, host:String, port:String, user:String,
+  def compactTables(spark: SparkSession, deltaPath: String, partition: String = "",
+                    numFiles: Int, host:String, port:String, user:String,
                     schema:String, db:String, pw:String=""): Unit = {
 
     //URL to connect to DB
     val url = f"jdbc:postgresql://${host}:${port}/${db}?user=${user}&currentSchema=${schema}&password=${pw}"
-    //logger.warn("URL = "+url)
 
     //Get list of delta tables
     val tables = spark.read.format("postgres")
@@ -72,7 +72,8 @@ class CompactTable extends LazyLogging{
     })
   }
 
-  def compactTable(spark: SparkSession, deltaPath: String, deltaTable: String, partition: String = "", numFiles: Int): Unit = {
+  def compactTable(spark: SparkSession, deltaPath: String, deltaTable: String,
+                   partition: String = "", numFiles: Int): Unit = {
 
     val fullPath = deltaPath + "/" + deltaTable
     //check if delta path exists
@@ -93,8 +94,7 @@ class CompactTable extends LazyLogging{
         .save(fullPath)
     else{
 
-      //val partition = "year = '2019'"
-      val numFilesPerPartition = numFiles   //16
+      val numFilesPerPartition = numFiles
 
       spark.read
         .format("delta")

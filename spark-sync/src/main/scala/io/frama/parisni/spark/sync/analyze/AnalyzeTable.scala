@@ -19,7 +19,6 @@ object AnalyzeTable extends App with LazyLogging {
   val spark = SparkSession.builder()
     .master("local")
     .appName("spark session")
-    //.config("spark.sql.shuffle.partitions", "1")
     .getOrCreate()
 
   spark.sparkContext.setLogLevel("WARN")
@@ -46,7 +45,6 @@ class AnalyzeTable extends LazyLogging{
 
     //URL to connect to DB
     val url = f"jdbc:postgresql://${host}:${port}/${db}?user=${user}&currentSchema=${schema}&password=${pw}"
-    //logger.warn("URL = "+url)
 
     //Table "meta_column" in DB "spark-prod"
     val dbSparkLib = "spark-prod"
@@ -59,7 +57,6 @@ class AnalyzeTable extends LazyLogging{
     val lastUpdateField = "last_analyze"
 
     //Get list of tables of DB "spark-prod"
-    //val tables: List[io.frama.parisni.spark.sync.analyze.MetaTable] = List()
     val tables = spark.read.format("postgres")
       .option("url", url)
       .option("query", s"select ${tableIdField}, ${tableLibField} from ${tableTables} where ${dbLibField} = '${dbSparkLib}'")
@@ -71,8 +68,8 @@ class AnalyzeTable extends LazyLogging{
 
     tables.as[MetaTable].take(tables.count.toInt).map(table => {
 
-      val tableId = table.ids_table
-      val tableName = table.lib_table
+      val tableId = table.idsTable
+      val tableName = table.libTable
 
       //Get list of columns of a given table: col1 [, col2, ...]
       val columns = spark.read.format("postgres")
@@ -86,7 +83,6 @@ class AnalyzeTable extends LazyLogging{
 
       //Analyze table and columns
       analyzeCols(spark, deltaPath, tableName, columns)
-      //analyzeColsPg(spark, db, tableName, columns, url)
 
       //Update date of last_analyze
       val query = s"update ${tableTables} set ${lastUpdateField} = now() where ${tableIdField} = '${tableId}'"
@@ -109,13 +105,6 @@ class AnalyzeTable extends LazyLogging{
     logger.warn("query = "+query)
     spark.sql(query)
   }
-
-  def analyzeColsPg(spark: SparkSession, db:String, table: String, columns: String, url: String): Unit = {
-    val query = s"analyze ${table} (${columns})"
-    logger.warn("query = "+query)
-    PGTool.sqlExec(url, query)
-  }
 }
 
-case class MetaTable(ids_table:Int, lib_table:String)
-
+case class MetaTable(idsTable:Int, libTable:String)

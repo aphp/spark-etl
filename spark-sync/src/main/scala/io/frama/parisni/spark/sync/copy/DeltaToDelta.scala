@@ -30,9 +30,7 @@ import DeltaToDeltaYaml._
     val dateMax = database.dateMax.getOrElse("")
 
     for(table <- database.tables.getOrElse(Nil)) {
-      //if (table.isActive.getOrElse(true)) {
 
-        //val pathTarget = table.pathTarget.toString
         val s_table = table.tableDeltaSource.toString
         val path = table.path.toString
         val t_table = table.tableDeltaTarget.toString
@@ -47,17 +45,19 @@ import DeltaToDeltaYaml._
         val sync = new Sync()
         sync.syncSourceTarget(spark, config, dateFieldsDelta, pks)
 
-      //}
     }
+  } catch {
+    case re: RuntimeException => throw re
+    case e: Exception => throw new RuntimeException(e)
+  } finally {
+    spark.close()
   }
-
-  spark.close()
 }
 
 
 class DeltaToDelta2 extends App with LazyLogging {
 
-  val filename = "deltaToDelta.yaml"     //args(0)
+  val filename = "deltaToDelta.yaml"
   val ymlTxt = Source.fromFile(filename).mkString
   val yaml = ymlTxt.stripMargin.parseYaml
   val database = yaml.convertTo[Database]
@@ -77,28 +77,28 @@ class DeltaToDelta2 extends App with LazyLogging {
         val dateMax = database.dateMax.getOrElse("")
 
         for(table <- database.tables.getOrElse(Nil)) {
-          //if (table.isActive.getOrElse(true)) {
 
-          //val pathTarget = table.pathTarget.toString
-          val s_table = table.tableDeltaSource.toString
+          val sTable = table.tableDeltaSource.toString
           val path = table.path.toString
-          val t_table = table.tableDeltaTarget.toString
+          val tTable = table.tableDeltaTarget.toString
           val loadType = table.typeLoad.getOrElse("full")
           val pks = table.key
 
-          val config = Map("S_TABLE_NAME" -> s_table, "S_TABLE_TYPE" -> "delta", "S_DATE_FIELD" -> dateFieldDelta,
-            "T_TABLE_NAME" -> t_table, "T_TABLE_TYPE" -> "delta",  "T_DATE_MAX" -> dateMax,
+          val config = Map("S_TABLE_NAME" -> sTable, "S_TABLE_TYPE" -> "delta", "S_DATE_FIELD" -> dateFieldDelta,
+            "T_TABLE_NAME" -> tTable, "T_TABLE_TYPE" -> "delta",  "T_DATE_MAX" -> dateMax,
             "PATH" -> path, "T_LOAD_TYPE" -> loadType
           )
 
           val sync = new Sync()
           sync.syncSourceTarget(spark, config, dateFieldsDelta, pks)
 
-          //}
         }
+    } catch {
+      case re: RuntimeException => throw re
+      case e: Exception => throw new RuntimeException(e)
+    } finally {
+      spark.close()
     }
   }
-
-  //spark.close()
 }
 

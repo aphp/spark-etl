@@ -4,10 +4,12 @@ import io.frama.parisni.spark.dataframe.DFTool
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 import scala.util.Try
-
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.spark.sql.{AnalysisException, Column, DataFrame, Row, SaveMode, SparkSession}
 
 class DeltaConf(config: Map[String, String], dates: List[String], pks: List[String])
-  extends SourceAndTarget { //io.frama.parisni.spark.sync.conf.TargetConf with io.frama.parisni.spark.sync.conf.SourceConf with LazyLogging{
+  extends SourceAndTarget {
 
   checkTargetParams(config)
   checkSourceParams(config)
@@ -15,16 +17,16 @@ class DeltaConf(config: Map[String, String], dates: List[String], pks: List[Stri
   val PATH: String = "PATH" //PATH is used by Delta for connexion
   def getPath: Option[String] = config.get(PATH)
 
-  def readSource(spark: SparkSession, path: String, s_table: String,
-                 s_date_field: String, date_Max: String, load_type: String): DataFrame = {
+  def readSource(spark: SparkSession, path: String, sTable: String,
+                 sDateField: String, dateMax: String, loadType: String): DataFrame = {
 
     logger.warn("Reading data from Delta table ---------")
 
-    var dfDelta = Try(DFTool.read(spark, path, s_table, "delta"))
+    var dfDelta = Try(DFTool.read(spark, path, sTable, "delta"))
       .getOrElse(spark.emptyDataFrame)
 
-    if (load_type != "full" && date_Max != "")
-      dfDelta = dfDelta.filter(f"${s_date_field} >= '${date_Max}'")
+    if (loadType != "full" && dateMax != "")
+      dfDelta = dfDelta.filter(f"${sDateField} >= '${dateMax}'")
 
     dfDelta
   }
@@ -52,6 +54,7 @@ class DeltaConf(config: Map[String, String], dates: List[String], pks: List[Stri
     val result = config.get(T_DATE_MAX) match {
       case Some("") => calculDateMax(spark, getPath.getOrElse(""), getTargetTableType.getOrElse(""), getTargetTableName.getOrElse(""), getDateFields)
       case Some(_) => config.get(T_DATE_MAX).get
+      case None => ""
     }
     logger.warn(s"getting the maxdate : ${result}")
     result
@@ -64,20 +67,20 @@ class DeltaConf(config: Map[String, String], dates: List[String], pks: List[Stri
    *  - DataFrame column names cannot differ only by case.
    */
   def writeSource(spark: SparkSession
-                  , s_df: DataFrame
+                  , sDf: DataFrame
                   , path: String
-                  , t_table: String
-                  , load_type: String
-                  , hash_field: String = "hash"): Unit = {
+                  , tTable: String
+                  , loadType: String
+                  , hashField: String = "hash"): Unit = {
 
     logger.warn("Writing data into Delta table ---------")
 
     //Add hash field to DF
-    val hashedDF = DFTool.dfAddHash(s_df)
+    val hashedDF = DFTool.dfAddHash(sDf)
 
-    load_type match {
-      case "full" => DFTool.saveHive(hashedDF, DFTool.getDbTable(t_table, path), "delta")
-      case "scd1" => DFTool.deltaScd1(hashedDF, t_table, getSourcePK, path)
+    loadType match {
+      case "full" => DFTool.saveHiveFull(hashedDF, path, tTable, "delta")
+      case "scd1" => DFTool.deltaScd1(hashedDF, tTable, getSourcePK, path)
     }
   }
 }

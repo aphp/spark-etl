@@ -1,0 +1,42 @@
+jobName:    Eds Stats Calc
+hostPg:     0.0.0.0
+portPg:     5432
+databasePg: edsr
+schemaPg:   meta
+userPg:     nparis
+schemas:
+  - dbName: pg-prod
+    dbType: postgresql
+    host: 0.0.0.0
+    db: edsr
+    user: nparis
+    isActive: true
+    strategy:
+      extractor:
+        featureExtractImplClass: io.frama.parisni.spark.meta.TestFeatureExtractImpl
+      generator:
+        tableGeneratorImplClass: io.frama.parisni.spark.meta.TestTableGeneratorImpl
+  - dbName: pg-prod
+    dbType: postgresql
+    host: 0.0.0.0
+    db: edsr
+    user: nparis
+    isActive: true
+  - dbName: pg-prod
+    dbType: postgresql
+    host: 0.0.0.0
+    db: edsr
+    user: nparis
+    isActive: true
+    strategy:
+      extractor:
+        featureExtractImplClass: io.frama.parisni.spark.meta.TestFeatureExtractImpl
+  - dbName: pg-prod
+    dbType: postgresql
+    host: 0.0.0.0
+    db: edsr
+    user: nparis
+    isActive: true
+    strategy:
+      generator:
+        tableGeneratorImplClass: io.frama.parisni.spark.meta.TestTableGeneratorImpl

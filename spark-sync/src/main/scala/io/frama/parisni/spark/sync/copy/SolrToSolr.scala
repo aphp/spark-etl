@@ -1,12 +1,12 @@
 package io.frama.parisni.spark.sync.copy
 
 import com.typesafe.scalalogging.LazyLogging
-import io.frama.parisni.spark.sync.Sync
 import net.jcazevedo.moultingyaml._
+import SolrToSolrYaml._
+import io.frama.parisni.spark.sync.Sync
 import org.apache.spark.sql.SparkSession
 
 import scala.io.Source
-import SolrToSolrYaml._
 
 object SolrToSolr extends App with LazyLogging {
 
@@ -18,7 +18,6 @@ object SolrToSolr extends App with LazyLogging {
   // Spark Session
   val spark = SparkSession.builder()
     .appName(database.jobName)
-    //.enableHiveSupport()
     .getOrCreate()
 
   spark.sparkContext.setLogLevel("WARN")
@@ -30,7 +29,6 @@ object SolrToSolr extends App with LazyLogging {
     val dateMax = database.dateMax.getOrElse("")
 
     for(table <- database.tables.getOrElse(Nil)) {
-      //if (table.isActive.getOrElse(true)) {
 
         val tableSource = table.tableSolrSource.toString
         val tableTarget = table.tableSolrTarget.toString
@@ -48,17 +46,19 @@ object SolrToSolr extends App with LazyLogging {
         val sync = new Sync()
         sync.syncSourceTarget(spark, config, dateFieldsTarget, pks)
 
-      //}
     }
+  } catch {
+    case re: RuntimeException => throw re
+    case e: Exception => throw new RuntimeException(e)
   } finally {
+    spark.close()
   }
-  spark.close()
 }
 
 
 class SolrToSolr2 extends App with LazyLogging {
 
-  val filename = "solrToSolr.yaml"       //args(0)
+  val filename = "solrToSolr.yaml"
   val ymlTxt = Source.fromFile(filename).mkString
   val yaml = ymlTxt.stripMargin.parseYaml
   val database = yaml.convertTo[Database]
@@ -66,7 +66,6 @@ class SolrToSolr2 extends App with LazyLogging {
   // Spark Session
   val spark = SparkSession.builder()
     .appName(database.jobName)
-    //.enableHiveSupport()
     .getOrCreate()
 
   spark.sparkContext.setLogLevel("WARN")
@@ -79,7 +78,6 @@ class SolrToSolr2 extends App with LazyLogging {
       val dateMax = database.dateMax.getOrElse("")
 
       for(table <- database.tables.getOrElse(Nil)) {
-        //if (table.isActive.getOrElse(true)) {
 
         val tableSource = table.tableSolrSource.toString
         val tableTarget = table.tableSolrTarget.toString
@@ -97,11 +95,14 @@ class SolrToSolr2 extends App with LazyLogging {
         val sync = new Sync()
         sync.syncSourceTarget(spark, config, dateFieldsTarget, pks)
 
-        //}
       }
 
+    } catch {
+      case re: RuntimeException => throw re
+      case e: Exception => throw new RuntimeException(e)
+    } finally {
+      spark.close()
     }
   }
-  spark.close()
 }
 

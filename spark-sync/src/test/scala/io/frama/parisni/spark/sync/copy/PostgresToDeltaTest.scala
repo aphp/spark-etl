@@ -14,13 +14,13 @@ import scala.io.Source
 
 class PostgresToDeltaTest extends FunSuite with SparkSessionTestWrapper {
 
-  @Test
+  //@Test
   def postgresToDeltaTest = {
     import spark.implicits._
-    val url = getPgUrl
+    //val url = getPgUrl
 
     // Create table "source"
-    val s_inputDF: DataFrame = (
+    val sInputDF: DataFrame = (
       (1, "id1s", "PG details of 1st row source", Timestamp.valueOf("2016-02-01 23:00:01"),
         Timestamp.valueOf("2016-06-16 00:00:00"), Timestamp.valueOf("2016-06-16 00:00:00")) ::
         (2, "id2s", "PG details of 2nd row source", Timestamp.valueOf("2017-06-05 23:00:01"),
@@ -36,7 +36,7 @@ class PostgresToDeltaTest extends FunSuite with SparkSessionTestWrapper {
         Nil).toDF("id", "pk2", "details", "date_update", "date_update2", "date_update3")
 
     val pgc: PostgresConf = new PostgresConf(Map("T_LOAD_TYPE" -> "full", "S_TABLE_TYPE" -> "postgres", "T_TABLE_TYPE" -> "delta"), List(""), List(""))
-    pgc.writeSource(spark, s_inputDF, "localhost", pg.getEmbeddedPostgres.getPort.toString, "postgres", "postgres", "public", "source", "full", "hash")
+    pgc.writeSource(spark, sInputDF, "localhost", pg.getEmbeddedPostgres.getPort.toString, "postgres", "postgres", "public", "source", "full", "hash")
 
     val filename = "postgresToDelta.yaml"
     val ymlTxt = Source.fromFile(filename).mkString

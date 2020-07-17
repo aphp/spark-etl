@@ -1,12 +1,12 @@
 package io.frama.parisni.spark.sync.copy
 
 import com.typesafe.scalalogging.LazyLogging
-import io.frama.parisni.spark.sync.Sync
 import net.jcazevedo.moultingyaml._
+import PostgresToSolrYaml._
+import io.frama.parisni.spark.sync.Sync
 import org.apache.spark.sql.SparkSession
 
 import scala.io.Source
-import PostgresToSolrYaml._
 
 object PostgresToSolr extends App with LazyLogging {
 
@@ -34,7 +34,6 @@ object PostgresToSolr extends App with LazyLogging {
     val dateMax = database.dateMax.getOrElse("")
 
     for(table <- database.tables.getOrElse(Nil)) {
-      //if (table.isActive.getOrElse(true)) {
 
         val schemaPg = table.schemaPg.toString
         val tablePg = table.tablePg.toString
@@ -54,17 +53,20 @@ object PostgresToSolr extends App with LazyLogging {
         val sync = new Sync()
         sync.syncSourceTarget(spark, config, dateFieldsSolr, pks)
 
-      //}
     }
+  } catch {
+    case re: RuntimeException => throw re
+    case e: Exception => throw new RuntimeException(e)
+  } finally {
+    spark.close()
   }
-  spark.close()
 }
 
 
 
 class PostgresToSolr2 extends App with LazyLogging{
 
-  val filename = "postgresToSolr.yaml"       //args(0)
+  val filename = "postgresToSolr.yaml"
   val ymlTxt = Source.fromFile(filename).mkString
   val yaml = ymlTxt.stripMargin.parseYaml
   val database = yaml.convertTo[Database]
@@ -89,7 +91,6 @@ class PostgresToSolr2 extends App with LazyLogging{
       val dateMax = database.dateMax.getOrElse("")
 
       for(table <- database.tables.getOrElse(Nil)) {
-        //if (table.isActive.getOrElse(true)) {
 
           val schemaPg = table.schemaPg.toString
           val tablePg = table.tablePg.toString
@@ -109,9 +110,12 @@ class PostgresToSolr2 extends App with LazyLogging{
           val sync = new Sync()
           sync.syncSourceTarget(spark, config, dateFieldsSolr, pks)
 
-        //}
       }
+    } catch {
+      case re: RuntimeException => throw re
+      case e: Exception => throw new RuntimeException(e)
+    } finally {
+      spark.close()
     }
   }
-  spark.close()
 }

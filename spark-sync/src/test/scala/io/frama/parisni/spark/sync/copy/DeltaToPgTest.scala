@@ -16,12 +16,12 @@ class DeltaToPgTest extends FunSuite with SparkSessionTestWrapper  {
   def testDelta2Pg(): Unit = {
     //println("io.frama.parisni.spark.sync.Sync Delta2Pg")
     //val url = f"jdbc:postgresql://localhost:${pg.getEmbeddedPostgres.getPort}/postgres?user=postgres&currentSchema=public"
-    val url = getPgUrl
+    //val url = getPgUrl
 
     import spark.implicits._
 
     // Create table "source"
-    val s_inputDF: DataFrame = (
+    val sInputDF: DataFrame = (
       (1, "id1s", "Delta details of 1st row source", Timestamp.valueOf("2016-02-01 23:00:01"),
         Timestamp.valueOf("2016-06-16 00:00:00"), Timestamp.valueOf("2016-06-16 00:00:00")) ::
         (2, "id2s", "Delta details of 2nd row source", Timestamp.valueOf("2017-06-05 23:00:01"),
@@ -36,10 +36,10 @@ class DeltaToPgTest extends FunSuite with SparkSessionTestWrapper  {
           Timestamp.valueOf("2016-06-16 00:00:00"), Timestamp.valueOf("2016-06-16 00:00:00")) ::
         Nil).toDF("id", "pk2", "details", "date_update", "date_update2", "date_update3")
 
-    val sourceDeltaTable = "/tmp/source"
     val dc: DeltaConf = new DeltaConf(Map("T_LOAD_TYPE" -> "full", "S_TABLE_TYPE" -> "delta", "T_TABLE_TYPE" -> "postgres"), List(""), List(""))
-    dc.writeSource(spark, s_inputDF, "/tmp", "source10", "full")
-    /*s_inputDF.write.format("delta")
+    dc.writeSource(spark, sInputDF, "/tmp", "source10", "full")
+    /* val sourceDeltaTable = "/tmp/source"
+	sInputDF.write.format("delta")
       .mode("overwrite")
       .save(sourceDeltaTable)*/
 

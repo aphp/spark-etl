@@ -14,7 +14,6 @@ object DeltaToDeltaYaml extends DefaultYamlProtocol {
   case class Table(tableDeltaSource: String
       , tableDeltaTarget: String
       , path: String
-      //, pathTarget: String
       , key: List[String]
       , typeLoad: Option[String]      // Added param
       , format: Option[String]
@@ -25,8 +24,6 @@ object DeltaToDeltaYaml extends DefaultYamlProtocol {
     	, isAnalyse: Option[Boolean]
       , numThread: Option[Int]){
 
-   // require(isMultiline.isEmpty || (isMultiline.isDefined && splitFactor.isDefined), "When multiline then splitfactor must be specified too")
-   //require(!isMultiline.get && splitFactor.isDefined && splitFactor.get > 1, "When no multiline, splitfactor should be equal to one")
     require(numThread.isDefined && (numThread.get < 9 && numThread.get > 0), "Thread number should be between 1 and 8")
   }
 

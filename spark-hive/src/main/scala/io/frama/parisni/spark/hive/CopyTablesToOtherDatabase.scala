@@ -24,7 +24,7 @@ object CopyTablesToOtherDatabase extends App with LazyLogging {
 
   implicit val spark = SparkSession
     .builder()
-    .appName("")
+    .appName("Copy tables spark")
     .enableHiveSupport()
     .getOrCreate()
 
@@ -37,8 +37,8 @@ object CopyTablesToOtherDatabase extends App with LazyLogging {
       listTable: Option[String] = None)(implicit spark: SparkSession) = {
 
     val tbList = tableList match {
-      case Some(e) => e.split(",")
-      case _       => listTables(fromDb)
+      case Some(e: String) if e != "" => e.split(",")
+      case _                          => listTables(fromDb)
     }
     for {
       table <- tbList

@@ -3,12 +3,11 @@ package io.frama.parisni.spark.sync.conf
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 class PostgresConf(config: Map[String, String], dates: List[String], pks: List[String])
-  extends SourceAndTarget { //io.frama.parisni.spark.sync.conf.TargetConf with io.frama.parisni.spark.sync.conf.SourceConf with LazyLogging{
+  extends SourceAndTarget {
 
   checkTargetParams(config)
   checkSourceParams(config)
 
-  //val URL: String = "URL"
   val HOST: String = "HOST"
   val PORT: String = "PORT"
   val DATABASE: String = "DATABASE"
@@ -28,21 +27,21 @@ class PostgresConf(config: Map[String, String], dates: List[String], pks: List[S
   // SourceTable methods
   def readSource(spark: SparkSession, host: String, port: String,
                  db: String, user: String, schema: String,
-                 s_table: String, s_date_field: String,
-                 date_Max: String, load_type: String, pks: List[String]): DataFrame = {
+                 sTable: String, sDateField: String,
+                 dateMax: String, loadType: String, pks: List[String]): DataFrame = {
 
     try {
       logger.warn("Reading data from Postgres table ---------")
-      val url = f"jdbc:postgresql://${host}:${port}/${db}?user=${user}&currentSchema=${schema},public"
+      val url = f"jdbc:postgresql://${host}:${port}/${db}?user=${user}&currentSchema=${schema}"
 
-      //if (!checkTableExists(spark, url, schema, s_table)) {
-      //  logger.warn(s"Postgres Table ${s_table} doesn't exist")
-      //  return spark.emptyDataFrame
-      //}
-      val dateFilter = dates.map(x => s""" "${x}" >= '${date_Max}'""").mkString(" OR ")
+      if (!checkTableExists(spark, url, schema, sTable)) {
+        logger.warn(s"Postgres Table ${sTable} doesn't exist")
+        return spark.emptyDataFrame
+      }
+      val dateFilter = dates.map(x => s""" "${x}" >= '${dateMax}'""").mkString(" OR ")
 
-      var query = f"select * from ${s_table}"
-      if (load_type != "full" && date_Max != "")
+      var query = f"select * from ${sTable}"
+      if (loadType != "full" && dateMax != "")
         query += f""" where $dateFilter"""
 
       logger.warn("query: " + query)
@@ -88,49 +87,50 @@ class PostgresConf(config: Map[String, String], dates: List[String], pks: List[S
     val result = config.get(T_DATE_MAX) match {
       case Some("") => calculDateMax(spark, url, getTargetTableType.getOrElse(""), getTargetTableName.getOrElse(""), getDateFields)
       case Some(_) => config.get(T_DATE_MAX).get
+      case None => ""
     }
     logger.warn(s"getting the maxdate : ${result}")
     result
   }
 
-  def writeSource(spark: SparkSession, s_df: DataFrame, host: String, port: String,
-                  db: String, user: String, schema: String, t_table: String,
-                  load_type: String, hash_field: String = "", pw: String = ""): Unit = {
+  def writeSource(spark: SparkSession, sDf: DataFrame, host: String, port: String,
+                  db: String, user: String, schema: String, tTable: String,
+                  loadType: String, hashField: String = "", pw: String = ""): Unit = {
 
     try {
       logger.warn("Writing data into Postgres table ---------")
       val url = f"jdbc:postgresql://${host}:${port}/${db}?user=${user}&currentSchema=${schema}"
 
-      if (!checkTableExists(spark, url, schema, t_table)) {
-        logger.warn(s"Creating Postgres Table ${t_table} from scratch")
+      if (!checkTableExists(spark, url, schema, tTable)) {
+        logger.warn(s"Creating Postgres Table ${tTable} from scratch")
 
-        s_df.write.format("postgres")
+        sDf.write.format("postgres")
           .option("type", "full")
           .option("partitions", 4)
           .option("url", url)
-          .option("table", t_table)
+          .option("table", tTable)
           .save
 
         return
       }
 
-      load_type match {
+      loadType match {
         case "full" => {
-          s_df.write.format("postgres")
-            .option("type", load_type)
+          sDf.write.format("postgres")
+            .option("type", loadType)
             .option("partitions", 4)
             .option("url", url)
-            .option("table", t_table)
+            .option("table", tTable)
             .mode(org.apache.spark.sql.SaveMode.Overwrite)
             .save
         }
         case "scd1" => {
-          s_df.write.format("postgres")
-            .option("type", load_type)
-            .option("JoinKey", hash_field)
+          sDf.write.format("postgres")
+            .option("type", loadType)
+            .option("JoinKey", hashField)
             .option("partitions", 4)
             .option("url", url)
-            .option("table", t_table)
+            .option("table", tTable)
             .save
         }
       }

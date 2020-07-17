@@ -13,22 +13,22 @@ class ParquetConf(config: Map[String, String], dates: List[String], pks: List[St
   val PATH: String = "PATH" //PATH is used by Parquet for connexion
   def getPath: Option[String] = config.get(PATH)
 
-  def readSource(spark: SparkSession, path: String, s_table: String,
-                 s_date_field: String, date_Max: String, load_type: String): DataFrame = {
+  def readSource(spark: SparkSession, path: String, sTable: String,
+                 sDateField: String, dateMax: String, loadType: String): DataFrame = {
 
     try {
       logger.warn("Reading data from Parquet table ---------")
 
-      if (!checkTableExists(spark, path, s_table)) {
-        logger.warn(s"Parquet Table ${s_table} doesn't exist")
+      if (!checkTableExists(spark, path, sTable)) {
+        logger.warn(s"Parquet Table ${sTable} doesn't exist")
         return spark.emptyDataFrame
       }
 
-      val parquetPath = "%s/%s".format(path, s_table)
+      val parquetPath = "%s/%s".format(path, sTable)
       var dfParquet = spark.read.format("parquet").load(parquetPath)
 
-      if (load_type != "full")
-        dfParquet = dfParquet.filter(f"${s_date_field} >= '${date_Max}'")
+      if (loadType != "full" && dateMax != "")
+        dfParquet = dfParquet.filter(f"${sDateField} >= '${dateMax}'")
 
       dfParquet
     } catch {
@@ -64,23 +64,23 @@ class ParquetConf(config: Map[String, String], dates: List[String], pks: List[St
       calculDateMax(spark, getPath.getOrElse(""), getTargetTableType.getOrElse(""), getTargetTableName.getOrElse(""), getDateFields)
   }
 
-  def writeSource(spark: SparkSession, s_df: DataFrame, path: String, t_table: String, load_type: String,
-                  hash_field: String = "hash"): Unit = {
+  def writeSource(spark: SparkSession, sDf: DataFrame, path: String, tTable: String, loadType: String,
+                  hashField: String = "hash"): Unit = {
 
     try {
       logger.warn("Writing data into Parquet table ---------")
-      val parquetPath = "%s/%s".format(path, t_table)
+      val parquetPath = "%s/%s".format(path, tTable)
 
       //Add hash field to DF
-      val hashedDF = DFTool.dfAddHash(s_df)
+      val hashedDF = DFTool.dfAddHash(sDf)
 
-      if (!checkTableExists(spark, path, t_table)) {
+      if (!checkTableExists(spark, path, tTable)) {
         logger.warn(s"Creating parquet table ${parquetPath} from scratch")
         hashedDF.write.format("parquet").save(parquetPath)
       }
       else {
 
-        load_type match {
+        loadType match {
           case "full" => {
             hashedDF.write.format("parquet")
               .mode("overwrite")

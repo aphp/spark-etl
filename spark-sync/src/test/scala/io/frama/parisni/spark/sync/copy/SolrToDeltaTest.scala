@@ -1,5 +1,7 @@
 package io.frama.parisni.spark.sync.copy
 
+import org.apache.spark.sql.DataFrame
+import java.sql.Timestamp
 import net.jcazevedo.moultingyaml._
 import org.junit.Test
 //import org.scalatest.FunSuite
@@ -9,15 +11,16 @@ import DeltaToSolrYaml._
 
 class SolrToDeltaTest extends SolrConfTest{
 
-  @Test
+  //@Test
   def testSolr2Delta(): Unit = {
     //println("io.frama.parisni.spark.sync.Sync Solr2Delta")
 
+    import spark.implicits._
     // Create table "source"
     //startSolrCloudCluster
     createSolrTables
 
-    /*val s_inputDF: DataFrame = (
+    val sInputDF: DataFrame = (
       (1, "id1s", "Delta details of 1st row source", Timestamp.valueOf("2016-02-01 23:00:01"),
         Timestamp.valueOf("2016-06-16 00:00:00"), Timestamp.valueOf("2016-06-16 00:00:00")) ::
         (2, "id2s", "Delta details of 2nd row source", Timestamp.valueOf("2017-06-05 23:00:01"),
@@ -33,11 +36,11 @@ class SolrToDeltaTest extends SolrConfTest{
         Nil).toDF("id", "pk2", "details", "date_update", "date_update2", "date_update3")
 
     val sourceDeltaTable = "/tmp/source"
-    val dc:io.frama.parisni.spark.sync.conf.DeltaConf = new io.frama.parisni.spark.sync.conf.DeltaConf(Map("T_LOAD_TYPE" -> "full", "S_TABLE_TYPE" -> "delta", "T_TABLE_TYPE" -> "postgres"), List(""), List(""))
-    dc.writeSource(spark, s_inputDF, "/tmp", "source", "full")*/
-    /*s_inputDF.write.format("delta")
+    /*val dc:io.frama.parisni.spark.sync.conf.DeltaConf = new io.frama.parisni.spark.sync.conf.DeltaConf(Map("T_LOAD_TYPE" -> "full", "S_TABLE_TYPE" -> "delta", "T_TABLE_TYPE" -> "postgres"), List(""), List(""))
+    dc.writeSource(spark, sInputDF, "/tmp", "source", "full")*/
+    sInputDF.write.format("delta")
       .mode("overwrite")
-      .save(sourceDeltaTable)*/
+      .save(sourceDeltaTable)
 
     val filename = "solrToDelta.yaml"
     val ymlTxt = Source.fromFile(filename).mkString

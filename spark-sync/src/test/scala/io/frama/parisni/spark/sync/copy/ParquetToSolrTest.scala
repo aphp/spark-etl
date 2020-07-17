@@ -16,7 +16,7 @@ class ParquetToSolrTest extends SolrConfTest {
     import spark.implicits._
 
     // Create table "source"
-    val s_inputDF: DataFrame = (
+    val sInputDF: DataFrame = (
       (1, "id1s", "Delta details of 1st row source", Timestamp.valueOf("2016-02-01 23:00:01"),
         Timestamp.valueOf("2016-06-16 00:00:00"), Timestamp.valueOf("2016-06-16 00:00:00")) ::
         (2, "id2s", "Delta details of 2nd row source", Timestamp.valueOf("2017-06-05 23:00:01"),
@@ -32,7 +32,7 @@ class ParquetToSolrTest extends SolrConfTest {
         Nil).toDF("id", "pk2", "details", "date_update", "date_update2", "date_update3")
 
     val dc: ParquetConf = new ParquetConf(Map("T_LOAD_TYPE" -> "full", "S_TABLE_TYPE" -> "delta", "T_TABLE_TYPE" -> "postgres"), List(""), List(""))
-    dc.writeSource(spark, s_inputDF, "/tmp", "source", "full")
+    dc.writeSource(spark, sInputDF, "/tmp", "source", "full")
 
     startSolrCloudCluster
 
@@ -47,7 +47,7 @@ class ParquetToSolrTest extends SolrConfTest {
 
     import com.lucidworks.spark.util.SolrDataFrameImplicits._
     val options = Map("collection" -> "target", "zkhost" -> zkHost.toString, "commit_within" -> "5000", "fields" -> "id,pk2,date_update", "request_handler" -> "/export") //, "soft_commit_secs"-> "10")
-    s_inputDF.write.options(options).solr("target")
+    sInputDF.write.options(options).solr("target")
 
 
     assert(spark.read.solr("target", options).count == 2L)

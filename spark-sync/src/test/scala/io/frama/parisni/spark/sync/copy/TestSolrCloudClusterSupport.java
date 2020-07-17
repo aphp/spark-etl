@@ -61,7 +61,9 @@ public class TestSolrCloudClusterSupport {
             if (br != null) {
                 try {
                     br.close();
-                } catch (IOException ignore){}
+                } catch (IOException ignore){
+                    log.error("IOException! ", ignore);
+                }
             }
         }
         return sb.toString();
@@ -209,7 +211,10 @@ public class TestSolrCloudClusterSupport {
             if (!allReplicasUp) {
                 try {
                     Thread.sleep(500L);
-                } catch (Exception ignoreMe) { ignoreMe.printStackTrace(); }
+                } catch (Exception ignoreMe) {
+                    //ignoreMe.printStackTrace();           //Commented line
+                    log.error("Exception! ", ignoreMe);     //Added line
+                }
                 waitMs += 500L;
             }
         } // end while
@@ -252,10 +257,12 @@ public class TestSolrCloudClusterSupport {
     protected static void dumpSolrCollection(String collection, SolrQuery solrQuery) {
         try {
             QueryResponse qr = cloudSolrServer.query(collection, solrQuery);
-            System.out.println("Found "+qr.getResults().getNumFound()+" docs in "+collection);
+            //System.out.println("Found "+qr.getResults().getNumFound()+" docs in "+collection);
+            log.info("Found "+qr.getResults().getNumFound()+" docs in "+collection);
             int i=0;
             for (SolrDocument doc : qr.getResults()) {
-                System.out.println(i+": "+doc);
+                //System.out.println(i+": "+doc);
+                log.info(i+": "+doc);
                 ++i;
             }
         } catch (Exception exc) {

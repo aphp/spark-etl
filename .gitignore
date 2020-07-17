@@ -26,6 +26,7 @@ syntax: glob
 
 # building
 target
+**/target
 build
 null
 tmp*

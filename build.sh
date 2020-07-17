@@ -94,9 +94,8 @@ __init() {
       -Dnexus.group.url=${MVN_GROUP_REPOSITORY} \
       -Dnexus.snapshot.url=${MVN_SNAPSHOT_REPOSITORY} \
       -Dnexus.release.url=${MVN_RELEASE_REPOSITORY} \
-      -Dmaven.wagon.http.ssl.insecure=true \
-      -Dmaven.wagon.http.ssl.allowall=true \
-      -Dmaven.wagon.http.ssl.ignore.validity.dates=true"
+      -Djavax.net.ssl.trustStore=/opt/local/cacerts.jks \
+      -Djavax.net.ssl.trustStorePassword=AeYmDdWksACpCzyQteNbbcxHT"
   fi
 
   export MAVEN_CLI_OPTS

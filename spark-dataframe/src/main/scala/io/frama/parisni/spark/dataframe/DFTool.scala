@@ -470,6 +470,48 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
     }
   }
 
+  def saveHiveFull(df: DataFrame, database: String, tableName: String, format: String = "parquet"): Unit = {
+
+    def write() = {
+
+      logger.warn(s"persisting $tableName")
+      val spark = df.sparkSession
+      //val candidate = if (!df.columns.contains("hash")) dfAddHash(df) else df
+
+      val (isHive, isTableExists, deltaPath) = if (spark.catalog.databaseExists(database)) {
+        val hiveLoc = getHiveLocation(spark, getDbTable(tableName, database)).getOrElse("nothingNeeded")
+        (true, spark.catalog.tableExists(database, tableName), hiveLoc)
+      } else (false, DFTool.tableExists(spark, database, tableName), database + "/" + tableName)
+
+
+      //val query = primaryKeys.map(x => (f"t.${x} = s.${x}")).mkString(" AND ")
+      if (!isTableExists) {
+        logger.warn("Table %s does not yet exist".format(getDbTable(tableName, database)))
+        /*if (isHive) saveHive(df, getDbTable(tableName, database), format)
+        else df.write.mode(SaveMode.Overwrite).format(format).save(deltaPath)*/
+        df.write.format(format).save(deltaPath)
+      }
+      else{
+        df.write
+          .format(format).mode(SaveMode.Overwrite)
+          .saveAsTable(tableName)
+      }
+    }
+
+    val res = Try {
+      write()
+    }
+    /*res.failed.getOrElse(None) match {
+      case e: AnalysisException => {
+        val location = DFTool.getHiveLocation(e.getMessage())
+        logger.warn(s"${location} already exists")
+        DFTool.removeHiveLocation(df.sparkSession, location)
+        write()
+      }
+      case _ =>
+    }*/
+  }
+
   def getHiveLocation(errorMessage: String) = {
     val reg = """.*The associated location\('([^']+)'\) already exists.*""".r
     errorMessage match {

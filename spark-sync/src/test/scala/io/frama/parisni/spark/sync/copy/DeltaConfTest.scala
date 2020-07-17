@@ -36,7 +36,7 @@ class DeltaConfTest extends QueryTest with SparkSessionTestWrapper {
       .save(sourceDeltaTable)
 
     println("After: table /tmp/source exists = "+ checkTableExists(spark, "/tmp", "source"))
-    println(s"table /tmp/target exists = "+ checkTableExists(spark, "/tmp", "target"))
+    println("table /tmp/target exists = "+ checkTableExists(spark, "/tmp", "target"))
 
     val sOutputDF = spark.read.format("delta").load(sourceDeltaTable)
     sOutputDF.show()

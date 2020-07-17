@@ -1,6 +1,7 @@
 package io.frama.parisni.spark.sync.copy
 
 import com.typesafe.scalalogging.LazyLogging
+
 import io.frama.parisni.spark.sync.Sync
 import io.frama.parisni.spark.sync.copy.ParquetToSolrYaml._
 import org.apache.spark.sql.SparkSession
@@ -34,6 +35,9 @@ class ParquetToSolr extends LazyLogging {
         sync.syncSourceTarget(spark, config, dateFieldsSolr, pks)
 
       }
+    } catch {
+      case re: RuntimeException => throw re
+      case e: Exception => throw new RuntimeException(e)
     }
   }
 }

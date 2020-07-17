@@ -1,12 +1,12 @@
 package io.frama.parisni.spark.sync.copy
 
 import com.typesafe.scalalogging.LazyLogging
-import io.frama.parisni.spark.sync.Sync
 import net.jcazevedo.moultingyaml._
+import DeltaToSolrYaml._
+import io.frama.parisni.spark.sync.Sync
 import org.apache.spark.sql.SparkSession
 
 import scala.io.Source
-import DeltaToSolrYaml._
 
 object SolrToDelta extends App with LazyLogging {
 
@@ -30,7 +30,6 @@ object SolrToDelta extends App with LazyLogging {
     val dateMax = database.dateMax.getOrElse("")
 
     for(table <- database.tables.getOrElse(Nil)) {
-      //if (table.isActive.getOrElse(true)) {
 
         val tableDelta = table.tableDelta.toString
         val pathDelta = table.schemaDelta.toString
@@ -49,16 +48,19 @@ object SolrToDelta extends App with LazyLogging {
         val sync = new Sync()
         sync.syncSourceTarget(spark, config, dateFieldsDelta, pks)
 
-      //}
     }
+  } catch {
+    case re: RuntimeException => throw re
+    case e: Exception => throw new RuntimeException(e)
+  } finally {
+    spark.close()
   }
-  spark.close()
 }
 
 
 class SolrToDelta2 extends App with LazyLogging {
 
-  val filename = "solrToDelta.yaml"     //args(0)
+  val filename = "solrToDelta.yaml"
   val ymlTxt = Source.fromFile(filename).mkString
   val yaml = ymlTxt.stripMargin.parseYaml
   val database = yaml.convertTo[Database]
@@ -79,7 +81,6 @@ class SolrToDelta2 extends App with LazyLogging {
       val dateMax = database.dateMax.getOrElse("")
 
       for(table <- database.tables.getOrElse(Nil)) {
-        //if (table.isActive.getOrElse(true)) {
 
         val tableDelta = table.tableDelta.toString
         val pathDelta = table.schemaDelta.toString
@@ -98,11 +99,14 @@ class SolrToDelta2 extends App with LazyLogging {
         val sync = new Sync()
         sync.syncSourceTarget(spark, config, dateFieldsDelta, pks)
 
-        //}
       }
 
+    } catch {
+      case re: RuntimeException => throw re
+      case e: Exception => throw new RuntimeException(e)
+    } finally {
+      spark.close()
     }
   }
-  spark.close()
 }
 

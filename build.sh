@@ -93,9 +93,7 @@ __init() {
       -Dnexus.password=${NEXUS_PASSWORD} \
       -Dnexus.group.url=${MVN_GROUP_REPOSITORY} \
       -Dnexus.snapshot.url=${MVN_SNAPSHOT_REPOSITORY} \
-      -Dnexus.release.url=${MVN_RELEASE_REPOSITORY} \
-      -Djavax.net.ssl.trustStore=/opt/local/cacerts.jks \
-      -Djavax.net.ssl.trustStorePassword=AeYmDdWksACpCzyQteNbbcxHT"
+      -Dnexus.release.url=${MVN_RELEASE_REPOSITORY}"
   fi
 
   export MAVEN_CLI_OPTS

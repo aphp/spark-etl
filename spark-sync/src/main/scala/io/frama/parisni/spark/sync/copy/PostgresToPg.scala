@@ -1,12 +1,12 @@
 package io.frama.parisni.spark.sync.copy
 
 import com.typesafe.scalalogging.LazyLogging
-import io.frama.parisni.spark.sync.Sync
 import net.jcazevedo.moultingyaml._
+import PostgresToPgYaml._
+import io.frama.parisni.spark.sync.Sync
 import org.apache.spark.sql.SparkSession
 
 import scala.io.Source
-import PostgresToPgYaml._
 
 object PostgresToPg extends App with LazyLogging {
 
@@ -18,7 +18,6 @@ object PostgresToPg extends App with LazyLogging {
   // Spark Session
   val spark = SparkSession.builder()
     .appName(database.jobName)
-    //.enableHiveSupport()
     .getOrCreate()
 
   spark.sparkContext.setLogLevel("WARN")
@@ -34,7 +33,6 @@ object PostgresToPg extends App with LazyLogging {
     val dateMax = database.dateMax.getOrElse("")
 
     for(table <- database.tables.getOrElse(Nil)) {
-      //if (table.isActive.getOrElse(true)) {
 
         val tablePgSource = table.tablePgSource.toString
         val tablePgTarget = table.tablePgTarget.toString
@@ -53,17 +51,20 @@ object PostgresToPg extends App with LazyLogging {
         val sync = new Sync()
         sync.syncSourceTarget(spark, config, dateFieldsTarget, pks)
 
-      //}
     }
+  } catch {
+    case re: RuntimeException => throw re
+    case e: Exception => throw new RuntimeException(e)
+  } finally {
+    spark.close()
   }
-  spark.close()
 }
 
 
 
 class PostgresToPg2 extends App with LazyLogging{
 
-  val filename = "postgresToPg.yaml"     //args(0)
+  val filename = "postgresToPg.yaml"
   val ymlTxt = Source.fromFile(filename).mkString
   val yaml = ymlTxt.stripMargin.parseYaml
   val database = yaml.convertTo[Database]
@@ -71,7 +72,6 @@ class PostgresToPg2 extends App with LazyLogging{
   // SPARK PART
   val spark = SparkSession.builder()
     .appName(database.jobName)
-    //.enableHiveSupport()
     .getOrCreate()
 
   spark.sparkContext.setLogLevel("WARN")
@@ -88,7 +88,6 @@ class PostgresToPg2 extends App with LazyLogging{
       val dateMax = database.dateMax.getOrElse("")
 
       for(table <- database.tables.getOrElse(Nil)) {
-        //if (table.isActive.getOrElse(true)) {
 
         val tablePgSource = table.tablePgSource.toString
         val tablePgTarget = table.tablePgTarget.toString
@@ -107,9 +106,12 @@ class PostgresToPg2 extends App with LazyLogging{
         val sync = new Sync()
         sync.syncSourceTarget(spark, config, dateFieldsTarget, pks)
 
-        //}
       }
+    } catch {
+      case re: RuntimeException => throw re
+      case e: Exception => throw new RuntimeException(e)
+    } finally {
+      spark.close()
     }
   }
-  spark.close()
 }

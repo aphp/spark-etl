@@ -9,7 +9,7 @@ import io.frama.parisni.spark.sync.conf.PostgresConf
 import io.frama.parisni.spark.sync.copy.PostgresToDeltaYaml.Database
 import net.jcazevedo.moultingyaml._
 import org.apache.spark.sql.{DataFrame, QueryTest}
-import org.junit.Rule
+import org.junit.{Rule, Test}
 
 import scala.annotation.meta.getter
 import scala.io.Source
@@ -23,11 +23,10 @@ class PostgresConfTest extends QueryTest with SparkSessionTestWrapper {
 
     import spark.implicits._
 
-    //val con = pg.getEmbeddedPostgres.getPostgresDatabase.getConnection
-    //val url = f"jdbc:postgresql://localhost:${pg.getEmbeddedPostgres.getPort}/postgres?user=postgres&currentSchema=public"
-    val url = getPgUrl
+	val url = f"jdbc:postgresql://localhost:${pg.getEmbeddedPostgres.getPort}/postgres?user=postgres&currentSchema=public"
+    
     // Create table "source"
-    val s_inputDF: DataFrame = (
+    val sInputDF: DataFrame = (
       (1, "id1s", "test details of 1st row source", Timestamp.valueOf("2016-02-01 23:00:01"),
         Timestamp.valueOf("2016-06-16 00:00:00"), Timestamp.valueOf("2016-06-16 00:00:00")) ::
         (2, "id2s", "test details of 2nd row source", Timestamp.valueOf("2017-06-05 23:00:01"),
@@ -42,19 +41,18 @@ class PostgresConfTest extends QueryTest with SparkSessionTestWrapper {
           Timestamp.valueOf("2016-06-16 00:00:00"), Timestamp.valueOf("2016-06-16 00:00:00")) ::
         Nil).toDF("id", "pk2", "details", "date_update", "date_update2", "date_update3")
 
-    s_inputDF.write.format("jdbc") //postgres
+    sInputDF.write.format("postgres")
       .option("url", url)
-      .option("dbtable", "source") //table
-      //.option("driver", "org.postgresql.Driver")
+      .option("table", "source")
       .mode(org.apache.spark.sql.SaveMode.Overwrite)
       .save
 
-    val s_outputDF: DataFrame = spark.read.format("jdbc") //postgres
+    val sOutputDF: DataFrame = spark.read.format("postgres")
       .option("url", url)
       .option("query", "select * from source")
       .load
 
-    s_outputDF.show
+    sOutputDF.show
 
     println("Table source exists = " + checkTableExists(spark, url, "source", "public"))
     println("Table target exists = " + checkTableExists(spark, url, "target", "public"))
@@ -80,23 +78,23 @@ class PostgresConfTest extends QueryTest with SparkSessionTestWrapper {
     val db = pgc.getDB.getOrElse("postgres")
     val user = pgc.getUser.getOrElse("postgres")
     val schema = pgc.getSchema.getOrElse("public")
-    val s_table = pgc.getSourceTableName.getOrElse("")
-    val s_date_field = pgc.getSourceDateField.getOrElse("")
-    val t_table = pgc.getTargetTableName.getOrElse("")
+    val sTable = pgc.getSourceTableName.getOrElse("")
+    val sDateField = pgc.getSourceDateField.getOrElse("")
+    val tTable = pgc.getTargetTableName.getOrElse("")
 
-    val date_max = pgc.getDateMax(spark) //pgc.getDateMax.getOrElse("2019-01-01")
+    val dateMax = pgc.getDateMax(spark) //pgc.getDateMax.getOrElse("2019-01-01")
 
-    val load_type = pgc.getLoadType.getOrElse("full")
-    val hash_field = pgc.getSourcePK.mkString(",")
-    println("hash_field = " + hash_field)
+    val loadType = pgc.getLoadType.getOrElse("full")
+    val hashField = pgc.getSourcePK.mkString(",")
+    println("hashField = " + hashField)
 
     // load table from source
-    println(s"Table ${s_table}")
-    val s_df = pgc.readSource(spark, host, port, db, user, schema, s_table, s_date_field, date_max, load_type, pks)
-    s_df.show()
+    println(s"Table ${sTable}")
+    val sDf = pgc.readSource(spark, host, port, db, user, schema, sTable, sDateField, dateMax, loadType, pks)
+    sDf.show()
 
     // write table to target
-    pgc.writeSource(spark, s_df, host, port, db, user, schema, t_table, load_type, hash_field)
+    pgc.writeSource(spark, sDf, host, port, db, user, schema, tTable, loadType, hashField)
 
   }
 
@@ -116,15 +114,15 @@ class PostgresConfTest extends QueryTest with SparkSessionTestWrapper {
     val pks = List("id", "pk2")
     val pgc = new PostgresConf(mapy, dates, pks)
 
-    val url = f"jdbc:postgresql://${pgc.getHost.getOrElse("localhost")}:${pgc.getPort.getOrElse("5432")}/" +
-      f"${pgc.getDB.getOrElse("postgres")}?user=${pgc.getUser.getOrElse("postgres")}&currentSchema=public"
-    //val date_max = pgc.calculDateMax(spark, url, pgc.getTargetTableType.getOrElse("target"),
+    /*val url = f"jdbc:postgresql://${pgc.getHost.getOrElse("localhost")}:${pgc.getPort.getOrElse("5432")}/" +
+      f"${pgc.getDB.getOrElse("postgres")}?user=${pgc.getUser.getOrElse("postgres")}&currentSchema=public"*/
+    //val dateMax = pgc.calculDateMax(spark, url, pgc.getTargetTableType.getOrElse("target"),
     //pgc.getTargetTableName.getOrElse("target"), pgc.getDateFields)
 
-    val date_max = pgc.getDateMax(spark)
-    println("Date Max = " + date_max)
+    val dateMax = pgc.getDateMax(spark)
+    println("Date Max = " + dateMax)
 
-    assert(date_max == "2019-09-25 20:16:07.0") //"2019-10-16"
+    assert(dateMax == "2019-09-25 20:16:07.0") //"2019-10-16"
   }
 
 
@@ -162,7 +160,7 @@ class PostgresConfTest extends QueryTest with SparkSessionTestWrapper {
     val database = yaml.convertTo[Database]
 
     for (pal <- database.tables.getOrElse(Nil)) {
-      println("bob" + pal.isActive.getOrElse("").toString())
+      println("bob" + pal.isActive.get.toString())
     }
     println(database.toYaml.prettyPrint)
     //println(pg.getEmbeddedPostgres.getJdbcUrl("postgres", "postgres"))
@@ -231,14 +229,7 @@ trait SparkSessionTestWrapper {
       f"WHERE schemaname = '${schema}' AND tablename = '${table}')"
     println(q1.toString())
 
-    //val q = f"SELECT * FROM pg_class WHERE oid = '${schema}.${table}'"    //::regclass
-
-    /*val q2 = "SELECT EXISTS (SELECT FROM pg_catalog.pg_class c " +
-      "JOIN  pg_catalog.pg_namespace n ON n.oid = c.relnamespace " +
-      f"WHERE  n.nspname = '${schema}' " +
-      f"AND   c.relname = '${table}')"*/
-
-    spark.read.format("jdbc") //postgres
+    spark.read.format("postgres")
       .option("url", url)
       .option("query", q1)
       .load.first.get(0).equals(true)

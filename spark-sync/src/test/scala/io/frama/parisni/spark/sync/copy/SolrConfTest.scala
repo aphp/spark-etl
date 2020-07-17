@@ -50,25 +50,25 @@ class SolrConfTest extends QueryTest with SparkSessionTestWrapper with SolrCloud
     val solrc = new SolrConf(mapy, dates, pks)
 
     val zkhost = solrc.getZkHost.getOrElse("")
-    val s_collection = solrc.getSourceTableName.getOrElse("")
-    val s_date_field = solrc.getSourceDateField.getOrElse("")
-    val t_tcollection = solrc.getTargetTableName.getOrElse("")
-    val date_max = solrc.getDateMax(spark) //pgc.getDateMax.getOrElse("2019-01-01")
+    val sCollection = solrc.getSourceTableName.getOrElse("")
+    val sDateField = solrc.getSourceDateField.getOrElse("")
+    val tCcollection = solrc.getTargetTableName.getOrElse("")
+    val dateMax = solrc.getDateMax(spark) //pgc.getDateMax.getOrElse("2019-01-01")
 
     // load collection from source
-    println(s"Collection ${s_collection}")
-    val s_df = solrc.readSource(spark, zkhost, s_collection, s_date_field, date_max)
-    s_df.show()
+    println(s"Collection ${sCollection}")
+    val sDf = solrc.readSource(spark, zkhost, sCollection, sDateField, dateMax)
+    sDf.show()
 
     // write collection to target
-    if (!solrc.checkCollectionExists(t_tcollection, zkhost)) //solrCloudClient,
-    SolrCloudUtil.buildCollection(zkHost, t_tcollection, null, 1, cloudClient, spark.sparkContext)
-    solrc.writeSource(s_df, zkhost, t_tcollection) //cloudClient,
+    if (!solrc.checkCollectionExists(tCcollection, zkhost)) //solrCloudClient,
+    SolrCloudUtil.buildCollection(zkHost, tCcollection, null, 1, cloudClient, spark.sparkContext)
+    solrc.writeSource(sDf, zkhost, tCcollection) //cloudClient,
 
-    solrCloudClient.commit(t_tcollection, true, true)
+    solrCloudClient.commit(tCcollection, true, true)
 
     //show target collection after update
-    solrc.readSource(spark, zkhost, t_tcollection, s_date_field, date_max).show()
+    solrc.readSource(spark, zkhost, tCcollection, sDateField, dateMax).show()
   }
 
   def startSolrCloudCluster(): Unit = {
@@ -122,7 +122,7 @@ class SolrConfTest extends QueryTest with SparkSessionTestWrapper with SolrCloud
     val solrCloudClient = SolrSupport.getCachedCloudClient(zkHost)
 
     // Create table "source"
-    val s_inputDF: DataFrame = (
+    val sInputDF: DataFrame = (
       (1, "id1s", "Solr details of 1st row source", Timestamp.valueOf("2016-02-01 23:00:01"),
         Timestamp.valueOf("2016-06-16 00:00:00"), Timestamp.valueOf("2016-06-16 00:00:00")) ::
         (2, "id2s", "Solr details of 2nd row source", Timestamp.valueOf("2017-06-05 23:00:01"),
@@ -137,21 +137,21 @@ class SolrConfTest extends QueryTest with SparkSessionTestWrapper with SolrCloud
           Timestamp.valueOf("2016-06-16 00:00:00"), Timestamp.valueOf("2016-06-16 00:00:00")) ::
         Nil).toDF("id", "pk2", "details", "date_update", "date_update2", "date_update3")
 
-    val s_collectionName = "source"
-    SolrCloudUtil.buildCollection(zkHost, s_collectionName, null, 1, cloudClient, spark.sparkContext)
-    val s_solrOpts = Map(
+    val sCollectionName = "source"
+    SolrCloudUtil.buildCollection(zkHost, sCollectionName, null, 1, cloudClient, spark.sparkContext)
+    val sSolrOpts = Map(
       "zkhost" -> zkHost,
-      "collection" -> s_collectionName,
+      "collection" -> sCollectionName,
       "flatten_multivalued" -> "false" // for correct reading column "date"
     )
-    s_inputDF.write.format("solr").options(s_solrOpts).mode(Overwrite).save()
+    sInputDF.write.format("solr").options(sSolrOpts).mode(Overwrite).save()
 
     // Explicit commit to make sure all docs are visible
-    solrCloudClient.commit(s_collectionName, true, true)
+    solrCloudClient.commit(sCollectionName, true, true)
 
-    val s_outputDF = spark.read.format("solr").options(s_solrOpts).load
+    val sOutputDF = spark.read.format("solr").options(sSolrOpts).load
     println("Source table: ")
-    s_outputDF.show()
+    sOutputDF.show()
 
   }
 

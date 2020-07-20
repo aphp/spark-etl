@@ -3,9 +3,8 @@ package io.frama.parisni.spark.meta
 import io.frama.parisni.spark.meta.strategy.MetaStrategyBuilder
 import org.apache.spark.sql.{DataFrame, QueryTest}
 
-class MetaExtractorTest extends QueryTest
-  with SparkSessionTestWrapper {
-/*
+class MetaExtractorTest extends QueryTest with SparkSessionTestWrapper {
+  /*
 
   //Database Connection information to adapt with your own test database
   val dbInfo = Map("host" -> "localhost"

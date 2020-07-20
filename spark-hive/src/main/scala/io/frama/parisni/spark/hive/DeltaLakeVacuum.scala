@@ -24,7 +24,8 @@ object DeltaLakeVacuum extends App {
   //
   // SPARK PART
   //
-  val spark = SparkSession.builder()
+  val spark = SparkSession
+    .builder()
     .appName(database.jobName)
     .getOrCreate()
 
@@ -45,4 +46,3 @@ object DeltaLakeVacuum extends App {
   }
 
 }
-

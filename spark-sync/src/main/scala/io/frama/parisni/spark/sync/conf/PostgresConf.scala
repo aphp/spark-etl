@@ -2,8 +2,11 @@ package io.frama.parisni.spark.sync.conf
 
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
-class PostgresConf(config: Map[String, String], dates: List[String], pks: List[String])
-  extends SourceAndTarget {
+class PostgresConf(
+    config: Map[String, String],
+    dates: List[String],
+    pks: List[String]
+) extends SourceAndTarget {
 
   checkTargetParams(config)
   checkSourceParams(config)
@@ -25,20 +28,31 @@ class PostgresConf(config: Map[String, String], dates: List[String], pks: List[S
   def getSchema: Option[String] = config.get(SCHEMA)
 
   // SourceTable methods
-  def readSource(spark: SparkSession, host: String, port: String,
-                 db: String, user: String, schema: String,
-                 sTable: String, sDateField: String,
-                 dateMax: String, loadType: String, pks: List[String]): DataFrame = {
+  def readSource(
+      spark: SparkSession,
+      host: String,
+      port: String,
+      db: String,
+      user: String,
+      schema: String,
+      sTable: String,
+      sDateField: String,
+      dateMax: String,
+      loadType: String,
+      pks: List[String]
+  ): DataFrame = {
 
     try {
       logger.warn("Reading data from Postgres table ---------")
-      val url = f"jdbc:postgresql://${host}:${port}/${db}?user=${user}&currentSchema=${schema}"
+      val url =
+        f"jdbc:postgresql://${host}:${port}/${db}?user=${user}&currentSchema=${schema}"
 
       if (!checkTableExists(spark, url, schema, sTable)) {
         logger.warn(s"Postgres Table ${sTable} doesn't exist")
         return spark.emptyDataFrame
       }
-      val dateFilter = dates.map(x => s""" "${x}" >= '${dateMax}'""").mkString(" OR ")
+      val dateFilter =
+        dates.map(x => s""" "${x}" >= '${dateMax}'""").mkString(" OR ")
 
       var query = f"select * from ${sTable}"
       if (loadType != "full" && dateMax != "")
@@ -46,7 +60,8 @@ class PostgresConf(config: Map[String, String], dates: List[String], pks: List[S
 
       logger.warn("query: " + query)
 
-      val dfPG = spark.read.format("postgres")
+      val dfPG = spark.read
+        .format("postgres")
         .option("url", url)
         .option("query", query)
         .option("partitions", 4)
@@ -58,7 +73,7 @@ class PostgresConf(config: Map[String, String], dates: List[String], pks: List[S
       dfPG
     } catch {
       case re: RuntimeException => throw re
-      case e: Exception => throw new RuntimeException(e)
+      case e: Exception         => throw new RuntimeException(e)
     }
   }
 
@@ -82,29 +97,49 @@ class PostgresConf(config: Map[String, String], dates: List[String], pks: List[S
   override def getDateMax(spark: SparkSession): String = {
 
     val url = f"jdbc:postgresql://${getHost.getOrElse("localhost")}:${getPort.getOrElse("5432")}/" +
-      f"${getDB.getOrElse("postgres")}?user=${getUser.getOrElse("postgres")}&currentSchema=${getSchema.getOrElse("public")}/"
+      f"${getDB.getOrElse("postgres")}?user=${getUser
+        .getOrElse("postgres")}&currentSchema=${getSchema.getOrElse("public")}/"
 
     val result = config.get(T_DATE_MAX) match {
-      case Some("") => calculDateMax(spark, url, getTargetTableType.getOrElse(""), getTargetTableName.getOrElse(""), getDateFields)
+      case Some("") =>
+        calculDateMax(
+          spark,
+          url,
+          getTargetTableType.getOrElse(""),
+          getTargetTableName.getOrElse(""),
+          getDateFields
+        )
       case Some(_) => config.get(T_DATE_MAX).get
-      case None => ""
+      case None    => ""
     }
     logger.warn(s"getting the maxdate : ${result}")
     result
   }
 
-  def writeSource(spark: SparkSession, sDf: DataFrame, host: String, port: String,
-                  db: String, user: String, schema: String, tTable: String,
-                  loadType: String, hashField: String = "", pw: String = ""): Unit = {
+  def writeSource(
+      spark: SparkSession,
+      sDf: DataFrame,
+      host: String,
+      port: String,
+      db: String,
+      user: String,
+      schema: String,
+      tTable: String,
+      loadType: String,
+      hashField: String = "",
+      pw: String = ""
+  ): Unit = {
 
     try {
       logger.warn("Writing data into Postgres table ---------")
-      val url = f"jdbc:postgresql://${host}:${port}/${db}?user=${user}&currentSchema=${schema}"
+      val url =
+        f"jdbc:postgresql://${host}:${port}/${db}?user=${user}&currentSchema=${schema}"
 
       if (!checkTableExists(spark, url, schema, tTable)) {
         logger.warn(s"Creating Postgres Table ${tTable} from scratch")
 
-        sDf.write.format("postgres")
+        sDf.write
+          .format("postgres")
           .option("type", "full")
           .option("partitions", 4)
           .option("url", url)
@@ -116,7 +151,8 @@ class PostgresConf(config: Map[String, String], dates: List[String], pks: List[S
 
       loadType match {
         case "full" => {
-          sDf.write.format("postgres")
+          sDf.write
+            .format("postgres")
             .option("type", loadType)
             .option("partitions", 4)
             .option("url", url)
@@ -125,7 +161,8 @@ class PostgresConf(config: Map[String, String], dates: List[String], pks: List[S
             .save
         }
         case "scd1" => {
-          sDf.write.format("postgres")
+          sDf.write
+            .format("postgres")
             .option("type", loadType)
             .option("JoinKey", hashField)
             .option("partitions", 4)
@@ -136,19 +173,28 @@ class PostgresConf(config: Map[String, String], dates: List[String], pks: List[S
       }
     } catch {
       case re: RuntimeException => throw re
-      case e: Exception => throw new RuntimeException(e)
+      case e: Exception         => throw new RuntimeException(e)
     }
   }
 
-  def checkTableExists(spark: SparkSession, url: String, schema: String, table: String): Boolean = {
+  def checkTableExists(
+      spark: SparkSession,
+      url: String,
+      schema: String,
+      table: String
+  ): Boolean = {
 
     val q1 = "SELECT EXISTS (SELECT FROM pg_tables " +
       f"WHERE schemaname = '${schema}' AND tablename = '${table}')"
 
-    val res = spark.read.format("postgres")
+    val res = spark.read
+      .format("postgres")
       .option("url", url)
       .option("query", q1)
-      .load.first.get(0).equals(true)
+      .load
+      .first
+      .get(0)
+      .equals(true)
 
     logger.warn(s"Table ${table} exists = " + res)
     res

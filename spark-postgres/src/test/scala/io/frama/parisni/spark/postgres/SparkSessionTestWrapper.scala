@@ -12,13 +12,13 @@ import scala.annotation.meta.getter
 trait SparkSessionTestWrapper {
 
   lazy val spark: SparkSession = {
-   val spark = SparkSession
+    val spark = SparkSession
       .builder()
       .master("local[2]")
       .appName("spark session")
       .config("spark.sql.shuffle.partitions", "4")
-     .config("spark.ui.enabled", "false")
-     .getOrCreate()
+      .config("spark.ui.enabled", "false")
+      .getOrCreate()
     spark
 
   }

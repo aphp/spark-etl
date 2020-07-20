@@ -5,16 +5,16 @@ import net.jcazevedo.moultingyaml._
 object DeltaVacuumYaml extends DefaultYamlProtocol {
 
   case class Database(
-                       jobName: String
-                       , pathDelta: String
-                       , tables: Option[List[Table]]
-                     )
+      jobName: String,
+      pathDelta: String,
+      tables: Option[List[Table]]
+  )
 
   case class Table(
-                    tableDelta: String
-                    , isActive: Option[Boolean] = Some(true)
-                    , nbHours: Option[Double]
-                  ) {
+      tableDelta: String,
+      isActive: Option[Boolean] = Some(true),
+      nbHours: Option[Double]
+  ) {
 
     // require(isMultiline.isEmpty || (isMultiline.isDefined && splitFactor.isDefined), "When multiline then splitfactor must be specified too")
     // require(!isMultiline.get && splitFactor.isDefined && splitFactor.get > 1, "When no multiline, splitfactor should be equal to one")
@@ -25,4 +25,3 @@ object DeltaVacuumYaml extends DefaultYamlProtocol {
   implicit val paletteFormat = yamlFormat3(Database)
 
 }
-

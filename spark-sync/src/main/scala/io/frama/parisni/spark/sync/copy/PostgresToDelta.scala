@@ -17,7 +17,8 @@ object PostgresToDelta extends App with LazyLogging {
   val database = yaml.convertTo[Database]
 
   // Spark Session
-  val spark = SparkSession.builder()
+  val spark = SparkSession
+    .builder()
     .appName(database.jobName)
     .enableHiveSupport()
     .getOrCreate()
@@ -43,12 +44,20 @@ object PostgresToDelta extends App with LazyLogging {
       val loadType = table.typeLoad.getOrElse("full")
       val pks = table.key
 
-      val config = Map("S_TABLE_NAME" -> tablePg, "S_TABLE_TYPE" -> "postgres",
-        "S_DATE_FIELD" -> dateFieldPg, "HOST" -> hostPg, "PORT" -> portPg,
-        "DATABASE" -> databasePg, "USER" -> userPg, "SCHEMA" -> schemaPg,
-
-        "T_TABLE_NAME" -> tableDelta, "T_TABLE_TYPE" -> "delta",
-        "PATH" -> pathDelta, "T_LOAD_TYPE" -> loadType, "T_DATE_MAX" -> dateMax
+      val config = Map(
+        "S_TABLE_NAME" -> tablePg,
+        "S_TABLE_TYPE" -> "postgres",
+        "S_DATE_FIELD" -> dateFieldPg,
+        "HOST" -> hostPg,
+        "PORT" -> portPg,
+        "DATABASE" -> databasePg,
+        "USER" -> userPg,
+        "SCHEMA" -> schemaPg,
+        "T_TABLE_NAME" -> tableDelta,
+        "T_TABLE_TYPE" -> "delta",
+        "PATH" -> pathDelta,
+        "T_LOAD_TYPE" -> loadType,
+        "T_DATE_MAX" -> dateMax
       )
 
       val sync = new Sync()
@@ -57,12 +66,11 @@ object PostgresToDelta extends App with LazyLogging {
     }
   } catch {
     case re: RuntimeException => throw re
-    case e: Exception => throw new RuntimeException(e)
+    case e: Exception         => throw new RuntimeException(e)
   } finally {
     spark.close()
   }
 }
-
 
 class PostgresToDelta extends LazyLogging {
 
@@ -86,12 +94,20 @@ class PostgresToDelta extends LazyLogging {
         val loadType = table.typeLoad.getOrElse("full")
         val pks = table.key
 
-        val config = Map("S_TABLE_NAME" -> tablePg, "S_TABLE_TYPE" -> "postgres",
-          "S_DATE_FIELD" -> dateFieldPg, "HOST" -> hostPg, "PORT" -> portPg,
-          "DATABASE" -> databasePg, "USER" -> userPg, "SCHEMA" -> schemaPg,
-
-          "T_TABLE_NAME" -> tableDelta, "T_TABLE_TYPE" -> "delta",
-          "PATH" -> pathDelta, "T_LOAD_TYPE" -> loadType, "T_DATE_MAX" -> dateMax
+        val config = Map(
+          "S_TABLE_NAME" -> tablePg,
+          "S_TABLE_TYPE" -> "postgres",
+          "S_DATE_FIELD" -> dateFieldPg,
+          "HOST" -> hostPg,
+          "PORT" -> portPg,
+          "DATABASE" -> databasePg,
+          "USER" -> userPg,
+          "SCHEMA" -> schemaPg,
+          "T_TABLE_NAME" -> tableDelta,
+          "T_TABLE_TYPE" -> "delta",
+          "PATH" -> pathDelta,
+          "T_LOAD_TYPE" -> loadType,
+          "T_DATE_MAX" -> dateMax
         )
 
         val sync = new Sync()
@@ -100,7 +116,7 @@ class PostgresToDelta extends LazyLogging {
       }
     } catch {
       case re: RuntimeException => throw re
-      case e: Exception => throw new RuntimeException(e)
+      case e: Exception         => throw new RuntimeException(e)
     }
   }
 }

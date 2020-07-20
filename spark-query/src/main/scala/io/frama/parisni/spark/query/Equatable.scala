@@ -1,6 +1,5 @@
 package io.frama.parisni.spark.query
 
-
 trait Equatable[A] {
   def eq(a: A): Predicate
   def ===(a: A): Predicate = eq(a)

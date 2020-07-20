@@ -31,7 +31,8 @@ object PostgresToDelta extends App with LazyLogging {
   //
   // SPARK PART
   //
-  val spark = SparkSession.builder()
+  val spark = SparkSession
+    .builder()
     .appName(database.jobName)
     .enableHiveSupport()
     .getOrCreate()
@@ -39,7 +40,8 @@ object PostgresToDelta extends App with LazyLogging {
   spark.sparkContext.setLogLevel("WARN")
 
   //val url = f"jdbc:postgresql://${database.hostPg}:${database.portPg}/${database.databasePg}?user=${database.userPg}&currentSchema=${database.schemaPg}"
-  val url = f"jdbc:postgresql://${database.hostPg}:${database.portPg}/${database.databasePg}?user=${database.userPg}"
+  val url =
+    f"jdbc:postgresql://${database.hostPg}:${database.portPg}/${database.databasePg}?user=${database.userPg}"
   val pgClient = PGTool(spark, url, "spark-postgres")
 
   try {
@@ -69,7 +71,7 @@ object PostgresToDelta extends App with LazyLogging {
     val dateFildsDelta = database.timestampColumns.getOrElse("")
     val dateMax = database.dateMax.getOrElse("2018-10-16 23:16:16")
 
-    for(table <- database.tables.getOrElse(Nil)) {
+    for (table <- database.tables.getOrElse(Nil)) {
       if (table.isActive.getOrElse(true)) {
 
         val schemaPg = table.schemaPg
@@ -79,12 +81,20 @@ object PostgresToDelta extends App with LazyLogging {
         val loadType = table.typeLoad.getOrElse("full")
         val pks = table.key
 
-        val config = Map("S_TABLE_NAME" -> tablePg, "S_TABLE_TYPE" -> "postgres",
-          "S_DATE_FIELD" -> dateFieldPg, "HOST" -> hostPg, "PORT" -> portPg,
-          "DATABASE" -> databasePg, "USER" -> userPg, "SCHEMA" -> schemaPg,
-
-          "T_TABLE_NAME" -> tableDelta, "T_TABLE_TYPE" -> "delta",
-          "PATH" -> pathDelta, "T_LOAD_TYPE" -> loadType, "T_DATE_MAX" -> dateMax
+        val config = Map(
+          "S_TABLE_NAME" -> tablePg,
+          "S_TABLE_TYPE" -> "postgres",
+          "S_DATE_FIELD" -> dateFieldPg,
+          "HOST" -> hostPg,
+          "PORT" -> portPg,
+          "DATABASE" -> databasePg,
+          "USER" -> userPg,
+          "SCHEMA" -> schemaPg,
+          "T_TABLE_NAME" -> tableDelta,
+          "T_TABLE_TYPE" -> "delta",
+          "PATH" -> pathDelta,
+          "T_LOAD_TYPE" -> loadType,
+          "T_DATE_MAX" -> dateMax
         )
 
         /*val sync = new Sync()
@@ -93,17 +103,25 @@ object PostgresToDelta extends App with LazyLogging {
       }
     }
 
-
     for (table <- database.tables.getOrElse(Nil)) {
       if (table.isActive.getOrElse(true)) {
 
-        val query = f"select * from ${table.schemaPg}.${table.tablePg} "  //+ timestampFilter
+        val query =
+          f"select * from ${table.schemaPg}.${table.tablePg} " //+ timestampFilter
         logger.warn(query)
-        val pgTable = DFTool.dfAddHash(pgClient.inputBulk(query = query, isMultiline = table.isMultiline, numPartitions = if (database.timestampTable.isEmpty) {
-          table.numThread
-        } else {
-          Some(1)
-        }, splitFactor = table.splitFactor, partitionColumn = table.key))
+        val pgTable = DFTool.dfAddHash(
+          pgClient.inputBulk(
+            query = query,
+            isMultiline = table.isMultiline,
+            numPartitions = if (database.timestampTable.isEmpty) {
+              table.numThread
+            } else {
+              Some(1)
+            },
+            splitFactor = table.splitFactor,
+            partitionColumn = table.key
+          )
+        )
 
         table.format.getOrElse("orc") match {
           case "delta" => {
@@ -120,7 +138,8 @@ object PostgresToDelta extends App with LazyLogging {
                   .as("t")
                   .merge(
                     pgTable.as("s"),
-                    "s.%s = t.%s".format(table.key, table.key))
+                    "s.%s = t.%s".format(table.key, table.key)
+                  )
                   .whenMatched("s.hash <> t.hash")
                   .updateAll()
                   .whenNotMatched()
@@ -133,7 +152,11 @@ object PostgresToDelta extends App with LazyLogging {
               pgTable.write.format("delta").mode(Overwrite).save(deltaPath)
             }
           }
-          case format => pgTable.write.format(format).mode(Overwrite).saveAsTable(f"${table.schemaHive}.${table.tableHive}")
+          case format =>
+            pgTable.write
+              .format(format)
+              .mode(Overwrite)
+              .saveAsTable(f"${table.schemaHive}.${table.tableHive}")
         }
       }
     }
@@ -143,7 +166,11 @@ object PostgresToDelta extends App with LazyLogging {
 
   spark.close()
 
-  def tableExists(spark: SparkSession, deltaPath: String, tablePath: String): Boolean = {
+  def tableExists(
+      spark: SparkSession,
+      deltaPath: String,
+      tablePath: String
+  ): Boolean = {
     val defaultFSConf = spark.sessionState.newHadoopConf().get("fs.defaultFS")
     val fsConf = if (deltaPath.startsWith("file:")) {
       "file:///"
@@ -178,4 +205,3 @@ object PostgresToDelta extends App with LazyLogging {
    */
 
 }
-

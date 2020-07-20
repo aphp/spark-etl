@@ -9,8 +9,7 @@ import org.apache.spark.sql.{DataFrame, QueryTest}
 
 import scala.io.Source
 
-class ConfigTest extends QueryTest
-  with SparkSessionTestWrapper {
+class ConfigTest extends QueryTest with SparkSessionTestWrapper {
 
   test("test fhir patient") {
     val filename = getClass.getResource("/meta/config.yaml").getPath
@@ -36,49 +35,91 @@ class ConfigTest extends QueryTest
     /**
       * First test with test strategy class
       */
-    var schema: ConfigMetaYaml.Schema = database.schemas.getOrElse(null).apply(0)
-    assert(MetaStrategyBuilder.build(schema.strategy).extractor.toString
-      .equals(new TestFeatureExtractImpl().toString))
+    var schema: ConfigMetaYaml.Schema =
+      database.schemas.getOrElse(null).apply(0)
+    assert(
+      MetaStrategyBuilder
+        .build(schema.strategy)
+        .extractor
+        .toString
+        .equals(new TestFeatureExtractImpl().toString)
+    )
 
-    assert(MetaStrategyBuilder.build(schema.strategy).generator.toString
-      .equals(new TestTableGeneratorImpl().toString))
+    assert(
+      MetaStrategyBuilder
+        .build(schema.strategy)
+        .generator
+        .toString
+        .equals(new TestTableGeneratorImpl().toString)
+    )
 
     /**
       * Second test with empty strategy class -- we expect defaultStrategy
       */
     schema = database.schemas.getOrElse(null).apply(1)
-    assert(MetaStrategyBuilder.build(schema.strategy).extractor.toString
-      .equals(MetaStrategyBuilder.build().extractor.toString))
+    assert(
+      MetaStrategyBuilder
+        .build(schema.strategy)
+        .extractor
+        .toString
+        .equals(MetaStrategyBuilder.build().extractor.toString)
+    )
 
-    assert(MetaStrategyBuilder.build(schema.strategy).generator.toString
-      .equals(MetaStrategyBuilder.build().generator.toString))
+    assert(
+      MetaStrategyBuilder
+        .build(schema.strategy)
+        .generator
+        .toString
+        .equals(MetaStrategyBuilder.build().generator.toString)
+    )
 
     /**
       * Third test with test extractor strategy class only -- we expect default generator strategy class
       */
     schema = database.schemas.getOrElse(null).apply(2)
-    assert(MetaStrategyBuilder.build(schema.strategy).extractor.toString
-      .equals(new TestFeatureExtractImpl().toString))
+    assert(
+      MetaStrategyBuilder
+        .build(schema.strategy)
+        .extractor
+        .toString
+        .equals(new TestFeatureExtractImpl().toString)
+    )
 
-    assert(MetaStrategyBuilder.build(schema.strategy).generator.toString
-      .equals(MetaStrategyBuilder.build().generator.toString))
+    assert(
+      MetaStrategyBuilder
+        .build(schema.strategy)
+        .generator
+        .toString
+        .equals(MetaStrategyBuilder.build().generator.toString)
+    )
 
     /**
       * Fourth test with test generator strategy class only -- we expect default extractor strategy class
       */
     schema = database.schemas.getOrElse(null).apply(3)
-    assert(MetaStrategyBuilder.build(schema.strategy).extractor.toString
-      .equals(MetaStrategyBuilder.build().extractor.toString))
+    assert(
+      MetaStrategyBuilder
+        .build(schema.strategy)
+        .extractor
+        .toString
+        .equals(MetaStrategyBuilder.build().extractor.toString)
+    )
 
-    assert(MetaStrategyBuilder.build(schema.strategy).generator.toString
-      .equals(new TestTableGeneratorImpl().toString))
+    assert(
+      MetaStrategyBuilder
+        .build(schema.strategy)
+        .generator
+        .toString
+        .equals(new TestTableGeneratorImpl().toString)
+    )
   }
 
 }
 
 class TestFeatureExtractImpl extends FeatureExtractTrait {
 
-  override def toString: String = "class TestFeatureExtractImpl extends FeatureExtractTrait"
+  override def toString: String =
+    "class TestFeatureExtractImpl extends FeatureExtractTrait"
 
   override def extractSource(df: DataFrame): DataFrame = null
 
@@ -91,7 +132,8 @@ class TestFeatureExtractImpl extends FeatureExtractTrait {
 
 class TestTableGeneratorImpl extends TableGeneratorTrait {
 
-  override def toString: String = "class TestTableGeneratorImpl extends TableGeneratorTrait"
+  override def toString: String =
+    "class TestTableGeneratorImpl extends TableGeneratorTrait"
 
   override def generateDatabase(df: DataFrame): DataFrame = null
 

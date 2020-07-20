@@ -1,7 +1,7 @@
 /**
- * Commenting this class as the performance gain is only visible when
- * writing at least some amount of data, meaning tests are long.
- */
+  * Commenting this class as the performance gain is only visible when
+  * writing at least some amount of data, meaning tests are long.
+  */
 /*
 package io.frama.parisni.spark.postgres
 
@@ -91,4 +91,4 @@ class TestPGBulkLoadPerf extends QueryTest with SparkSessionTestWrapper {
     abstractTest("PgBinaryStream", s"${16 * 1024 * 1024}")
   }
 }
-*/
+ */

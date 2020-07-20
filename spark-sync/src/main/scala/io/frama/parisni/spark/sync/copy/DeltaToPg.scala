@@ -16,7 +16,8 @@ object DeltaToPg extends App with LazyLogging {
   val database = yaml.convertTo[Database]
 
   // Spark Session
-  val spark = SparkSession.builder()
+  val spark = SparkSession
+    .builder()
     .appName(database.jobName)
     .enableHiveSupport()
     .getOrCreate()
@@ -42,12 +43,19 @@ object DeltaToPg extends App with LazyLogging {
       val loadType = table.typeLoad.getOrElse("full")
       val pks = table.key
 
-      val config = Map("S_TABLE_NAME" -> tableDelta, "S_TABLE_TYPE" -> "delta",
-        "S_DATE_FIELD" -> dateFieldDelta, "PATH" -> pathDelta,
-
-        "T_TABLE_NAME" -> tablePg, "T_TABLE_TYPE" -> "postgres",
-        "HOST" -> hostPg, "PORT" -> portPg, "DATABASE" -> databasePg,
-        "USER" -> userPg, "SCHEMA" -> schemaPg, "T_LOAD_TYPE" -> loadType,
+      val config = Map(
+        "S_TABLE_NAME" -> tableDelta,
+        "S_TABLE_TYPE" -> "delta",
+        "S_DATE_FIELD" -> dateFieldDelta,
+        "PATH" -> pathDelta,
+        "T_TABLE_NAME" -> tablePg,
+        "T_TABLE_TYPE" -> "postgres",
+        "HOST" -> hostPg,
+        "PORT" -> portPg,
+        "DATABASE" -> databasePg,
+        "USER" -> userPg,
+        "SCHEMA" -> schemaPg,
+        "T_LOAD_TYPE" -> loadType,
         "T_DATE_MAX" -> dateMax
       )
 
@@ -57,12 +65,11 @@ object DeltaToPg extends App with LazyLogging {
     }
   } catch {
     case re: RuntimeException => throw re
-    case e: Exception => throw new RuntimeException(e)
+    case e: Exception         => throw new RuntimeException(e)
   } finally {
     spark.close()
   }
 }
-
 
 class DeltaToPg2 extends App with LazyLogging {
 
@@ -72,7 +79,8 @@ class DeltaToPg2 extends App with LazyLogging {
   val database = yaml.convertTo[Database]
 
   // Spark Session
-  val spark = SparkSession.builder()
+  val spark = SparkSession
+    .builder()
     .appName(database.jobName)
     .enableHiveSupport()
     .getOrCreate()
@@ -99,12 +107,19 @@ class DeltaToPg2 extends App with LazyLogging {
         val loadType = table.typeLoad.getOrElse("full")
         val pks = table.key
 
-        val config = Map("S_TABLE_NAME" -> tableDelta, "S_TABLE_TYPE" -> "delta",
-          "S_DATE_FIELD" -> dateFieldDelta, "PATH" -> pathDelta,
-
-          "T_TABLE_NAME" -> tablePg, "T_TABLE_TYPE" -> "postgres",
-          "HOST" -> hostPg, "PORT" -> portPg, "DATABASE" -> databasePg,
-          "USER" -> userPg, "SCHEMA" -> schemaPg, "T_LOAD_TYPE" -> loadType,
+        val config = Map(
+          "S_TABLE_NAME" -> tableDelta,
+          "S_TABLE_TYPE" -> "delta",
+          "S_DATE_FIELD" -> dateFieldDelta,
+          "PATH" -> pathDelta,
+          "T_TABLE_NAME" -> tablePg,
+          "T_TABLE_TYPE" -> "postgres",
+          "HOST" -> hostPg,
+          "PORT" -> portPg,
+          "DATABASE" -> databasePg,
+          "USER" -> userPg,
+          "SCHEMA" -> schemaPg,
+          "T_LOAD_TYPE" -> loadType,
           "T_DATE_MAX" -> dateMax
         )
 
@@ -114,10 +129,9 @@ class DeltaToPg2 extends App with LazyLogging {
       }
     } catch {
       case re: RuntimeException => throw re
-      case e: Exception => throw new RuntimeException(e)
+      case e: Exception         => throw new RuntimeException(e)
     } finally {
       spark.close()
     }
   }
 }
-

@@ -14,13 +14,13 @@ class TestCSVTool extends QueryTest with SparkSessionTestWrapper {
     val schema = StructType(
       StructField("c1", IntegerType)
         :: StructField("c2", IntegerType)
-        :: StructField("c3", IntegerType, nullable=false, m)
-        :: Nil)
+        :: StructField("c3", IntegerType, nullable = false, m)
+        :: Nil
+    )
 
     val inputDF = CSVTool(spark, "test1.csv", schema)
 
-    val resultDF = spark.sql(
-      """
+    val resultDF = spark.sql("""
       select cast(1 as int) as c1, cast(null as int) as c2, cast(123 as int) as c3 
       union all 
       select cast(null as int) as c1, cast(1 as int) as c2, cast(123 as int) as c3 
@@ -36,13 +36,13 @@ class TestCSVTool extends QueryTest with SparkSessionTestWrapper {
     val schema = StructType(
       StructField("c1", IntegerType)
         :: StructField("c2", IntegerType)
-        :: StructField("c3", DateType, nullable=false, m)
-        :: Nil)
+        :: StructField("c3", DateType, nullable = false, m)
+        :: Nil
+    )
 
     val inputDF = CSVTool(spark, "test1.csv", schema)
 
-    val resultDF = spark.sql(
-      """
+    val resultDF = spark.sql("""
       select cast(1 as int) as c1, cast(null as int) as c2, cast('1515-01-01' as date) as c3 
       union all 
       select cast(null as int) as c1, cast(1 as int) as c2, cast('1515-01-01' as date) as c3 
@@ -64,8 +64,11 @@ class TestCSVTool extends QueryTest with SparkSessionTestWrapper {
     val schema = StructType(
       StructField("c1", StringType)
         :: StructField("c2", StringType)
-        :: Nil)
-    val res = CSVTool.getStringStructFromArray(CSVTool.getCsvHeaders(spark, "test1.csv", Some(",")))
+        :: Nil
+    )
+    val res = CSVTool.getStringStructFromArray(
+      CSVTool.getCsvHeaders(spark, "test1.csv", Some(","))
+    )
     assert(schema.prettyJson == res.prettyJson)
   }
 
@@ -78,9 +81,15 @@ class TestCSVTool extends QueryTest with SparkSessionTestWrapper {
 
   test("test write file to local") {
     import spark.implicits._
-    val df = ((1, "boby") :: (2, "jim") :: Nil).toDF("file", "content").repartition(2)
+    val df =
+      ((1, "boby") :: (2, "jim") :: Nil).toDF("file", "content").repartition(2)
     val path = Files.createTempDirectory("result")
-    CSVTool.writeDfToLocalFiles(df, "file", "content", path.toAbsolutePath.toString)
+    CSVTool.writeDfToLocalFiles(
+      df,
+      "file",
+      "content",
+      path.toAbsolutePath.toString
+    )
     assert(new File(path.toString).list().length === 2)
   }
 

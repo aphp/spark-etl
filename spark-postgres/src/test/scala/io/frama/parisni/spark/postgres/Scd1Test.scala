@@ -74,19 +74,22 @@ class Scd1Test extends QueryTest with SparkSessionTestWrapper {
     getPgTool(bulkLoadMode).outputScd1Hash(
       table,
       joinKey,
-      DFTool.dfAddHash(df.drop("end_date", "hash")))
+      DFTool.dfAddHash(df.drop("end_date", "hash"))
+    )
 
     val df1: DataFrame = ((1, "a", "b", "bob", new Timestamp(1L), -1) ::
       Nil).toDF("id", "key1", "key2", "cd", "end_date", "hash")
     getPgTool(bulkLoadMode).outputScd1Hash(
       table,
       joinKey,
-      DFTool.dfAddHash(df1.drop("end_date", "hash")))
+      DFTool.dfAddHash(df1.drop("end_date", "hash"))
+    )
     // this should make nothing
     getPgTool(bulkLoadMode).outputScd1Hash(
       table,
       joinKey,
-      DFTool.dfAddHash(df1.drop("end_date", "hash")))
+      DFTool.dfAddHash(df1.drop("end_date", "hash"))
+    )
 
     val result = getPgTool().inputBulk("select * from test_scd1_low")
 

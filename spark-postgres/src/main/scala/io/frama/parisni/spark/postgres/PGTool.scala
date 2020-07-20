@@ -42,11 +42,13 @@ object PgBinaryStream extends BulkLoadMode
 
 object PgBinaryFiles extends BulkLoadMode
 
-class PGTool(spark: SparkSession,
-             url: String,
-             tmpPath: String,
-             bulkLoadMode: BulkLoadMode,
-             bulkLoadBufferSize: Int) {
+class PGTool(
+    spark: SparkSession,
+    url: String,
+    tmpPath: String,
+    bulkLoadMode: BulkLoadMode,
+    bulkLoadBufferSize: Int
+) {
 
   private var password: String = ""
 
@@ -86,32 +88,38 @@ class PGTool(spark: SparkSession,
     * and might be functionally linked
     *  - reloptions are not copied
     */
-  def tableCopy(tableSrc: String,
-                tableTarg: String,
-                isUnlogged: Boolean = true,
-                copyConstraints: Boolean = false,
-                copyIndexes: Boolean = false,
-                copyStorage: Boolean = false,
-                copyComments: Boolean = false,
-                copyOwner: Boolean = false,
-                copyPermissions: Boolean = false): PGTool = {
-    PGTool.tableCopy(url,
-                     tableSrc,
-                     tableTarg,
-                     password,
-                     isUnlogged,
-                     copyConstraints,
-                     copyIndexes,
-                     copyStorage,
-                     copyComments,
-                     copyOwner,
-                     copyPermissions)
+  def tableCopy(
+      tableSrc: String,
+      tableTarg: String,
+      isUnlogged: Boolean = true,
+      copyConstraints: Boolean = false,
+      copyIndexes: Boolean = false,
+      copyStorage: Boolean = false,
+      copyComments: Boolean = false,
+      copyOwner: Boolean = false,
+      copyPermissions: Boolean = false
+  ): PGTool = {
+    PGTool.tableCopy(
+      url,
+      tableSrc,
+      tableTarg,
+      password,
+      isUnlogged,
+      copyConstraints,
+      copyIndexes,
+      copyStorage,
+      copyComments,
+      copyOwner,
+      copyPermissions
+    )
     this
   }
 
-  def tableCreate(tableTarg: String,
-                  schema: StructType,
-                  isUnlogged: Boolean = true): PGTool = {
+  def tableCreate(
+      tableTarg: String,
+      schema: StructType,
+      isUnlogged: Boolean = true
+  ): PGTool = {
     PGTool.tableCreate(url, tableTarg, schema, password, isUnlogged = false)
     this
   }
@@ -145,8 +153,10 @@ class PGTool(spark: SparkSession,
     this
   }
 
-  def sqlExecWithResult(query: String,
-                        params: List[Any] = Nil): Dataset[Row] = {
+  def sqlExecWithResult(
+      query: String,
+      params: List[Any] = Nil
+  ): Dataset[Row] = {
     PGTool.sqlExecWithResult(spark, url, query, password, params)
   }
 
@@ -155,128 +165,152 @@ class PGTool(spark: SparkSession,
     * the built-in COPY
     *
     * @return DataFrame
-    *
     */
-  def inputBulk(query: String,
-                isMultiline: Option[Boolean] = None,
-                numPartitions: Option[Int] = None,
-                splitFactor: Option[Int] = None,
-                partitionColumn: String = ""): Dataset[Row] = {
-    PGTool.inputQueryBulkDf(spark,
-                            url,
-                            query,
-                            genPath,
-                            isMultiline.getOrElse(false),
-                            numPartitions.getOrElse(1),
-                            partitionColumn,
-                            splitFactor.getOrElse(1),
-                            password = password)
+  def inputBulk(
+      query: String,
+      isMultiline: Option[Boolean] = None,
+      numPartitions: Option[Int] = None,
+      splitFactor: Option[Int] = None,
+      partitionColumn: String = ""
+  ): Dataset[Row] = {
+    PGTool.inputQueryBulkDf(
+      spark,
+      url,
+      query,
+      genPath,
+      isMultiline.getOrElse(false),
+      numPartitions.getOrElse(1),
+      partitionColumn,
+      splitFactor.getOrElse(1),
+      password = password
+    )
   }
 
   /**
     * Write a spark dataframe into a postgres table using
     * the built-in COPY
-    *
     */
-  def outputBulk(table: String,
-                 df: Dataset[Row],
-                 numPartitions: Option[Int] = None,
-                 reindex: Boolean = false): PGTool = {
-    PGTool.outputBulk(spark,
-                      url,
-                      table,
-                      df,
-                      genPath,
-                      numPartitions.getOrElse(8),
-                      password,
-                      reindex,
-                      bulkLoadMode,
-                      bulkLoadBufferSize)
+  def outputBulk(
+      table: String,
+      df: Dataset[Row],
+      numPartitions: Option[Int] = None,
+      reindex: Boolean = false
+  ): PGTool = {
+    PGTool.outputBulk(
+      spark,
+      url,
+      table,
+      df,
+      genPath,
+      numPartitions.getOrElse(8),
+      password,
+      reindex,
+      bulkLoadMode,
+      bulkLoadBufferSize
+    )
     this
   }
 
-  def input(query: String,
-            numPartitions: Int = 1,
-            partitionColumn: String = ""): Dataset[Row] = {
-    PGTool.inputQueryDf(spark,
-                        url,
-                        query,
-                        numPartitions,
-                        partitionColumn,
-                        password)
+  def input(
+      query: String,
+      numPartitions: Int = 1,
+      partitionColumn: String = ""
+  ): Dataset[Row] = {
+    PGTool.inputQueryDf(
+      spark,
+      url,
+      query,
+      numPartitions,
+      partitionColumn,
+      password
+    )
   }
 
-  def output(table: String,
-             df: Dataset[Row],
-             batchsize: Int = 50000): PGTool = {
+  def output(
+      table: String,
+      df: Dataset[Row],
+      batchsize: Int = 50000
+  ): PGTool = {
     PGTool.output(url, table, df, batchsize, password)
     this
   }
 
-  def outputScd2Hash(table: String,
-                     df: DataFrame,
-                     pk: String,
-                     key: Seq[String],
-                     endDatetimeCol: String,
-                     numPartitions: Option[Int] = None,
-                     multiline: Option[Boolean] = None): Unit = {
+  def outputScd2Hash(
+      table: String,
+      df: DataFrame,
+      pk: String,
+      key: Seq[String],
+      endDatetimeCol: String,
+      numPartitions: Option[Int] = None,
+      multiline: Option[Boolean] = None
+  ): Unit = {
 
-    PGTool.outputBulkDfScd2Hash(spark,
-                                url,
-                                table,
-                                df,
-                                pk,
-                                key,
-                                endDatetimeCol,
-                                numPartitions.getOrElse(4),
-                                genPath,
-                                password,
-                                bulkLoadMode,
-                                bulkLoadBufferSize)
+    PGTool.outputBulkDfScd2Hash(
+      spark,
+      url,
+      table,
+      df,
+      pk,
+      key,
+      endDatetimeCol,
+      numPartitions.getOrElse(4),
+      genPath,
+      password,
+      bulkLoadMode,
+      bulkLoadBufferSize
+    )
   }
 
   private def genPath: String = {
     tmpPath + "/" + randomUUID.toString
   }
 
-  def outputScd1Hash(table: String,
-                     key: Seq[String],
-                     df: Dataset[Row],
-                     numPartitions: Option[Int] = None,
-                     filter: Option[String] = None,
-                     deleteSet: Option[String] = None): PGTool = {
+  def outputScd1Hash(
+      table: String,
+      key: Seq[String],
+      df: Dataset[Row],
+      numPartitions: Option[Int] = None,
+      filter: Option[String] = None,
+      deleteSet: Option[String] = None
+  ): PGTool = {
 
-    PGTool.outputBulkDfScd1Hash(spark,
-                                url,
-                                table,
-                                df,
-                                key,
-                                numPartitions.getOrElse(4),
-                                genPath,
-                                filter,
-                                deleteSet,
-                                password,
-                                bulkLoadMode,
-                                bulkLoadBufferSize)
+    PGTool.outputBulkDfScd1Hash(
+      spark,
+      url,
+      table,
+      df,
+      key,
+      numPartitions.getOrElse(4),
+      genPath,
+      filter,
+      deleteSet,
+      password,
+      bulkLoadMode,
+      bulkLoadBufferSize
+    )
     this
   }
 
-  def outputBulkCsv(table: String,
-                    columns: String,
-                    path: String,
-                    numPartitions: Int = 8,
-                    delimiter: String = ",",
-                    csvPattern: String = ".*.csv"): PGTool = {
+  def outputBulkCsv(
+      table: String,
+      columns: String,
+      path: String,
+      numPartitions: Int = 8,
+      delimiter: String = ",",
+      csvPattern: String = ".*.csv"
+  ): PGTool = {
 
-    PGTool.outputBulkCsvLow(spark,
-                            url,
-                            table,
-                            columns,
-                            path,
-                            numPartitions,
-                            delimiter,
-                            csvPattern,
-                            password)
+    PGTool.outputBulkCsvLow(
+      spark,
+      url,
+      table,
+      columns,
+      path,
+      numPartitions,
+      delimiter,
+      csvPattern,
+      password
+    )
     this
   }
 
@@ -303,16 +337,20 @@ object PGTool extends java.io.Serializable with LazyLogging {
       bulkLoadMode: BulkLoadMode = defaultBulkLoadStrategy,
       bulkLoadBufferSize: Int = defaultBulkLoadBufferSize
   ): PGTool = {
-    new PGTool(spark,
-               url,
-               tmpPath + "/spark-postgres-" + randomUUID.toString,
-               bulkLoadMode,
-               bulkLoadBufferSize).setPassword("")
+    new PGTool(
+      spark,
+      url,
+      tmpPath + "/spark-postgres-" + randomUUID.toString,
+      bulkLoadMode,
+      bulkLoadBufferSize
+    ).setPassword("")
   }
 
-  def tableExists(url: String,
-                  table: String,
-                  password: String = ""): Boolean = {
+  def tableExists(
+      url: String,
+      table: String,
+      password: String = ""
+  ): Boolean = {
     val conn = connOpen(url, password)
     val st: PreparedStatement = conn.prepareStatement(s"""
          |SELECT EXISTS (
@@ -351,17 +389,19 @@ object PGTool extends java.io.Serializable with LazyLogging {
     dbPassword(host, port, database, username)
   }
 
-  private def dbPassword(hostname: String,
-                         port: String,
-                         database: String,
-                         username: String): String = {
+  private def dbPassword(
+      hostname: String,
+      port: String,
+      database: String,
+      username: String
+  ): String = {
     // Usage: val thatPassWord = dbPassword(hostname,port,database,username)
     // .pgpass file format, hostname:port:database:username:password
 
     val fs = FileSystem.get(new java.net.URI("file:///"), new Configuration)
     val reader = new BufferedReader(
-      new InputStreamReader(
-        fs.open(new Path(scala.sys.env("HOME"), ".pgpass"))))
+      new InputStreamReader(fs.open(new Path(scala.sys.env("HOME"), ".pgpass")))
+    )
     val content = Iterator
       .continually(reader.readLine())
       .takeWhile(_ != null)
@@ -369,10 +409,12 @@ object PGTool extends java.io.Serializable with LazyLogging {
     var passwd = ""
     content.split("\n").foreach { line =>
       val connCfg = line.split(":")
-      if (hostname == connCfg(0)
-          && port == connCfg(1)
-          && (database == connCfg(2) || connCfg(2) == "*")
-          && username == connCfg(3)) {
+      if (
+        hostname == connCfg(0)
+        && port == connCfg(1)
+        && (database == connCfg(2) || connCfg(2) == "*")
+        && username == connCfg(3)
+      ) {
         passwd = connCfg(4)
       }
     }
@@ -388,10 +430,12 @@ object PGTool extends java.io.Serializable with LazyLogging {
     conn.close()
   }
 
-  def tableRename(url: String,
-                  from: String,
-                  to: String,
-                  password: String = ""): Unit = {
+  def tableRename(
+      url: String,
+      from: String,
+      to: String,
+      password: String = ""
+  ): Unit = {
     val conn = connOpen(url, password)
     val st: PreparedStatement =
       conn.prepareStatement(s"""ALTER TABLE "$from" RENAME TO "$to" """)
@@ -405,11 +449,13 @@ object PGTool extends java.io.Serializable with LazyLogging {
     val conn = connOpen(url, password)
     try {
       val st = conn.prepareStatement(
-        "select pid from pg_locks l join pg_class t on l.relation = t.oid and t.relkind = 'r' where t.relname = ?")
+        "select pid from pg_locks l join pg_class t on l.relation = t.oid and t.relkind = 'r' where t.relname = ?"
+      )
       st.setString(1, table)
       val rs = st.executeQuery()
       val st2 = conn.prepareStatement(
-        "select pg_cancel_backend(?) AND pg_terminate_backend(?)")
+        "select pg_cancel_backend(?) AND pg_terminate_backend(?)"
+      )
 
       while (rs.next()) {
         val pid = rs.getInt("pid")
@@ -425,20 +471,24 @@ object PGTool extends java.io.Serializable with LazyLogging {
     killed
   }
 
-  def sqlExec(url: String,
-              query: String,
-              password: String = "",
-              params: List[Any] = Nil): Unit = {
+  def sqlExec(
+      url: String,
+      query: String,
+      password: String = "",
+      params: List[Any] = Nil
+  ): Unit = {
     val conn = connOpen(url, password)
     val st: PreparedStatement = conn.prepareStatement(s"$query")
     parametrize(st, params).executeUpdate()
     conn.close()
   }
 
-  def copyTableOwner(url: String,
-                     tableSrc: String,
-                     tableTarg: String,
-                     password: String = ""): Unit = {
+  def copyTableOwner(
+      url: String,
+      tableSrc: String,
+      tableTarg: String,
+      password: String = ""
+  ): Unit = {
     val conn = connOpen(url, password)
 
     val retrieveTablePermsQuery =
@@ -465,7 +515,8 @@ object PGTool extends java.io.Serializable with LazyLogging {
     ownerResultSet.next()
     if (!ownerResultSet.isAfterLast)
       throw new IllegalStateException(
-        s"More than one owner row for table $tableSrc")
+        s"More than one owner row for table $tableSrc"
+      )
     ownerResultSet.close()
     retrieveOwnerStatement.close()
 
@@ -479,10 +530,12 @@ object PGTool extends java.io.Serializable with LazyLogging {
 
   }
 
-  def postgresPermissionToGrant(permission: String,
-                                role: String,
-                                tableTarg: String,
-                                column: Option[String]): String = {
+  def postgresPermissionToGrant(
+      permission: String,
+      role: String,
+      tableTarg: String,
+      column: Option[String]
+  ): String = {
     // No role means permission is assigned to all
     val roleSql = if (role.isEmpty) "PUBLIC" else role
 
@@ -503,9 +556,11 @@ object PGTool extends java.io.Serializable with LazyLogging {
     s"GRANT $privilege $columnSql ON $tableTarg TO $roleSql $grantOption"
   }
 
-  def postgresPermissionsArrayToGrants(permissions: String,
-                                       tableTarg: String,
-                                       column: Option[String]): Seq[String] = {
+  def postgresPermissionsArrayToGrants(
+      permissions: String,
+      tableTarg: String,
+      column: Option[String]
+  ): Seq[String] = {
     val permsPattern = "^\\{(\\S*=([arwdDxt]\\\\*?)+/\\S*)+\\}$".r
     if (permissions != null) {
       permissions match {
@@ -520,17 +575,20 @@ object PGTool extends java.io.Serializable with LazyLogging {
           })
         case _ =>
           throw new IllegalStateException(
-            s"Incorrect permissions-array format for $permissions")
+            s"Incorrect permissions-array format for $permissions"
+          )
       }
     } else {
       Seq.empty
     }
   }
 
-  def copyTablePermissions(url: String,
-                           tableSrc: String,
-                           tableTarg: String,
-                           password: String = ""): Unit = {
+  def copyTablePermissions(
+      url: String,
+      tableSrc: String,
+      tableTarg: String,
+      password: String = ""
+  ): Unit = {
     val conn = connOpen(url, password)
 
     val retrieveTablePermsQuery =
@@ -546,7 +604,8 @@ object PGTool extends java.io.Serializable with LazyLogging {
     // If no result, throw error
     if (tableSrcPermsResultSet.isAfterLast)
       throw new IllegalStateException(
-        s"No permission to copy for table $tableSrc")
+        s"No permission to copy for table $tableSrc"
+      )
 
     // Retrieve permissions as postgres array-string
     tableSrcPermsResultSet.next()
@@ -556,14 +615,17 @@ object PGTool extends java.io.Serializable with LazyLogging {
     tableSrcPermsResultSet.next()
     if (!tableSrcPermsResultSet.isAfterLast)
       throw new IllegalStateException(
-        s"More than one permission row for table $tableSrc")
+        s"More than one permission row for table $tableSrc"
+      )
     tableSrcPermsResultSet.close()
     retrieveTableSrcPermsStatement.close()
 
     // Parse permissions and apply them
-    postgresPermissionsArrayToGrants(tableSrcPermsToParse,
-                                     tableTarg,
-                                     column = None).foreach(grant => {
+    postgresPermissionsArrayToGrants(
+      tableSrcPermsToParse,
+      tableTarg,
+      column = None
+    ).foreach(grant => {
       val updateTableTargPermsStatement: PreparedStatement =
         conn.prepareStatement(grant)
       updateTableTargPermsStatement.execute()
@@ -574,10 +636,12 @@ object PGTool extends java.io.Serializable with LazyLogging {
 
   }
 
-  def copyColumnsPermissions(url: String,
-                             tableSrc: String,
-                             tableTarg: String,
-                             password: String = ""): Unit = {
+  def copyColumnsPermissions(
+      url: String,
+      tableSrc: String,
+      tableTarg: String,
+      password: String = ""
+  ): Unit = {
     val conn = connOpen(url, password)
 
     val retrieveTableSrcColumnsPermsQuery =
@@ -611,7 +675,8 @@ object PGTool extends java.io.Serializable with LazyLogging {
         postgresPermissionsArrayToGrants(
           columnPermsToParse,
           tableTarg,
-          column = Some(columnName)).foreach(grant => {
+          column = Some(columnName)
+        ).foreach(grant => {
           val updateTableTargColumnPermsStatement: PreparedStatement =
             conn.prepareStatement(grant)
           updateTableTargColumnPermsStatement.execute()
@@ -626,17 +691,19 @@ object PGTool extends java.io.Serializable with LazyLogging {
 
   }
 
-  def tableCopy(url: String,
-                tableSrc: String,
-                tableTarg: String,
-                password: String = "",
-                isUnlogged: Boolean = true,
-                copyConstraints: Boolean = false,
-                copyIndexes: Boolean = false,
-                copyStorage: Boolean = false,
-                copyComments: Boolean = false,
-                copyOwner: Boolean = false,
-                copyPermissions: Boolean = false): Unit = {
+  def tableCopy(
+      url: String,
+      tableSrc: String,
+      tableTarg: String,
+      password: String = "",
+      isUnlogged: Boolean = true,
+      copyConstraints: Boolean = false,
+      copyIndexes: Boolean = false,
+      copyStorage: Boolean = false,
+      copyComments: Boolean = false,
+      copyOwner: Boolean = false,
+      copyPermissions: Boolean = false
+  ): Unit = {
     val conn = connOpen(url, password)
     val unlogged = if (isUnlogged) "UNLOGGED" else ""
     // TODO -- Add triggers
@@ -667,11 +734,13 @@ object PGTool extends java.io.Serializable with LazyLogging {
 
   }
 
-  def tableCreate(url: String,
-                  tableTarg: String,
-                  schema: StructType,
-                  password: String = "",
-                  isUnlogged: Boolean = true): Unit = {
+  def tableCreate(
+      url: String,
+      tableTarg: String,
+      schema: StructType,
+      password: String = "",
+      isUnlogged: Boolean = true
+  ): Unit = {
     val conn = connOpen(url, password)
     val unlogged = if (isUnlogged) {
       "UNLOGGED"
@@ -682,9 +751,11 @@ object PGTool extends java.io.Serializable with LazyLogging {
       .map(f => {
         s""""%s" %s""".format(f.name, toPostgresDdl(f.dataType.catalogString))
       })
-      .mkString(s"""CREATE $unlogged TABLE IF NOT EXISTS "$tableTarg" (""",
-                ",",
-                ");")
+      .mkString(
+        s"""CREATE $unlogged TABLE IF NOT EXISTS "$tableTarg" (""",
+        ",",
+        ");"
+      )
 
     val st: PreparedStatement = conn.prepareStatement(queryCreate)
     st.executeUpdate()
@@ -728,10 +799,12 @@ object PGTool extends java.io.Serializable with LazyLogging {
     }
   }
 
-  def tableMove(url: String,
-                tableSrc: String,
-                tableTarg: String,
-                password: String = ""): Unit = {
+  def tableMove(
+      url: String,
+      tableSrc: String,
+      tableTarg: String,
+      password: String = ""
+  ): Unit = {
     val conn = connOpen(url, password)
     val queryCreate = s"""ALTER TABLE "$tableSrc" RENAME TO "$tableTarg" """
     val st: PreparedStatement = conn.prepareStatement(queryCreate)
@@ -739,12 +812,14 @@ object PGTool extends java.io.Serializable with LazyLogging {
     conn.close()
   }
 
-  def inputQueryDf(spark: SparkSession,
-                   url: String,
-                   query: String,
-                   numPartitions: Int,
-                   partitionColumn: String,
-                   password: String = ""): Dataset[Row] = {
+  def inputQueryDf(
+      spark: SparkSession,
+      url: String,
+      query: String,
+      numPartitions: Int,
+      partitionColumn: String,
+      password: String = ""
+  ): Dataset[Row] = {
     val queryStr = s"($query) as tmp"
     if (partitionColumn != "") {
       // get min and max for partitioning
@@ -775,11 +850,13 @@ object PGTool extends java.io.Serializable with LazyLogging {
     }
   }
 
-  private def getMinMaxForColumn(spark: SparkSession,
-                                 url: String,
-                                 query: String,
-                                 partitionColumn: String,
-                                 password: String = ""): (Long, Long) = {
+  private def getMinMaxForColumn(
+      spark: SparkSession,
+      url: String,
+      query: String,
+      partitionColumn: String,
+      password: String = ""
+  ): (Long, Long) = {
     val min_max_query =
       s"""(SELECT
          |coalesce(cast(min("$partitionColumn") as bigint), 0) as min,
@@ -798,67 +875,79 @@ object PGTool extends java.io.Serializable with LazyLogging {
     (lowerBound, upperBound)
   }
 
-  def outputBulk(spark: SparkSession,
-                 url: String,
-                 table: String,
-                 df: Dataset[Row],
-                 path: String,
-                 numPartitions: Int = 8,
-                 password: String = "",
-                 reindex: Boolean = false,
-                 bulkLoadMode: BulkLoadMode = defaultBulkLoadStrategy,
-                 bulkLoadBufferSize: Int = defaultBulkLoadBufferSize) = {
+  def outputBulk(
+      spark: SparkSession,
+      url: String,
+      table: String,
+      df: Dataset[Row],
+      path: String,
+      numPartitions: Int = 8,
+      password: String = "",
+      reindex: Boolean = false,
+      bulkLoadMode: BulkLoadMode = defaultBulkLoadStrategy,
+      bulkLoadBufferSize: Int = defaultBulkLoadBufferSize
+  ) = {
     bulkLoadMode match {
       case CSV =>
-        outputBulkCsv(spark,
-                      url,
-                      table,
-                      df,
-                      path,
-                      numPartitions,
-                      password,
-                      reindex,
-                      bulkLoadBufferSize)
+        outputBulkCsv(
+          spark,
+          url,
+          table,
+          df,
+          path,
+          numPartitions,
+          password,
+          reindex,
+          bulkLoadBufferSize
+        )
       case Stream =>
-        outputCSVBulkStream(spark,
-                            url,
-                            table,
-                            df,
-                            numPartitions,
-                            password,
-                            reindex,
-                            bulkLoadBufferSize)
+        outputCSVBulkStream(
+          spark,
+          url,
+          table,
+          df,
+          numPartitions,
+          password,
+          reindex,
+          bulkLoadBufferSize
+        )
       case PgBinaryStream =>
-        outputBinaryBulkStream(spark,
-                               url,
-                               table,
-                               df,
-                               numPartitions,
-                               password,
-                               reindex,
-                               bulkLoadBufferSize)
+        outputBinaryBulkStream(
+          spark,
+          url,
+          table,
+          df,
+          numPartitions,
+          password,
+          reindex,
+          bulkLoadBufferSize
+        )
       case PgBinaryFiles =>
-        outputBinaryBulkFiles(spark,
-                              url,
-                              table,
-                              df,
-                              path,
-                              numPartitions,
-                              password,
-                              reindex,
-                              bulkLoadBufferSize)
+        outputBinaryBulkFiles(
+          spark,
+          url,
+          table,
+          df,
+          path,
+          numPartitions,
+          password,
+          reindex,
+          bulkLoadBufferSize
+        )
     }
   }
 
-  def outputBulkCsv(spark: SparkSession,
-                    url: String,
-                    table: String,
-                    df: Dataset[Row],
-                    path: String,
-                    numPartitions: Int = 8,
-                    password: String = "",
-                    reindex: Boolean = false,
-                    bulkLoadBufferSize: Int = defaultBulkLoadBufferSize) = {
+  def outputBulkCsv(
+      spark: SparkSession,
+      url: String,
+      table: String,
+      df: Dataset[Row],
+      path: String,
+      numPartitions: Int = 8,
+      password: String = "",
+      reindex: Boolean = false,
+      bulkLoadBufferSize: Int = defaultBulkLoadBufferSize
+  ) = {
     logger.info("using CSV strategy")
     try {
       if (reindex)
@@ -880,30 +969,34 @@ object PGTool extends java.io.Serializable with LazyLogging {
         .mode(org.apache.spark.sql.SaveMode.Overwrite)
         .save(path)
 
-      outputBulkCsvLow(spark,
-                       url,
-                       table,
-                       columns,
-                       path,
-                       numPartitions,
-                       ",",
-                       ".*.csv",
-                       password,
-                       bulkLoadBufferSize)
+      outputBulkCsvLow(
+        spark,
+        url,
+        table,
+        columns,
+        path,
+        numPartitions,
+        ",",
+        ".*.csv",
+        password,
+        bulkLoadBufferSize
+      )
     } finally {
       if (reindex)
         indexReactivate(url, table, password)
     }
   }
 
-  def outputBulkFileLow(spark: SparkSession,
-                        url: String,
-                        path: String,
-                        sqlCopy: String,
-                        extensionPattern: String,
-                        numPartitions: Int = 8,
-                        password: String = "",
-                        bulkLoadBufferSize: Int = defaultBulkLoadBufferSize) = {
+  def outputBulkFileLow(
+      spark: SparkSession,
+      url: String,
+      path: String,
+      sqlCopy: String,
+      extensionPattern: String,
+      numPartitions: Int = 8,
+      password: String = "",
+      bulkLoadBufferSize: Int = defaultBulkLoadBufferSize
+  ) = {
 
     // load the csv files from hdfs in parallel
     val fs = FileSystem.get(new Configuration())
@@ -951,14 +1044,16 @@ object PGTool extends java.io.Serializable with LazyLogging {
   ) = {
     val csvSqlCopy =
       s"""COPY "$table" ($columns) FROM STDIN WITH CSV DELIMITER '$delimiter'  NULL '' ESCAPE '"' QUOTE '"' """
-    outputBulkFileLow(spark,
-                      url,
-                      path,
-                      csvSqlCopy,
-                      extensionPattern,
-                      numPartitions,
-                      password,
-                      bulkLoadBufferSize)
+    outputBulkFileLow(
+      spark,
+      url,
+      path,
+      csvSqlCopy,
+      extensionPattern,
+      numPartitions,
+      password,
+      bulkLoadBufferSize
+    )
   }
 
   def outputCSVBulkStream(
@@ -970,7 +1065,8 @@ object PGTool extends java.io.Serializable with LazyLogging {
       password: String = "",
       reindex: Boolean = false,
       bulkLoadBufferSize: Int = defaultBulkLoadBufferSize,
-      copyTimeoutMs: Long = defaultStreamBulkLoadTimeoutMs) = {
+      copyTimeoutMs: Long = defaultStreamBulkLoadTimeoutMs
+  ) = {
     logger.info("using STREAM strategy")
     try {
       if (reindex)
@@ -1001,9 +1097,11 @@ object PGTool extends java.io.Serializable with LazyLogging {
           "ignoreTrailingWhiteSpace" -> "false"
         )
 
-        val csvOptions = new CSVOptions(csvOptionsMap,
-                                        columnPruning = true,
-                                        TimeZone.getDefault.getID)
+        val csvOptions = new CSVOptions(
+          csvOptionsMap,
+          columnPruning = true,
+          TimeZone.getDefault.getID
+        )
 
         val outputWriter = new PipedWriter()
         val inputReader = new PipedReader(outputWriter, bulkLoadBufferSize)
@@ -1022,7 +1120,8 @@ object PGTool extends java.io.Serializable with LazyLogging {
         val copyThread = new Thread("copy-to-pg-thread") {
           override def run(): Unit =
             promisedCopy.complete(
-              Try(copyManager.copyIn(sql, inputReader, bulkLoadBufferSize)))
+              Try(copyManager.copyIn(sql, inputReader, bulkLoadBufferSize))
+            )
         }
 
         try {
@@ -1040,25 +1139,30 @@ object PGTool extends java.io.Serializable with LazyLogging {
                 promisedCopy.future.value match {
                   case Some(Success(())) =>
                     throw new IllegalStateException(
-                      "The copying thread finished successfully but not all data had been copied. This is very much unexpected!")
+                      "The copying thread finished successfully but not all data had been copied. This is very much unexpected!"
+                    )
                   case Some(Failure(t)) =>
                     throw new IllegalStateException(
                       "The copying thread finished with an error.",
-                      t)
+                      t
+                    )
                 }
               }
               univocityGenerator.write(rowEncoder.toRow(row))
             })
             outputWriter.close()
             // Wait for the copy to have finished
-            Await.result(promisedCopy.future,
-                         Duration(copyTimeoutMs, TimeUnit.MILLISECONDS))
+            Await.result(
+              promisedCopy.future,
+              Duration(copyTimeoutMs, TimeUnit.MILLISECONDS)
+            )
           } catch {
             case _: TimeoutException =>
               throw new TimeoutException(s"""
                    | The copy operation for copying this partition's data to postgres has been running for
                    | more than the timeout: ${TimeUnit.MILLISECONDS.toSeconds(
-                                              copyTimeoutMs)}s.
+                copyTimeoutMs
+              )}s.
                    | You can configure this timeout with option copyTimeoutMs, such as "2h", "100min",
                    | and default copyTimeout is "10min".
                 """.stripMargin)
@@ -1129,11 +1233,13 @@ object PGTool extends java.io.Serializable with LazyLogging {
           s"COPY $fullyQualifiedTableName($commaSeparatedColumns) FROM STDIN BINARY"
 
         val pgCopyOutputStream = new DataOutputStream(
-          new PGCopyOutputStream(conn, copyCommand, bulkLoadBufferSize))
+          new PGCopyOutputStream(conn, copyCommand, bulkLoadBufferSize)
+        )
 
         // PG binary header
         pgCopyOutputStream.write(
-          "PGCOPY\nÿ\r\n\u0000".getBytes(Charsets.ISO_8859_1))
+          "PGCOPY\nÿ\r\n\u0000".getBytes(Charsets.ISO_8859_1)
+        )
         pgCopyOutputStream.writeInt(0)
         pgCopyOutputStream.writeInt(0)
 
@@ -1183,7 +1289,8 @@ object PGTool extends java.io.Serializable with LazyLogging {
 
           // PG binary header
           outputStream.write(
-            "PGCOPY\nÿ\r\n\u0000".getBytes(Charsets.ISO_8859_1))
+            "PGCOPY\nÿ\r\n\u0000".getBytes(Charsets.ISO_8859_1)
+          )
           outputStream.writeInt(0)
           outputStream.writeInt(0)
 
@@ -1207,14 +1314,16 @@ object PGTool extends java.io.Serializable with LazyLogging {
       val copyCommand =
         s"COPY $fullyQualifiedTableName($commaSeparatedColumns) FROM STDIN BINARY"
 
-      outputBulkFileLow(spark,
-                        url,
-                        path,
-                        copyCommand,
-                        ".*.pgb",
-                        numPartitions,
-                        password,
-                        bulkLoadBufferSize)
+      outputBulkFileLow(
+        spark,
+        url,
+        path,
+        copyCommand,
+        ".*.pgb",
+        numPartitions,
+        password,
+        bulkLoadBufferSize
+      )
 
     } finally {
       if (reindex)
@@ -1222,11 +1331,13 @@ object PGTool extends java.io.Serializable with LazyLogging {
     }
   }
 
-  def output(url: String,
-             table: String,
-             df: Dataset[Row],
-             batchsize: Int = 50000,
-             password: String = "") = {
+  def output(
+      url: String,
+      table: String,
+      df: Dataset[Row],
+      batchsize: Int = 50000,
+      password: String = ""
+  ) = {
     df.coalesce(8)
       .write
       .mode(org.apache.spark.sql.SaveMode.Overwrite)
@@ -1239,15 +1350,17 @@ object PGTool extends java.io.Serializable with LazyLogging {
       .save()
   }
 
-  def inputQueryPartBulkCsv(spark: SparkSession,
-                            fsConf: String,
-                            url: String,
-                            query: String,
-                            path: String,
-                            numPartitions: Int,
-                            partitionColumn: String,
-                            splitFactor: Int = 1,
-                            password: String = "") = {
+  def inputQueryPartBulkCsv(
+      spark: SparkSession,
+      fsConf: String,
+      url: String,
+      query: String,
+      path: String,
+      numPartitions: Int,
+      partitionColumn: String,
+      splitFactor: Int = 1,
+      password: String = ""
+  ) = {
     val columnType =
       getSqlColumnType(spark, url, query, partitionColumn, password)
     val queryStr = s"($query) as tmp"
@@ -1259,11 +1372,13 @@ object PGTool extends java.io.Serializable with LazyLogging {
       } else {
         val (lowerBound, upperBound) =
           getMinMaxForColumnString(spark, url, queryStr, partitionColumn)
-        getPartitionsString(spark,
-                            lowerBound,
-                            upperBound,
-                            numPartitions,
-                            splitFactor)
+        getPartitionsString(
+          spark,
+          lowerBound,
+          upperBound,
+          numPartitions,
+          splitFactor
+        )
       }
 
     rdd.foreachPartition(rddPart => {
@@ -1280,11 +1395,13 @@ object PGTool extends java.io.Serializable with LazyLogging {
     })
   }
 
-  def getSqlColumnType(spark: SparkSession,
-                       url: String,
-                       query: String,
-                       column: String,
-                       password: String = "") = {
+  def getSqlColumnType(
+      spark: SparkSession,
+      url: String,
+      query: String,
+      column: String,
+      password: String = ""
+  ) = {
     val stmt = s"""select "${column}" from (${query}) t limit 0"""
     val res = sqlExecWithResult(spark, url, stmt, password)
     val columnType: Array[String] =
@@ -1295,14 +1412,17 @@ object PGTool extends java.io.Serializable with LazyLogging {
       case "integer" => "Integer"
       case e =>
         throw new UnsupportedOperationException(
-          s"${e} not supported for partition column")
+          s"${e} not supported for partition column"
+        )
     }
   }
 
-  def inputQueryBulkCsv(fsConf: String,
-                        conn: Connection,
-                        query: String,
-                        path: String) = {
+  def inputQueryBulkCsv(
+      fsConf: String,
+      conn: Connection,
+      query: String,
+      path: String
+  ) = {
     val sqlStr =
       s""" COPY ($query) TO STDOUT  WITH DELIMITER AS ',' CSV NULL '' ENCODING 'UTF-8' QUOTE '"' ESCAPE '"' """
     val copyInputStream: PGCopyInputStream =
@@ -1371,15 +1491,17 @@ object PGTool extends java.io.Serializable with LazyLogging {
     sqlExec(url, query2, password)
   }
 
-  def inputQueryBulkDf(spark: SparkSession,
-                       url: String,
-                       query: String,
-                       path: String,
-                       isMultiline: Boolean = false,
-                       numPartitions: Int = 1,
-                       partitionColumn: String = "",
-                       splitFactor: Int = 1,
-                       password: String = ""): Dataset[Row] = {
+  def inputQueryBulkDf(
+      spark: SparkSession,
+      url: String,
+      query: String,
+      path: String,
+      isMultiline: Boolean = false,
+      numPartitions: Int = 1,
+      partitionColumn: String = "",
+      splitFactor: Int = 1,
+      password: String = ""
+  ): Dataset[Row] = {
     val defaultFSConf = spark.sessionState.newHadoopConf().get("fs.defaultFS")
     val fsConf = if (path.startsWith("file:")) {
       "file:///"
@@ -1398,15 +1520,17 @@ object PGTool extends java.io.Serializable with LazyLogging {
       inputQueryBulkCsv(fsConf, conn, query, path)
       conn.close()
     } else {
-      inputQueryPartBulkCsv(spark,
-                            fsConf,
-                            url,
-                            query,
-                            path,
-                            numPartitions,
-                            partitionColumn,
-                            splitFactor,
-                            password)
+      inputQueryPartBulkCsv(
+        spark,
+        fsConf,
+        url,
+        query,
+        path,
+        numPartitions,
+        partitionColumn,
+        splitFactor,
+        password
+      )
     }
 
     val schemaQuerySimple = schemaSimplify(schemaQueryComplex)
@@ -1449,9 +1573,11 @@ object PGTool extends java.io.Serializable with LazyLogging {
 
   def sanP(obj: String) = obj.mkString("\"", "", "\"")
 
-  def dataframeFromPgCsv(spark: SparkSession,
-                         dfSimple: Dataset[Row],
-                         schemaQueryComplex: StructType): Dataset[Row] = {
+  def dataframeFromPgCsv(
+      spark: SparkSession,
+      dfSimple: Dataset[Row],
+      schemaQueryComplex: StructType
+  ): Dataset[Row] = {
     val tableTmp = "table_" + randomUUID.toString.replaceAll(".*-", "")
     dfSimple.createOrReplaceTempView(tableTmp)
     val sqlQuery = "SELECT " + schemaQueryComplex
@@ -1459,8 +1585,11 @@ object PGTool extends java.io.Serializable with LazyLogging {
         if (a.dataType.simpleString == "boolean") {
           "CAST(" + sanS(a.name) + " as boolean) as " + sanS(a.name)
         } else if (a.dataType.simpleString.indexOf("array") == 0) {
-          "CAST(SPLIT(REGEXP_REPLACE(" + sanS(a.name) + ", '^[{]|[}]$', ''), ',') AS " + a.dataType.simpleString + ") as " + sanS(
-            a.name)
+          "CAST(SPLIT(REGEXP_REPLACE(" + sanS(
+            a.name
+          ) + ", '^[{]|[}]$', ''), ',') AS " + a.dataType.simpleString + ") as " + sanS(
+            a.name
+          )
         } else {
           sanS(a.name)
         }
@@ -1476,11 +1605,14 @@ object PGTool extends java.io.Serializable with LazyLogging {
         regexp_replace(
           regexp_replace(col(colName).cast("string"), lit("^."), lit("{")),
           lit(".$"),
-          lit("}")).as(colName)
+          lit("}")
+        ).as(colName)
       } else if (c.dataType.simpleString.indexOf("string") == 0) {
-        regexp_replace(regexp_replace(col(colName), lit("\\u0000"), lit("")),
-                       lit("\r\n|\r"),
-                       lit("\n")).as(colName)
+        regexp_replace(
+          regexp_replace(col(colName), lit("\\u0000"), lit("")),
+          lit("\r\n|\r"),
+          lit("\n")
+        ).as(colName)
       } else {
         col(colName)
       }
@@ -1488,12 +1620,16 @@ object PGTool extends java.io.Serializable with LazyLogging {
     df.select(newCols: _*)
   }
 
-  def dataframeMapsAndStructsToJson(spark: SparkSession,
-                                    df: Dataset[Row]): DataFrame = {
+  def dataframeMapsAndStructsToJson(
+      spark: SparkSession,
+      df: Dataset[Row]
+  ): DataFrame = {
     val newCols = df.schema.fields.map(c => {
       val colName = c.name
-      if (c.dataType.isInstanceOf[MapType] || c.dataType
-            .isInstanceOf[StructType]) {
+      if (
+        c.dataType.isInstanceOf[MapType] || c.dataType
+          .isInstanceOf[StructType]
+      ) {
         to_json(col(colName)).as(colName)
       } else {
         col(colName)
@@ -1502,33 +1638,39 @@ object PGTool extends java.io.Serializable with LazyLogging {
     df.select(newCols: _*)
   }
 
-  def tableEmpty(spark: SparkSession,
-                 url: String,
-                 table: String,
-                 password: String): Boolean = {
+  def tableEmpty(
+      spark: SparkSession,
+      url: String,
+      table: String,
+      password: String
+  ): Boolean = {
     val query = s"""select 1 from "$table" limit 1 """
     sqlExecWithResult(spark, url, query, password).count == 0
   }
 
-  def loadEmptyTable(spark: SparkSession,
-                     url: String,
-                     table: String,
-                     candidate: Dataset[Row],
-                     path: String,
-                     partitions: Int,
-                     password: String,
-                     bulkLoadMode: BulkLoadMode): Boolean = {
+  def loadEmptyTable(
+      spark: SparkSession,
+      url: String,
+      table: String,
+      candidate: Dataset[Row],
+      path: String,
+      partitions: Int,
+      password: String,
+      bulkLoadMode: BulkLoadMode
+  ): Boolean = {
     if (tableEmpty(spark, url, table, password)) {
       logger.info("Loading directly data")
-      outputBulk(spark,
-                 url,
-                 table,
-                 candidate,
-                 path,
-                 partitions,
-                 password,
-                 reindex = false,
-                 bulkLoadMode)
+      outputBulk(
+        spark,
+        url,
+        table,
+        candidate,
+        path,
+        partitions,
+        password,
+        reindex = false,
+        bulkLoadMode
+      )
       return true
     }
     false
@@ -1546,15 +1688,20 @@ object PGTool extends java.io.Serializable with LazyLogging {
       deleteSet: Option[String] = None,
       password: String = "",
       bulkLoadMode: BulkLoadMode = defaultBulkLoadStrategy,
-      bulkLoadBufferSize: Int = defaultBulkLoadBufferSize): Unit = {
-    if (loadEmptyTable(spark,
-                       url,
-                       table,
-                       candidate,
-                       path,
-                       partitions,
-                       password,
-                       bulkLoadMode))
+      bulkLoadBufferSize: Int = defaultBulkLoadBufferSize
+  ): Unit = {
+    if (
+      loadEmptyTable(
+        spark,
+        url,
+        table,
+        candidate,
+        path,
+        partitions,
+        password,
+        bulkLoadMode
+      )
+    )
       return
 
     logger.info("The postgres table is not empty")
@@ -1570,16 +1717,19 @@ object PGTool extends java.io.Serializable with LazyLogging {
         key.mkString("\"", "\",\"", "\""),
         "hash",
         sanP(table),
-        scdFilter.getOrElse(" TRUE"))
-      val fetch1 = inputQueryBulkDf(spark,
-                                    url,
-                                    queryFetch1,
-                                    path,
-                                    isMultiline = true,
-                                    partitions,
-                                    key(0),
-                                    40,
-                                    password)
+        scdFilter.getOrElse(" TRUE")
+      )
+      val fetch1 = inputQueryBulkDf(
+        spark,
+        url,
+        queryFetch1,
+        path,
+        isMultiline = true,
+        partitions,
+        key(0),
+        40,
+        password
+      )
 
       // 2.1 produce insert
       val joinCol = key.map(x => s"""f.`$x` = c.`$x`""").mkString(" AND ")
@@ -1590,41 +1740,49 @@ object PGTool extends java.io.Serializable with LazyLogging {
       // 2.2 produce insert
       val update = candidate
         .as("c")
-        .join(fetch1.as("f"),
-              expr(joinCol + "AND c.hash != f.hash"),
-              "left_semi")
+        .join(
+          fetch1.as("f"),
+          expr(joinCol + "AND c.hash != f.hash"),
+          "left_semi"
+        )
       logger.info(s"Row to update: ${update.count}")
 
       // 3. load tmp tables
       tableCreate(url, insertTmp, insert.schema, password)
 
-      outputBulk(spark,
-                 url,
-                 insertTmp,
-                 insert,
-                 path + "ins",
-                 partitions,
-                 password,
-                 bulkLoadMode = bulkLoadMode,
-                 bulkLoadBufferSize = bulkLoadBufferSize)
+      outputBulk(
+        spark,
+        url,
+        insertTmp,
+        insert,
+        path + "ins",
+        partitions,
+        password,
+        bulkLoadMode = bulkLoadMode,
+        bulkLoadBufferSize = bulkLoadBufferSize
+      )
       insert.unpersist()
 
       tableCreate(url, updateTmp, update.schema, password)
-      outputBulk(spark,
-                 url,
-                 updateTmp,
-                 update,
-                 path + "upd",
-                 partitions,
-                 password,
-                 bulkLoadMode = bulkLoadMode,
-                 bulkLoadBufferSize = bulkLoadBufferSize)
+      outputBulk(
+        spark,
+        url,
+        updateTmp,
+        update,
+        path + "upd",
+        partitions,
+        password,
+        bulkLoadMode = bulkLoadMode,
+        bulkLoadBufferSize = bulkLoadBufferSize
+      )
       update.unpersist()
 
       // 4. load postgres
-      sqlExec(url,
-              applyScd1(table, insertTmp, updateTmp, insert.schema, key),
-              password)
+      sqlExec(
+        url,
+        applyScd1(table, insertTmp, updateTmp, insert.schema, key),
+        password
+      )
 
       // 5 produce delete
       if (isDelete) {
@@ -1633,18 +1791,22 @@ object PGTool extends java.io.Serializable with LazyLogging {
           .join(candidate.as("c"), expr(joinCol), "left_anti")
           .selectExpr(key.mkString("`", "`,`", "`").split(","): _*)
         tableCreate(url, deleteTmp, delete.schema, password)
-        outputBulk(spark,
-                   url,
-                   deleteTmp,
-                   delete,
-                   path + "del",
-                   partitions,
-                   password,
-                   bulkLoadMode = bulkLoadMode,
-                   bulkLoadBufferSize = bulkLoadBufferSize)
-        sqlExec(url,
-                applyScd1Delete(table, deleteTmp, key, deleteSet.get),
-                password)
+        outputBulk(
+          spark,
+          url,
+          deleteTmp,
+          delete,
+          path + "del",
+          partitions,
+          password,
+          bulkLoadMode = bulkLoadMode,
+          bulkLoadBufferSize = bulkLoadBufferSize
+        )
+        sqlExec(
+          url,
+          applyScd1Delete(table, deleteTmp, key, deleteSet.get),
+          password
+        )
       }
 
     } finally {
@@ -1656,10 +1818,12 @@ object PGTool extends java.io.Serializable with LazyLogging {
     }
   }
 
-  def applyScd1Delete(table: String,
-                      deleteTmp: String,
-                      key: Seq[String],
-                      deleteSet: String): String = {
+  def applyScd1Delete(
+      table: String,
+      deleteTmp: String,
+      key: Seq[String],
+      deleteSet: String
+  ): String = {
     val joinColumns = key.map(k => s""" t."$k" = s."$k" """).mkString("AND")
     val query =
       s"""
@@ -1672,11 +1836,13 @@ object PGTool extends java.io.Serializable with LazyLogging {
 
   }
 
-  def applyScd1(table: String,
-                insertTmp: String,
-                updateTmp: String,
-                insertSchema: StructType,
-                key: Seq[String]): String = {
+  def applyScd1(
+      table: String,
+      insertTmp: String,
+      updateTmp: String,
+      insertSchema: StructType,
+      key: Seq[String]
+  ): String = {
     val insertCol =
       insertSchema.fields.map(f => f.name).mkString("\"", "\",\"", "\"")
     val updateCol = insertSchema.fields
@@ -1704,12 +1870,14 @@ object PGTool extends java.io.Serializable with LazyLogging {
     res
   }
 
-  def applyScd2(table: String,
-                insertTmp: String,
-                updateTmp: String,
-                pk: String,
-                endDatetimeCol: String,
-                insertSchema: StructType): String = {
+  def applyScd2(
+      table: String,
+      insertTmp: String,
+      updateTmp: String,
+      pk: String,
+      endDatetimeCol: String,
+      insertSchema: StructType
+  ): String = {
     val insertCol =
       insertSchema.fields.map(f => f.name).mkString("\"", "\",\"", "\"")
     val query =
@@ -1737,16 +1905,21 @@ object PGTool extends java.io.Serializable with LazyLogging {
       path: String,
       password: String = "",
       bulkLoadMode: BulkLoadMode = defaultBulkLoadStrategy,
-      bulkLoadBufferSize: Int = defaultBulkLoadBufferSize): Unit = {
+      bulkLoadBufferSize: Int = defaultBulkLoadBufferSize
+  ): Unit = {
 
-    if (loadEmptyTable(spark,
-                       url,
-                       table,
-                       candidate,
-                       path,
-                       partitions,
-                       password,
-                       bulkLoadMode))
+    if (
+      loadEmptyTable(
+        spark,
+        url,
+        table,
+        candidate,
+        path,
+        partitions,
+        password,
+        bulkLoadMode
+      )
+    )
       return
 
     val insertTmp = getTmpTable("ins_")
@@ -1759,65 +1932,80 @@ object PGTool extends java.io.Serializable with LazyLogging {
           key.mkString("\"", "\",\"", "\""),
           "hash",
           table,
-          endDatetimeCol)
-      val fetch1 = inputQueryBulkDf(spark,
-                                    url,
-                                    queryFetch1,
-                                    path,
-                                    isMultiline = true,
-                                    partitions,
-                                    pk,
-                                    1,
-                                    password)
+          endDatetimeCol
+        )
+      val fetch1 = inputQueryBulkDf(
+        spark,
+        url,
+        queryFetch1,
+        path,
+        isMultiline = true,
+        partitions,
+        pk,
+        1,
+        password
+      )
 
       // 2.1 produce insert and update
       val joinCol = key.map(x => s"""f.`$x` = c.`$x`""").mkString(" AND ")
       val insert = candidate
         .as("c")
-        .join(fetch1.as("f"),
-              expr(joinCol + "AND c.hash = f.hash"),
-              "left_anti")
+        .join(
+          fetch1.as("f"),
+          expr(joinCol + "AND c.hash = f.hash"),
+          "left_anti"
+        )
 
       // 2.2 produce insert and update
       val update = fetch1
         .as("f")
-        .join(candidate.as("c"),
-              expr(joinCol + "AND c.hash != f.hash"),
-              "left_semi")
+        .join(
+          candidate.as("c"),
+          expr(joinCol + "AND c.hash != f.hash"),
+          "left_semi"
+        )
         .select(col(pk))
 
       // 3. load tmp tables
       tableCreate(url, insertTmp, insert.schema, password)
-      outputBulk(spark,
-                 url,
-                 insertTmp,
-                 insert,
-                 path + "ins",
-                 partitions,
-                 password,
-                 bulkLoadMode = bulkLoadMode,
-                 bulkLoadBufferSize = bulkLoadBufferSize)
+      outputBulk(
+        spark,
+        url,
+        insertTmp,
+        insert,
+        path + "ins",
+        partitions,
+        password,
+        bulkLoadMode = bulkLoadMode,
+        bulkLoadBufferSize = bulkLoadBufferSize
+      )
 
       tableCreate(url, updateTmp, update.schema, password)
-      outputBulk(spark,
-                 url,
-                 updateTmp,
-                 update,
-                 path + "upd",
-                 partitions,
-                 password,
-                 bulkLoadMode = bulkLoadMode,
-                 bulkLoadBufferSize = bulkLoadBufferSize)
+      outputBulk(
+        spark,
+        url,
+        updateTmp,
+        update,
+        path + "upd",
+        partitions,
+        password,
+        bulkLoadMode = bulkLoadMode,
+        bulkLoadBufferSize = bulkLoadBufferSize
+      )
 
       // 4. load postgres
-      sqlExec(url,
-              applyScd2(table,
-                        insertTmp,
-                        updateTmp,
-                        pk,
-                        endDatetimeCol,
-                        insert.schema),
-              password)
+      sqlExec(
+        url,
+        applyScd2(
+          table,
+          insertTmp,
+          updateTmp,
+          pk,
+          endDatetimeCol,
+          insert.schema
+        ),
+        password
+      )
 
     } finally {
       // 5. drop the temporarytables
@@ -1826,11 +2014,13 @@ object PGTool extends java.io.Serializable with LazyLogging {
     }
   }
 
-  def sqlExecWithResult(spark: SparkSession,
-                        url: String,
-                        query: String,
-                        password: String = "",
-                        params: List[Any] = Nil): Dataset[Row] = {
+  def sqlExecWithResult(
+      spark: SparkSession,
+      url: String,
+      query: String,
+      password: String = "",
+      params: List[Any] = Nil
+  ): Dataset[Row] = {
     val conn = connOpen(url, password)
     try {
 
@@ -1879,7 +2069,8 @@ object PGTool extends java.io.Serializable with LazyLogging {
         case t: Timestamp            => st.setTimestamp(i + 1, t)
         case _ =>
           throw new UnsupportedEncodingException(
-            obj.getClass.getCanonicalName + " type not yet supported for prepared statements")
+            obj.getClass.getCanonicalName + " type not yet supported for prepared statements"
+          )
       }
     }
     st
@@ -1910,7 +2101,8 @@ object PGTool extends java.io.Serializable with LazyLogging {
       url: String,
       query: String,
       partitionColumn: String,
-      password: String = ""): (String, String) = {
+      password: String = ""
+  ): (String, String) = {
     val min_max_query =
       s"""SELECT
          |min("$partitionColumn") as min,
@@ -1922,10 +2114,12 @@ object PGTool extends java.io.Serializable with LazyLogging {
     (lowerBound, upperBound)
   }
 
-  private def getSchemaQuery(spark: SparkSession,
-                             url: String,
-                             query: String,
-                             password: String = ""): StructType = {
+  private def getSchemaQuery(
+      spark: SparkSession,
+      url: String,
+      query: String,
+      password: String = ""
+  ): StructType = {
     val queryStr = s"""(SELECT * FROM ($query) as tmp1 LIMIT 0) as tmp"""
     spark.read
       .format("jdbc")
@@ -1937,11 +2131,13 @@ object PGTool extends java.io.Serializable with LazyLogging {
       .schema
   }
 
-  private def getPartitions(spark: SparkSession,
-                            lowerBound: Long,
-                            upperBound: Long,
-                            numPartitions: Int,
-                            splitFactor: Int = 1): RDD[(Int, String)] = {
+  private def getPartitions(
+      spark: SparkSession,
+      lowerBound: Long,
+      upperBound: Long,
+      numPartitions: Int,
+      splitFactor: Int = 1
+  ): RDD[(Int, String)] = {
     val length = BigInt(1) + upperBound - lowerBound
     val splitPartitions = numPartitions * splitFactor
 
@@ -1957,7 +2153,9 @@ object PGTool extends java.io.Serializable with LazyLogging {
       .zipWithIndex
       .map(_.swap)
       .toDS
-      .dropDuplicates("_2") // remove the duplicated predicate, in case the splitfactor is too high
+      .dropDuplicates(
+        "_2"
+      ) // remove the duplicated predicate, in case the splitfactor is too high
       .rdd
       .partitionBy(new ExactPartitioner(numPartitions))
     partitions
@@ -1975,16 +2173,21 @@ object PGTool extends java.io.Serializable with LazyLogging {
     * @param splitFactor
     * @return
     */
-  private def getPartitionsString(spark: SparkSession,
-                                  lowerString: String,
-                                  upperString: String,
-                                  numPartitions: Int,
-                                  splitFactor: Int = 1): RDD[(Int, String)] = {
+  private def getPartitionsString(
+      spark: SparkSession,
+      lowerString: String,
+      upperString: String,
+      numPartitions: Int,
+      splitFactor: Int = 1
+  ): RDD[(Int, String)] = {
 
     logger.debug(s"low:${lowerString} up:${upperString}")
     import spark.implicits._
     if (lowerString == upperString)
-      return ((1, s"between '${lowerString}' and '${upperString}'") :: Nil).toDS.rdd
+      return ((
+        1,
+        s"between '${lowerString}' and '${upperString}'"
+      ) :: Nil).toDS.rdd
 
     val commonStart = (lowerString, upperString).zipped.toIterator
       .takeWhile { case (l: Char, u: Char) => l == u }
@@ -1999,18 +2202,20 @@ object PGTool extends java.io.Serializable with LazyLogging {
       upperString.substring(commonStart.length, upperString.length)
 
     import spark.implicits._
-    val partitionsTmp = List((lowerBound, "/"),
-                             ("0", "0"),
-                             ("1", "1"),
-                             ("2", "2"),
-                             ("3", "3"),
-                             ("4", "4"), //
-                             ("5", "5"),
-                             ("6", "6"),
-                             ("7", "7"),
-                             ("8", "8"),
-                             ("9", "9"),
-                             (":", upperBound))
+    val partitionsTmp = List(
+      (lowerBound, "/"),
+      ("0", "0"),
+      ("1", "1"),
+      ("2", "2"),
+      ("3", "3"),
+      ("4", "4"), //
+      ("5", "5"),
+      ("6", "6"),
+      ("7", "7"),
+      ("8", "8"),
+      ("9", "9"),
+      (":", upperBound)
+    )
       .filterNot { case (_, end) => end > upperBound }
 
     val partitionsLast = List(partitionsTmp.last._1 -> upperBound)

@@ -23,10 +23,12 @@ trait SourceConf {
     require(config != null, "Config cannot be null")
     require(config.nonEmpty, "Config cannot be empty")
 
-
-    require(config.get(S_TABLE_TYPE).isEmpty || (config.get(S_TABLE_TYPE).isDefined
-      && ("postgres" :: "solr" :: "delta" :: "parquet" :: Nil).contains(config.get(S_TABLE_TYPE).get)),
-      "Source table shall be in postgres, solr, delta")
+    require(
+      config.get(S_TABLE_TYPE).isEmpty || (config.get(S_TABLE_TYPE).isDefined
+        && ("postgres" :: "solr" :: "delta" :: "parquet" :: Nil)
+          .contains(config.get(S_TABLE_TYPE).get)),
+      "Source table shall be in postgres, solr, delta"
+    )
 
   }
 }

@@ -13,15 +13,12 @@ class PostgresToHiveTest extends FunSuite {
     val ymlTxt = Source.fromFile(filename).mkString
     val yaml = ymlTxt.stripMargin.parseYaml
     val palette = yaml.convertTo[Database]
-    
-    
+
     for (pal <- palette.tables.getOrElse(Nil)) {
       println("bob" + pal.isActive.getOrElse(""))
     }
-   println(palette.toYaml.prettyPrint)
+    println(palette.toYaml.prettyPrint)
 
   }
 
 }
-
-

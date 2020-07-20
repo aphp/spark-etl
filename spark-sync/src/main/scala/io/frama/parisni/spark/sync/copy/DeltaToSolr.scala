@@ -16,7 +16,8 @@ object DeltaToSolr extends App with LazyLogging {
   val database = yaml.convertTo[Database]
 
   // Spark Session
-  val spark = SparkSession.builder()
+  val spark = SparkSession
+    .builder()
     .appName(database.jobName)
     .enableHiveSupport()
     .getOrCreate()
@@ -38,11 +39,16 @@ object DeltaToSolr extends App with LazyLogging {
       val loadType = table.typeLoad.getOrElse("full")
       val pks = table.key
 
-      val config = Map("S_TABLE_NAME" -> tableDelta, "S_TABLE_TYPE" -> "delta",
-        "S_DATE_FIELD" -> dateFieldDelta, "PATH" -> pathDelta,
-
-        "T_TABLE_NAME" -> tableSolr, "T_TABLE_TYPE" -> "solr",
-        "ZKHOST" -> zkHost, "T_LOAD_TYPE" -> loadType, "T_DATE_MAX" -> dateMax
+      val config = Map(
+        "S_TABLE_NAME" -> tableDelta,
+        "S_TABLE_TYPE" -> "delta",
+        "S_DATE_FIELD" -> dateFieldDelta,
+        "PATH" -> pathDelta,
+        "T_TABLE_NAME" -> tableSolr,
+        "T_TABLE_TYPE" -> "solr",
+        "ZKHOST" -> zkHost,
+        "T_LOAD_TYPE" -> loadType,
+        "T_DATE_MAX" -> dateMax
       )
 
       val sync = new Sync()
@@ -51,12 +57,11 @@ object DeltaToSolr extends App with LazyLogging {
     }
   } catch {
     case re: RuntimeException => throw re
-    case e: Exception => throw new RuntimeException(e)
+    case e: Exception         => throw new RuntimeException(e)
   } finally {
     spark.close()
   }
 }
-
 
 class DeltaToSolr extends LazyLogging {
 
@@ -75,11 +80,15 @@ class DeltaToSolr extends LazyLogging {
         val zkHost = zookHost //table.ZkHost.toString
         val pks = table.key
 
-        val config = Map("S_TABLE_NAME" -> tableDelta, "S_TABLE_TYPE" -> "delta",
-          "S_DATE_FIELD" -> dateFieldDelta, "PATH" -> pathDelta,
-
-          "T_TABLE_NAME" -> tableSolr, "T_TABLE_TYPE" -> "solr",
-          "ZKHOST" -> zkHost, "T_DATE_MAX" -> dateMax //, "T_LOAD_TYPE" -> "full"
+        val config = Map(
+          "S_TABLE_NAME" -> tableDelta,
+          "S_TABLE_TYPE" -> "delta",
+          "S_DATE_FIELD" -> dateFieldDelta,
+          "PATH" -> pathDelta,
+          "T_TABLE_NAME" -> tableSolr,
+          "T_TABLE_TYPE" -> "solr",
+          "ZKHOST" -> zkHost,
+          "T_DATE_MAX" -> dateMax //, "T_LOAD_TYPE" -> "full"
         )
 
         val sync = new Sync()
@@ -88,8 +97,7 @@ class DeltaToSolr extends LazyLogging {
       }
     } catch {
       case re: RuntimeException => throw re
-      case e: Exception => throw new RuntimeException(e)
+      case e: Exception         => throw new RuntimeException(e)
     }
   }
 }
-

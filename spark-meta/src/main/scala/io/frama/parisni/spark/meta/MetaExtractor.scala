@@ -10,17 +10,35 @@ import io.frama.parisni.spark.meta.Constants._
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
-class MetaExtractor(metaStrategy: MetaStrategy, spark: SparkSession
-                    , host: String, database: String, user: String, dbType: String, schema: String)
-  extends GetTables with LazyLogging {
+class MetaExtractor(
+    metaStrategy: MetaStrategy,
+    spark: SparkSession,
+    host: String,
+    database: String,
+    user: String,
+    dbType: String,
+    schema: String
+) extends GetTables
+    with LazyLogging {
 
   /**
     * Alternative constructor
     */
-  def this(confSchema: ConfigMetaYaml.Schema, spark: SparkSession, schema: String = "public") {
+  def this(
+      confSchema: ConfigMetaYaml.Schema,
+      spark: SparkSession,
+      schema: String = "public"
+  ) {
 
-    this(MetaStrategyBuilder.build(confSchema.strategy), spark
-      , confSchema.host, confSchema.db, confSchema.user, confSchema.dbType, schema)
+    this(
+      MetaStrategyBuilder.build(confSchema.strategy),
+      spark,
+      confSchema.host,
+      confSchema.db,
+      confSchema.user,
+      confSchema.dbType,
+      schema
+    )
   }
 
   def getUrl(): String = {
@@ -30,7 +48,8 @@ class MetaExtractor(metaStrategy: MetaStrategy, spark: SparkSession
 
   def fetchTable(sql: String): DataFrame = {
     logger.info(s"$host, $database, $schema, $sql")
-    spark.read.format("postgres")
+    spark.read
+      .format("postgres")
       .option("query", sql)
       .option("host", host)
       .option("user", user)
@@ -44,9 +63,10 @@ class MetaExtractor(metaStrategy: MetaStrategy, spark: SparkSession
   def initTables(dbName: String, schemaRegexFilter: Option[String]): Unit = {
     val result = dbType match {
       case "postgresql" => getPostgresTable(dbName)
-      case "spark" => getSparkTable(dbName)
+      case "spark"      => getSparkTable(dbName)
     }
-    var res = metaStrategy.extractor.extractSource(result)
+    var res = metaStrategy.extractor
+      .extractSource(result)
       .filter(col("lib_schema").rlike(schemaRegexFilter.getOrElse(".*")))
 
     // extraire la pk
@@ -79,36 +99,79 @@ class MetaExtractor(metaStrategy: MetaStrategy, spark: SparkSession
   def getReference: DataFrame = this.resreference
 
   def extractJson(df: DataFrame): DataFrame = {
-    val stats = df.selectExpr(LIB_DATABASE, LIB_SCHEMA, LIB_TABLE, s"explode($STTS) as e")
+    val stats = df
+      .selectExpr(LIB_DATABASE, LIB_SCHEMA, LIB_TABLE, s"explode($STTS) as e")
       .withColumn("param", expr("split(e,'=')[0]"))
       .withColumn("value", expr("split(e,'=')[1]"))
-      .withColumn(LIB_COLUMN, expr("regexp_extract(param,'.*?([^\\.]+)\\.[^\\.]+$', 1)"))
-      .withColumn("type_value", expr("regexp_extract(param,'.*?[^\\.]+\\.([^\\.]+)$', 1)"))
+      .withColumn(
+        LIB_COLUMN,
+        expr("regexp_extract(param,'.*?([^\\.]+)\\.[^\\.]+$', 1)")
+      )
+      .withColumn(
+        "type_value",
+        expr("regexp_extract(param,'.*?[^\\.]+\\.([^\\.]+)$', 1)")
+      )
 
-    df.withColumn("js", expr(s"from_json($SCHEM, 'struct<fields:array<struct<metadata:struct<>,name:string,nullable:boolean,type:string>>,type:string>')"))
-      .selectExpr("posexplode(js.fields)", LIB_DATABASE, LIB_SCHEMA, LIB_TABLE, COUNT_TABLE, LAST_ANALYSE)
-      .selectExpr(LIB_DATABASE, LIB_SCHEMA, LIB_TABLE, COUNT_TABLE, LAST_ANALYSE,
-        s"col.name as $LIB_COLUMN"
-        , s"col.type as $TYP_COLUMN"
-        , s"col.nullable as $IS_MANDATORY"
-        , s"pos + 1 as $ORDER_COLUMN")
-      .join(stats.filter(expr("type_value = 'nullCount'")).as("nc"), Seq(LIB_DATABASE, LIB_SCHEMA, LIB_TABLE, LIB_COLUMN), "left")
-      .join(stats.filter(expr("type_value = 'distinctCount'")).as("dc"), Seq(LIB_DATABASE, LIB_SCHEMA, LIB_TABLE, LIB_COLUMN), "left")
-      .selectExpr(LIB_DATABASE, LIB_SCHEMA, LIB_TABLE, COUNT_TABLE, LAST_ANALYSE
-        , s"cast(dc.value as bigint) $COUNT_DISTINCT_COLUMN"
-        , s"100 * cast(nc.value as bigint) / count_table $NULL_RATIO_COLUMN"
-        , LIB_COLUMN, TYP_COLUMN, IS_MANDATORY, ORDER_COLUMN)
+    df.withColumn(
+      "js",
+      expr(
+        s"from_json($SCHEM, 'struct<fields:array<struct<metadata:struct<>,name:string,nullable:boolean,type:string>>,type:string>')"
+      )
+    ).selectExpr(
+      "posexplode(js.fields)",
+      LIB_DATABASE,
+      LIB_SCHEMA,
+      LIB_TABLE,
+      COUNT_TABLE,
+      LAST_ANALYSE
+    ).selectExpr(
+      LIB_DATABASE,
+      LIB_SCHEMA,
+      LIB_TABLE,
+      COUNT_TABLE,
+      LAST_ANALYSE,
+      s"col.name as $LIB_COLUMN",
+      s"col.type as $TYP_COLUMN",
+      s"col.nullable as $IS_MANDATORY",
+      s"pos + 1 as $ORDER_COLUMN"
+    ).join(
+      stats.filter(expr("type_value = 'nullCount'")).as("nc"),
+      Seq(LIB_DATABASE, LIB_SCHEMA, LIB_TABLE, LIB_COLUMN),
+      "left"
+    ).join(
+      stats.filter(expr("type_value = 'distinctCount'")).as("dc"),
+      Seq(LIB_DATABASE, LIB_SCHEMA, LIB_TABLE, LIB_COLUMN),
+      "left"
+    ).selectExpr(
+      LIB_DATABASE,
+      LIB_SCHEMA,
+      LIB_TABLE,
+      COUNT_TABLE,
+      LAST_ANALYSE,
+      s"cast(dc.value as bigint) $COUNT_DISTINCT_COLUMN",
+      s"100 * cast(nc.value as bigint) / count_table $NULL_RATIO_COLUMN",
+      LIB_COLUMN,
+      TYP_COLUMN,
+      IS_MANDATORY,
+      ORDER_COLUMN
+    )
   }
 
   protected def getSparkTable(dbName: String): DataFrame = {
-    val regularTable = DFTool.trimAll(fetchTable(GetTables.SQL_HIVE_TABLE.format(dbName)))
-    val externalTable = extractJson(DFTool.trimAll(fetchTable(GetTables.SQL_HIVE_TABLE_EXT.format(dbName))))
+    val regularTable =
+      DFTool.trimAll(fetchTable(GetTables.SQL_HIVE_TABLE.format(dbName)))
+    val externalTable = extractJson(
+      DFTool.trimAll(fetchTable(GetTables.SQL_HIVE_TABLE_EXT.format(dbName)))
+    )
     DFTool.unionDataFrame(regularTable, externalTable)
   }
 
   protected def getPostgresTable(dbName: String): DataFrame = {
 
-    val tbl = addLastCommitTimestampColumn(fetchTable(GetTables.SQL_PG_TABLE.format(dbName)), LAST_COMMIT_TIMESTAMPZ)
+    val tbl = addLastCommitTimestampColumn(
+      fetchTable(GetTables.SQL_PG_TABLE.format(dbName)),
+      LAST_COMMIT_TIMESTAMPZ
+    )
     val view = fetchTable(GetTables.SQL_PG_VIEW.format(dbName))
     val res = DFTool.trimAll(DFTool.unionDataFrame(tbl, view))
 
@@ -123,9 +186,11 @@ class MetaExtractor(metaStrategy: MetaStrategy, spark: SparkSession
     */
   def is_track_commit_timestamp_activate(): Boolean = {
     val conn: Connection = PGTool.connOpen(getUrl())
-    val resultSet: ResultSet = conn.createStatement().executeQuery("show track_commit_timestamp")
+    val resultSet: ResultSet =
+      conn.createStatement().executeQuery("show track_commit_timestamp")
     resultSet.next()
-    val res: Boolean = resultSet.getString("track_commit_timestamp").equals("on")
+    val res: Boolean =
+      resultSet.getString("track_commit_timestamp").equals("on")
     conn.close()
     res
   }
@@ -138,7 +203,10 @@ class MetaExtractor(metaStrategy: MetaStrategy, spark: SparkSession
     * @return returns a new dataframe with the newColum if 'track_commit_timestamp' is activated ,
     *         otherwise it returns the input dataframe without any transformation
     */
-  def addLastCommitTimestampColumn(dataFrame: DataFrame, colName: String): DataFrame = {
+  def addLastCommitTimestampColumn(
+      dataFrame: DataFrame,
+      colName: String
+  ): DataFrame = {
 
     //first of all we check if track_commit_timestamp is activated
     if (!is_track_commit_timestamp_activate()) {
@@ -147,18 +215,28 @@ class MetaExtractor(metaStrategy: MetaStrategy, spark: SparkSession
     }
     logger.info("postgres parameter : track_commit_timestamp = on")
 
-    val timestamp_df: DataFrame = PGTool.sqlExecWithResult(spark, getUrl(), buildLastCommitTimestampQuery(dataFrame, colName))
+    val timestamp_df: DataFrame = PGTool.sqlExecWithResult(
+      spark,
+      getUrl(),
+      buildLastCommitTimestampQuery(dataFrame, colName)
+    )
 
     //Add new column with last_commit_timestamp
-    dataFrame.join(timestamp_df, Seq(LIB_DATABASE, LIB_SCHEMA, LIB_TABLE), "left_outer")
+    dataFrame.join(
+      timestamp_df,
+      Seq(LIB_DATABASE, LIB_SCHEMA, LIB_TABLE),
+      "left_outer"
+    )
   }
 
-  private def buildLastCommitTimestampQuery(df: DataFrame, colName: String): String = {
+  private def buildLastCommitTimestampQuery(
+      df: DataFrame,
+      colName: String
+  ): String = {
     df.dropDuplicates(LIB_DATABASE, LIB_SCHEMA, LIB_TABLE)
       .select(LIB_DATABASE, LIB_SCHEMA, LIB_TABLE)
       .collect()
-      .map(row =>
-        s"""(SELECT * FROM (
+      .map(row => s"""(SELECT * FROM (
            |  SELECT pg_xact_commit_timestamp(xmin)::timestamptz as $colName,
            |  '${row.getString(0)}'::text as $LIB_DATABASE,
            |  '${row.getString(1)}'::text as $LIB_SCHEMA,

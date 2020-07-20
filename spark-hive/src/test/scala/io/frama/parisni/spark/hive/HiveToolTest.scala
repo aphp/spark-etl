@@ -53,4 +53,4 @@ class HiveToolTest extends FunSuite {
 }
 
 
-*/
+ */

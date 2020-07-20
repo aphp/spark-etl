@@ -4,22 +4,26 @@ import net.jcazevedo.moultingyaml._
 
 object ConfigMetaYaml extends DefaultYamlProtocol {
 
-  case class Database(jobName: String
-                      , hostPg: String
-                      , portPg: Int
-                      , databasePg: String
-                      , userPg: String
-                      , schemaPg: String
-                      , schemas: Option[List[Schema]])
+  case class Database(
+      jobName: String,
+      hostPg: String,
+      portPg: Int,
+      databasePg: String,
+      userPg: String,
+      schemaPg: String,
+      schemas: Option[List[Schema]]
+  )
 
-  case class Schema(dbName: String
-                    , dbType: String
-                    , host: String
-                    , db: String
-                    , schemaRegexFilter: Option[String]
-                    , user: String
-                    , isActive: Option[Boolean]
-                    , strategy: Option[Strategy])
+  case class Schema(
+      dbName: String,
+      dbType: String,
+      host: String,
+      db: String,
+      schemaRegexFilter: Option[String],
+      user: String,
+      isActive: Option[Boolean],
+      strategy: Option[Strategy]
+  )
 
   /**
     * This class contain the meta extractor and generator strategies to adopt
@@ -30,9 +34,10 @@ object ConfigMetaYaml extends DefaultYamlProtocol {
     * @param extractor The extractor strategy to apply
     * @param generator The generator strategy to apply
     */
-  case class Strategy(extractor: Option[ExtractStrategy] = Some(ExtractStrategy())
-                      , generator: Option[TableGeneratorStrategy] = Some(TableGeneratorStrategy())
-                     )
+  case class Strategy(
+      extractor: Option[ExtractStrategy] = Some(ExtractStrategy()),
+      generator: Option[TableGeneratorStrategy] = Some(TableGeneratorStrategy())
+  )
 
   /**
     * This class define witch 'FeatureExtractTrait' strategy to apply
@@ -40,7 +45,10 @@ object ConfigMetaYaml extends DefaultYamlProtocol {
     *                                path should be format like 'packageName.ClassName'
     *                                Default value will be the default strategy to apply
     */
-  case class ExtractStrategy(featureExtractImplClass: String = "io.frama.parisni.spark.meta.strategy.extractor.DefaultFeatureExtractImpl")
+  case class ExtractStrategy(
+      featureExtractImplClass: String =
+        "io.frama.parisni.spark.meta.strategy.extractor.DefaultFeatureExtractImpl"
+  )
 
   /**
     * This class define witch 'TableGeneratorTrait' strategy to apply
@@ -48,7 +56,10 @@ object ConfigMetaYaml extends DefaultYamlProtocol {
     *                                path should be format like 'packageName.ClassName'
     *                                Default value will be the default strategy to apply
     */
-  case class TableGeneratorStrategy(tableGeneratorImplClass: String = "io.frama.parisni.spark.meta.strategy.generator.DefaultTableGeneratorImpl")
+  case class TableGeneratorStrategy(
+      tableGeneratorImplClass: String =
+        "io.frama.parisni.spark.meta.strategy.generator.DefaultTableGeneratorImpl"
+  )
 
   //YAML implicit format mapping
   implicit val extractorFormat = yamlFormat1(ExtractStrategy)
@@ -58,4 +69,3 @@ object ConfigMetaYaml extends DefaultYamlProtocol {
   implicit val databaseFormat = yamlFormat7(Database)
 
 }
-

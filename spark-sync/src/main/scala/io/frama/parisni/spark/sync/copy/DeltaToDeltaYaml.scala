@@ -4,27 +4,38 @@ import net.jcazevedo.moultingyaml.DefaultYamlProtocol
 
 object DeltaToDeltaYaml extends DefaultYamlProtocol {
 
-  case class Database(jobName: String
-      , timestampTable:Option[String]
-      , timestampLastColumn:Option[String]      // To be used as PG  "S_DATE_FIELD"
-      , timestampColumns:Option[List[String]]   // To be used as Delta dates
-      , dateMax: Option[String]                 // Added param
-      , tables: Option[List[Table]])
+  case class Database(
+      jobName: String,
+      timestampTable: Option[String],
+      timestampLastColumn: Option[String] // To be used as PG  "S_DATE_FIELD"
+      ,
+      timestampColumns: Option[List[String]] // To be used as Delta dates
+      ,
+      dateMax: Option[String] // Added param
+      ,
+      tables: Option[List[Table]]
+  )
 
-  case class Table(tableDeltaSource: String
-      , tableDeltaTarget: String
-      , path: String
-      , key: List[String]
-      , typeLoad: Option[String]      // Added param
-      , format: Option[String]
-      , delta: Option[String]
-      , isActive: Option[Boolean]
-      , isMultiline: Option[Boolean]
-      , splitFactor: Option[Int]
-    	, isAnalyse: Option[Boolean]
-      , numThread: Option[Int]){
+  case class Table(
+      tableDeltaSource: String,
+      tableDeltaTarget: String,
+      path: String,
+      key: List[String],
+      typeLoad: Option[String] // Added param
+      ,
+      format: Option[String],
+      delta: Option[String],
+      isActive: Option[Boolean],
+      isMultiline: Option[Boolean],
+      splitFactor: Option[Int],
+      isAnalyse: Option[Boolean],
+      numThread: Option[Int]
+  ) {
 
-    require(numThread.isDefined && (numThread.get < 9 && numThread.get > 0), "Thread number should be between 1 and 8")
+    require(
+      numThread.isDefined && (numThread.get < 9 && numThread.get > 0),
+      "Thread number should be between 1 and 8"
+    )
   }
 
   implicit val colorFormat = yamlFormat12(Table)

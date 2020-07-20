@@ -5,9 +5,9 @@ import java.io.DataOutputStream
 import org.apache.spark.sql.Row
 
 class PgBinaryWriter(
-                     outputStream: DataOutputStream
-                     , rowWriter: Map[Int, ((Row, DataOutputStream) => Unit)]
-                    ) {
+    outputStream: DataOutputStream,
+    rowWriter: Map[Int, ((Row, DataOutputStream) => Unit)]
+) {
 
   private val columnNumber = this.rowWriter.size
 

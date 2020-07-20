@@ -35,7 +35,6 @@ trait GetTables {
 
   //TODO check that \\w+ (ie. in 'spark.sql.statistics.colStats.\\w+.distinctCount') works
 
-
   val SQL_HIVE_TABLE_EXT: String =
     s"""
        select

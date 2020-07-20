@@ -18,10 +18,29 @@ case class exportDf(file: String, content: String)
 
 object CSVTool extends LazyLogging {
 
-  def apply(spark: SparkSession, path: String, schema: StructType, delimiter: Option[String] = None, escape: Option[String] = None, multiline: Option[Boolean] = None, dateFormat: Option[String] = None, timestampFormat: Option[String] = None, removeNullRows: Option[String] = None, isCast: Boolean = true): Dataset[Row] = {
+  def apply(
+      spark: SparkSession,
+      path: String,
+      schema: StructType,
+      delimiter: Option[String] = None,
+      escape: Option[String] = None,
+      multiline: Option[Boolean] = None,
+      dateFormat: Option[String] = None,
+      timestampFormat: Option[String] = None,
+      removeNullRows: Option[String] = None,
+      isCast: Boolean = true
+  ): Dataset[Row] = {
     val mandatoryColumns = DFTool.getMandatoryColumns(schema)
     val optionalColumns = DFTool.getOptionalColumns(schema)
-    val df = read(spark: SparkSession, path: String, delimiter, escape, multiline, dateFormat, timestampFormat)
+    val df = read(
+      spark: SparkSession,
+      path: String,
+      delimiter,
+      escape,
+      multiline,
+      dateFormat,
+      timestampFormat
+    )
 
     DFTool.existColumns(df, mandatoryColumns)
     val dfWithCol = DFTool.addMissingColumns(df, optionalColumns)
@@ -37,8 +56,13 @@ object CSVTool extends LazyLogging {
       dfNull
   }
 
-  def write(df: DataFrame, path: String, mode: org.apache.spark.sql.SaveMode): Unit = {
-    df.write.format("csv")
+  def write(
+      df: DataFrame,
+      path: String,
+      mode: org.apache.spark.sql.SaveMode
+  ): Unit = {
+    df.write
+      .format("csv")
       .option("delimiter", ",")
       .option("header", value = false)
       .option("nullValue", null)
@@ -51,18 +75,30 @@ object CSVTool extends LazyLogging {
       .save(path)
   }
 
-  def read(spark: SparkSession, path: String, delimiter: Option[String] = None, escape: Option[String], multiline: Option[Boolean] = None, dateFormat: Option[String], timestampFormat: Option[String] = None): Dataset[Row] = {
+  def read(
+      spark: SparkSession,
+      path: String,
+      delimiter: Option[String] = None,
+      escape: Option[String],
+      multiline: Option[Boolean] = None,
+      dateFormat: Option[String],
+      timestampFormat: Option[String] = None
+  ): Dataset[Row] = {
     val headers = getCsvHeaders(spark, path, delimiter)
     val schemaSimple = getStringStructFromArray(headers)
     logger.info(schemaSimple.prettyJson)
-    val csvTmp = spark.read.format("csv")
+    val csvTmp = spark.read
+      .format("csv")
       .schema(schemaSimple)
       .option("multiline", multiline.getOrElse(false))
       .option("delimiter", delimiter.getOrElse(","))
       .option("header", value = true)
       .option("quote", "\"")
       .option("escape", escape.getOrElse("\""))
-      .option("timestampFormat", timestampFormat.getOrElse("yyyy-MM-dd HH:mm:ss"))
+      .option(
+        "timestampFormat",
+        timestampFormat.getOrElse("yyyy-MM-dd HH:mm:ss")
+      )
       .option("dateFormat", dateFormat.getOrElse("yyyy-MM-dd"))
       .option("columnNameOfCorruptRecord", "_corrupt_record")
       .option("mode", "PERMISSIVE")
@@ -82,7 +118,11 @@ object CSVTool extends LazyLogging {
 
   }
 
-  def getCsvHeaders(spark: SparkSession, path: String, delimiter: Option[String]): Array[String] = {
+  def getCsvHeaders(
+      spark: SparkSession,
+      path: String,
+      delimiter: Option[String]
+  ): Array[String] = {
     val data = spark.sparkContext.textFile(path)
     val header = data.first()
     val headers = header.split(delimiter.getOrElse(","))
@@ -100,14 +140,19 @@ object CSVTool extends LazyLogging {
   }
 
   /**
-   * Exports local files
-   *
-   * @param df            a dataframe with
-   * @param fileColumn    shall be a string
-   * @param contentColumn shall be a string
-   * @param folder
-   */
-  def writeDfToLocalFiles(df: DataFrame, fileColumn: String, contentColumn: String, folder: String) = {
+    * Exports local files
+    *
+    * @param df            a dataframe with
+    * @param fileColumn    shall be a string
+    * @param contentColumn shall be a string
+    * @param folder
+    */
+  def writeDfToLocalFiles(
+      df: DataFrame,
+      fileColumn: String,
+      contentColumn: String,
+      folder: String
+  ) = {
 
     // validate folder exists
     if (!Files.exists(Paths.get(folder)))
@@ -115,35 +160,49 @@ object CSVTool extends LazyLogging {
 
     import df.sparkSession.implicits._
     val ds = df
-      .select(col(fileColumn).cast(StringType) as "file", col(contentColumn).cast(StringType) as "content")
+      .select(
+        col(fileColumn).cast(StringType) as "file",
+        col(contentColumn).cast(StringType) as "content"
+      )
       .as[exportDf]
 
-    ds.collect().foreach(
-      p => {
+    ds.collect()
+      .foreach(p => {
         val fileName = folder + "/" + p.file + ".txt"
         val writerAnn = new java.io.PrintWriter(fileName, "UTF-8")
         if (p.content != null)
           writerAnn.write(p.content)
         writerAnn.close()
-      }
-    )
+      })
     logger.info(s"Exported ${ds.count} files")
 
   }
 
-  def writeCsvLocal(df: DataFrame, tempPath: String, localPath: String, options: Map[String, String] = Map(), format: String = "csv") = {
+  def writeCsvLocal(
+      df: DataFrame,
+      tempPath: String,
+      localPath: String,
+      options: Map[String, String] = Map(),
+      format: String = "csv"
+  ) = {
     val hdfs = FileSystem.get(new Configuration())
     val hdfsPath = new Path(tempPath)
     val targetFile = new File(localPath)
-    val fileWDot = new File(targetFile.getPath.substring(0, targetFile.getPath.length - targetFile.getName.length) + "." + targetFile.getName)
+    val fileWDot = new File(
+      targetFile.getPath.substring(
+        0,
+        targetFile.getPath.length - targetFile.getName.length
+      ) + "." + targetFile.getName
+    )
     logger.warn(s"writing to temp file ${fileWDot.getAbsolutePath}")
     val mime = format match {
-      case "csv" => ".csv"
+      case "csv"  => ".csv"
       case "text" => ".txt"
-      case _ => throw new Exception("only text and csv")
+      case _      => throw new Exception("only text and csv")
     }
     try {
-      df.write.mode(SaveMode.Overwrite)
+      df.write
+        .mode(SaveMode.Overwrite)
         .format(format)
         .options(options)
         .save(tempPath)
@@ -165,12 +224,13 @@ object CSVTool extends LazyLogging {
           outStream.close()
         }
       }
-    }
-    finally {
+    } finally {
       hdfs.delete(hdfsPath, true)
       logger.warn(s"deleting hdfs path $hdfsPath")
       fileWDot.renameTo(targetFile)
-      logger.warn(s"renaming ${fileWDot.getAbsolutePath} to ${targetFile.getAbsolutePath}")
+      logger.warn(
+        s"renaming ${fileWDot.getAbsolutePath} to ${targetFile.getAbsolutePath}"
+      )
     }
   }
 

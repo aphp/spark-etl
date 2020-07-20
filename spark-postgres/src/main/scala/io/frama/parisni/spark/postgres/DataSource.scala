@@ -15,8 +15,10 @@ class DefaultSource
     with DataSourceRegister
     with LazyLogging {
 
-  override def createRelation(sqlContext: SQLContext,
-                              parameters: Map[String, String]): BaseRelation = {
+  override def createRelation(
+      sqlContext: SQLContext,
+      parameters: Map[String, String]
+  ): BaseRelation = {
     try {
       new PostgresRelation(parameters, None, sqlContext.sparkSession)
 
@@ -26,17 +28,20 @@ class DefaultSource
     }
   }
 
-  override def createRelation(sqlContext: SQLContext,
-                              mode: SaveMode,
-                              parameters: Map[String, String],
-                              df: DataFrame): BaseRelation = {
+  override def createRelation(
+      sqlContext: SQLContext,
+      mode: SaveMode,
+      parameters: Map[String, String],
+      df: DataFrame
+  ): BaseRelation = {
     try {
       // TODO: What to do with the saveMode?
       val postgresRelation =
         new PostgresRelation(parameters, Some(df), sqlContext.sparkSession)
       postgresRelation.insert(
         df,
-        overwrite = mode.name().toLowerCase() == "overwrite")
+        overwrite = mode.name().toLowerCase() == "overwrite"
+      )
       postgresRelation
     } catch {
       case re: RuntimeException => throw re
@@ -48,10 +53,12 @@ class DefaultSource
 
 }
 
-class PostgresRelation(val parameters: Map[String, String],
-                       val dataFrame: Option[DataFrame],
-                       @transient val sparkSession: SparkSession)(
-    implicit val conf: PostgresConf = new PostgresConf(parameters)
+class PostgresRelation(
+    val parameters: Map[String, String],
+    val dataFrame: Option[DataFrame],
+    @transient val sparkSession: SparkSession
+)(implicit
+    val conf: PostgresConf = new PostgresConf(parameters)
 ) extends BaseRelation
     with Serializable
     with InsertableRelation
@@ -77,8 +84,10 @@ class PostgresRelation(val parameters: Map[String, String],
       case "scd1" =>
         require(conf.getJoinKey.nonEmpty, "JoinKey cannot be empty when scd1")
       case "scd2" =>
-        require(conf.getEndColumn.nonEmpty && conf.getPrimaryKey.nonEmpty,
-                "pk and endCol cannot be empty when scd2")
+        require(
+          conf.getEndColumn.nonEmpty && conf.getPrimaryKey.nonEmpty,
+          "pk and endCol cannot be empty when scd2"
+        )
       case _ =>
     }
 
@@ -95,30 +104,34 @@ class PostgresRelation(val parameters: Map[String, String],
 
     // Swap can only be applied if the original table exists
     if (overwrite && swapLoadParam && _pg.tableExists(table)) {
-      swapLoad(table,
-               killLocks,
-               loadType,
-               data,
-               numPartitions,
-               reindex,
-               joinKey,
-               filter,
-               deleteSet,
-               pk,
-               endCol)
+      swapLoad(
+        table,
+        killLocks,
+        loadType,
+        data,
+        numPartitions,
+        reindex,
+        joinKey,
+        filter,
+        deleteSet,
+        pk,
+        endCol
+      )
     } else {
-      inPlaceLoad(table,
-                  overwrite,
-                  killLocks,
-                  loadType,
-                  data,
-                  numPartitions,
-                  reindex,
-                  joinKey,
-                  filter,
-                  deleteSet,
-                  pk,
-                  endCol)
+      inPlaceLoad(
+        table,
+        overwrite,
+        killLocks,
+        loadType,
+        data,
+        numPartitions,
+        reindex,
+        joinKey,
+        filter,
+        deleteSet,
+        pk,
+        endCol
+      )
     }
   }
 
@@ -142,26 +155,30 @@ class PostgresRelation(val parameters: Map[String, String],
     // Bulk-load the data into it and when done
     // drop existing and rename newly loaded
     val tmpTable = "table_" + randomUUID.toString.replaceAll(".*-", "")
-    _pg.tableCopy(table,
-                  tmpTable,
-                  isUnlogged = false,
-                  copyConstraints = true,
-                  copyIndexes = true,
-                  copyStorage = true,
-                  copyComments = true,
-                  copyOwner = true,
-                  copyPermissions = true)
+    _pg.tableCopy(
+      table,
+      tmpTable,
+      isUnlogged = false,
+      copyConstraints = true,
+      copyIndexes = true,
+      copyStorage = true,
+      copyComments = true,
+      copyOwner = true,
+      copyPermissions = true
+    )
 
-    loadByType(loadType,
-               tmpTable,
-               data,
-               numPartitions,
-               reindex,
-               joinKey,
-               filter,
-               deleteSet,
-               pk,
-               endCol)
+    loadByType(
+      loadType,
+      tmpTable,
+      data,
+      numPartitions,
+      reindex,
+      joinKey,
+      filter,
+      deleteSet,
+      pk,
+      endCol
+    )
 
     _pg.purgeTmp()
 
@@ -202,16 +219,18 @@ class PostgresRelation(val parameters: Map[String, String],
     if ((!overwrite) && killLocks)
       _pg.killLocks(table)
 
-    loadByType(loadType,
-               table,
-               data,
-               numPartitions,
-               reindex,
-               joinKey,
-               filter,
-               deleteSet,
-               pk,
-               endCol)
+    loadByType(
+      loadType,
+      table,
+      data,
+      numPartitions,
+      reindex,
+      joinKey,
+      filter,
+      deleteSet,
+      pk,
+      endCol
+    )
 
     _pg.purgeTmp()
 
@@ -234,27 +253,33 @@ class PostgresRelation(val parameters: Map[String, String],
       case "megafull" =>
         _pg.outputBulk(tableToLoad, data, numPartitions, reindex)
       case "scd1" =>
-        _pg.outputScd1Hash(tableToLoad,
-                           joinKey.get,
-                           DFTool.dfAddHash(data),
-                           numPartitions,
-                           filter,
-                           deleteSet)
+        _pg.outputScd1Hash(
+          tableToLoad,
+          joinKey.get,
+          DFTool.dfAddHash(data),
+          numPartitions,
+          filter,
+          deleteSet
+        )
       case "scd2" =>
-        _pg.outputScd2Hash(tableToLoad,
-                           DFTool.dfAddHash(data),
-                           pk.get,
-                           joinKey.get,
-                           endCol.get,
-                           numPartitions)
+        _pg.outputScd2Hash(
+          tableToLoad,
+          DFTool.dfAddHash(data),
+          pk.get,
+          joinKey.get,
+          endCol.get,
+          numPartitions
+        )
     }
   }
 
   // https://michalsenkyr.github.io/2017/02/spark-sql_datasource
   override def buildScan(): RDD[Row] = {
     require(conf.getQuery.nonEmpty, "Query cannot be empty")
-    require(conf.getNumPartition.get == 1 || conf.getPartitionColumn.isDefined,
-            "For multiple partition, a partition column shall be specified")
+    require(
+      conf.getNumPartition.get == 1 || conf.getPartitionColumn.isDefined,
+      "For multiple partition, a partition column shall be specified"
+    )
 
     val query = conf.getQuery.get
     val multiline = conf.getIsMultiline
@@ -271,12 +296,18 @@ class PostgresRelation(val parameters: Map[String, String],
 
   def getPool: PGTool = {
 
-    require(conf.getHost.nonEmpty || conf.getUrl.isDefined,
-            "Host cannot be empty")
-    require(conf.getDatabase.nonEmpty || conf.getUrl.isDefined,
-            "Database cannot be empty")
-    require(conf.getUser.nonEmpty || conf.getUrl.isDefined,
-            "User cannot be empty")
+    require(
+      conf.getHost.nonEmpty || conf.getUrl.isDefined,
+      "Host cannot be empty"
+    )
+    require(
+      conf.getDatabase.nonEmpty || conf.getUrl.isDefined,
+      "Database cannot be empty"
+    )
+    require(
+      conf.getUser.nonEmpty || conf.getUrl.isDefined,
+      "User cannot be empty"
+    )
     val bulkLoadMode = conf.getBulkLoadMode.getOrElse("") match {
       case "csv"            => CSV
       case "stream"         => Stream
@@ -287,17 +318,21 @@ class PostgresRelation(val parameters: Map[String, String],
     val bulkLoadBufferSize =
       conf.getBulkLoadBufferSize.getOrElse(PGTool.defaultBulkLoadBufferSize)
 
-    val url = getUrl(conf.getUrl,
-                     conf.getHost,
-                     conf.getPort,
-                     conf.getDatabase,
-                     conf.getUser,
-                     conf.getSchema)
-    pgTool(url,
-           conf.getTemp,
-           conf.getPassword,
-           bulkLoadMode,
-           bulkLoadBufferSize)
+    val url = getUrl(
+      conf.getUrl,
+      conf.getHost,
+      conf.getPort,
+      conf.getDatabase,
+      conf.getUser,
+      conf.getSchema
+    )
+    pgTool(
+      url,
+      conf.getTemp,
+      conf.getPassword,
+      bulkLoadMode,
+      bulkLoadBufferSize
+    )
   }
 
   def pgTool(
@@ -307,31 +342,37 @@ class PostgresRelation(val parameters: Map[String, String],
       bulkLoadMode: BulkLoadMode,
       bulkLoadBufferSize: Int
   ) = {
-    val pg = PGTool(sparkSession,
-                    url,
-                    tempFolder.getOrElse("/tmp"),
-                    bulkLoadMode,
-                    bulkLoadBufferSize)
+    val pg = PGTool(
+      sparkSession,
+      url,
+      tempFolder.getOrElse("/tmp"),
+      bulkLoadMode,
+      bulkLoadBufferSize
+    )
     if (password.isDefined)
       pg.setPassword(password.get)
     pg
   }
 
-  def getUrl(url: Option[String],
-             host: Option[String],
-             port: Option[String],
-             database: Option[String],
-             user: Option[String],
-             schema: Option[String]) = {
+  def getUrl(
+      url: Option[String],
+      host: Option[String],
+      port: Option[String],
+      database: Option[String],
+      user: Option[String],
+      schema: Option[String]
+  ) = {
     url match {
       case Some(s) => s
       case None =>
         "jdbc:postgresql://%s:%s/%s?user=%s&currentSchema=%s"
-          .format(host.get,
-                  port.getOrElse(5432),
-                  database.get,
-                  user.get,
-                  schema.getOrElse("public"))
+          .format(
+            host.get,
+            port.getOrElse(5432),
+            database.get,
+            user.get,
+            schema.getOrElse("public")
+          )
     }
 
   }

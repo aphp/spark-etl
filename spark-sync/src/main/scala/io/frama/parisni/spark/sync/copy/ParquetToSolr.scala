@@ -6,7 +6,6 @@ import io.frama.parisni.spark.sync.Sync
 import io.frama.parisni.spark.sync.copy.ParquetToSolrYaml._
 import org.apache.spark.sql.SparkSession
 
-
 class ParquetToSolr extends LazyLogging {
 
   def sync(spark: SparkSession, database: Database, zookHost: String): Unit = {
@@ -24,11 +23,15 @@ class ParquetToSolr extends LazyLogging {
         val zkHost = zookHost //table.ZkHost.toString
         val pks = table.key
 
-        val config = Map("S_TABLE_NAME" -> tableDelta, "S_TABLE_TYPE" -> "parquet",
-          "S_DATE_FIELD" -> dateFieldDelta, "PATH" -> pathDelta,
-
-          "T_TABLE_NAME" -> tableSolr, "T_TABLE_TYPE" -> "solr",
-          "ZKHOST" -> zkHost, "T_DATE_MAX" -> dateMax //, "T_LOAD_TYPE" -> loadType
+        val config = Map(
+          "S_TABLE_NAME" -> tableDelta,
+          "S_TABLE_TYPE" -> "parquet",
+          "S_DATE_FIELD" -> dateFieldDelta,
+          "PATH" -> pathDelta,
+          "T_TABLE_NAME" -> tableSolr,
+          "T_TABLE_TYPE" -> "solr",
+          "ZKHOST" -> zkHost,
+          "T_DATE_MAX" -> dateMax //, "T_LOAD_TYPE" -> loadType
         )
 
         val sync = new Sync()
@@ -37,8 +40,7 @@ class ParquetToSolr extends LazyLogging {
       }
     } catch {
       case re: RuntimeException => throw re
-      case e: Exception => throw new RuntimeException(e)
+      case e: Exception         => throw new RuntimeException(e)
     }
   }
 }
-

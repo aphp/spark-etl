@@ -71,11 +71,13 @@ class CrudTest extends QueryTest with SparkSessionTestWrapper {
     assert(resultInt == "Integer")
 
     assertThrows[UnsupportedOperationException] {
-      val resultBool = PGTool.getSqlColumnType(spark,
-                                               getPgUrl,
-                                               query,
-                                               "colboolean",
-                                               "postgres")
+      val resultBool = PGTool.getSqlColumnType(
+        spark,
+        getPgUrl,
+        query,
+        "colboolean",
+        "postgres"
+      )
     }
   }
 
@@ -109,6 +111,7 @@ class CrudTest extends QueryTest with SparkSessionTestWrapper {
         .option("partitions", "8")
         .option("partitionColumn", "key")
         .load
-        .count === 8)
+        .count === 8
+    )
   }
 }

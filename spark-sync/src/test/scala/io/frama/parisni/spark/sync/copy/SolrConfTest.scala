@@ -16,23 +16,54 @@ import org.eclipse.jetty.servlet.ServletHolder
 import org.junit.Assert.assertTrue
 import org.restlet.ext.servlet.ServerServlet
 
-
-class SolrConfTest extends QueryTest with SparkSessionTestWrapper with SolrCloudTestBuilder {
+class SolrConfTest
+    extends QueryTest
+    with SparkSessionTestWrapper
+    with SolrCloudTestBuilder {
 
   test("test collection exists") {
 
     startSolrCloudCluster()
-    println("Before --- Collection source exists= " + checkCollectionExists("source", zkHost))
-    println("Before --- Collection target exists= " + checkCollectionExists("target", zkHost))
-    println("Before --- Collection source55 exists= " + checkCollectionExists("source55", zkHost))
+    println(
+      "Before --- Collection source exists= " + checkCollectionExists(
+        "source",
+        zkHost
+      )
+    )
+    println(
+      "Before --- Collection target exists= " + checkCollectionExists(
+        "target",
+        zkHost
+      )
+    )
+    println(
+      "Before --- Collection source55 exists= " + checkCollectionExists(
+        "source55",
+        zkHost
+      )
+    )
 
     createSolrTables()
 
-    println("After --- Collection source exists= " + checkCollectionExists("source", zkHost))
-    println("After --- Collection target exists= " + checkCollectionExists("target", zkHost))
-    println("Before --- Collection source55 exists= " + checkCollectionExists("source55", zkHost))
+    println(
+      "After --- Collection source exists= " + checkCollectionExists(
+        "source",
+        zkHost
+      )
+    )
+    println(
+      "After --- Collection target exists= " + checkCollectionExists(
+        "target",
+        zkHost
+      )
+    )
+    println(
+      "Before --- Collection source55 exists= " + checkCollectionExists(
+        "source55",
+        zkHost
+      )
+    )
   }
-
 
   test("test sync solr to solr") {
 
@@ -41,9 +72,14 @@ class SolrConfTest extends QueryTest with SparkSessionTestWrapper with SolrCloud
     val clusterState = cloudClient.getZkStateReader.getClusterState
     val solrCloudClient = SolrSupport.getCachedCloudClient(zkHost)
 
-    val mapy = Map("S_TABLE_NAME" -> "source", "S_TABLE_TYPE" -> "solr", "S_DATE_FIELD" -> "date_update",
-      "T_TABLE_NAME" -> "target", "T_TABLE_TYPE" -> "solr", //"T_DATE_MAX" -> "2017-08-07 23:00:00",
-      "ZKHOST" -> zkHost, "T_LOAD_TYPE" -> "full"
+    val mapy = Map(
+      "S_TABLE_NAME" -> "source",
+      "S_TABLE_TYPE" -> "solr",
+      "S_DATE_FIELD" -> "date_update",
+      "T_TABLE_NAME" -> "target",
+      "T_TABLE_TYPE" -> "solr", //"T_DATE_MAX" -> "2017-08-07 23:00:00",
+      "ZKHOST" -> zkHost,
+      "T_LOAD_TYPE" -> "full"
     )
     val dates = List("date_update", "date_update2", "date_update3")
     val pks = List("id", "pk2")
@@ -53,7 +89,8 @@ class SolrConfTest extends QueryTest with SparkSessionTestWrapper with SolrCloud
     val sCollection = solrc.getSourceTableName.getOrElse("")
     val sDateField = solrc.getSourceDateField.getOrElse("")
     val tCcollection = solrc.getTargetTableName.getOrElse("")
-    val dateMax = solrc.getDateMax(spark) //pgc.getDateMax.getOrElse("2019-01-01")
+    val dateMax =
+      solrc.getDateMax(spark) //pgc.getDateMax.getOrElse("2019-01-01")
 
     // load collection from source
     println(s"Collection ${sCollection}")
@@ -62,7 +99,14 @@ class SolrConfTest extends QueryTest with SparkSessionTestWrapper with SolrCloud
 
     // write collection to target
     if (!solrc.checkCollectionExists(tCcollection, zkhost)) //solrCloudClient,
-    SolrCloudUtil.buildCollection(zkHost, tCcollection, null, 1, cloudClient, spark.sparkContext)
+      SolrCloudUtil.buildCollection(
+        zkHost,
+        tCcollection,
+        null,
+        1,
+        cloudClient,
+        spark.sparkContext
+      )
     solrc.writeSource(sDf, zkhost, tCcollection) //cloudClient,
 
     solrCloudClient.commit(tCcollection, true, true)
@@ -75,30 +119,47 @@ class SolrConfTest extends QueryTest with SparkSessionTestWrapper with SolrCloud
 
     System.setProperty("jetty.testMode", "true")
     val solrXml = new File("src/test/resources/solr.xml")
-    val solrXmlContents: String = TestSolrCloudClusterSupport.readSolrXml(solrXml)
+    val solrXmlContents: String =
+      TestSolrCloudClusterSupport.readSolrXml(solrXml)
 
     val targetDir = new File("target")
     if (!targetDir.isDirectory)
-      fail("Project 'target' directory not found at :" + targetDir.getAbsolutePath)
+      fail(
+        "Project 'target' directory not found at :" + targetDir.getAbsolutePath
+      )
 
-    testWorkingDir = new File(targetDir, "scala-solrcloud-" + System.currentTimeMillis)
+    testWorkingDir =
+      new File(targetDir, "scala-solrcloud-" + System.currentTimeMillis)
     if (!testWorkingDir.isDirectory)
       testWorkingDir.mkdirs
 
     // need the schema stuff
-    val extraServlets: java.util.SortedMap[ServletHolder, String] = new java.util.TreeMap[ServletHolder, String]()
+    val extraServlets: java.util.SortedMap[ServletHolder, String] =
+      new java.util.TreeMap[ServletHolder, String]()
 
-    val solrSchemaRestApi: ServletHolder = new ServletHolder("SolrSchemaRestApi", classOf[ServerServlet])
-    solrSchemaRestApi.setInitParameter("org.restlet.application", "org.apache.solr.rest.SolrSchemaRestApi")
+    val solrSchemaRestApi: ServletHolder =
+      new ServletHolder("SolrSchemaRestApi", classOf[ServerServlet])
+    solrSchemaRestApi.setInitParameter(
+      "org.restlet.application",
+      "org.apache.solr.rest.SolrSchemaRestApi"
+    )
     extraServlets.put(solrSchemaRestApi, "/schema/*") //delete \ before *
 
-    cluster = new MiniSolrCloudCluster(1, null /* hostContext */ ,
-      testWorkingDir.toPath(), solrXmlContents, extraServlets, null)
+    cluster = new MiniSolrCloudCluster(
+      1,
+      null /* hostContext */,
+      testWorkingDir.toPath(),
+      solrXmlContents,
+      extraServlets,
+      null
+    )
     cloudClient = cluster.getSolrClient
     cloudClient.connect()
     //println("cloudClient = "+cloudClient.toString)
 
-    assertTrue(!cloudClient.getZkStateReader.getClusterState.getLiveNodes.isEmpty)
+    assertTrue(
+      !cloudClient.getZkStateReader.getClusterState.getLiveNodes.isEmpty
+    )
     zkHost = cluster.getZkServer.getZkAddress
     println("zkHost = " + zkHost)
 
@@ -122,23 +183,72 @@ class SolrConfTest extends QueryTest with SparkSessionTestWrapper with SolrCloud
     val solrCloudClient = SolrSupport.getCachedCloudClient(zkHost)
 
     // Create table "source"
-    val sInputDF: DataFrame = (
-      (1, "id1s", "Solr details of 1st row source", Timestamp.valueOf("2016-02-01 23:00:01"),
-        Timestamp.valueOf("2016-06-16 00:00:00"), Timestamp.valueOf("2016-06-16 00:00:00")) ::
-        (2, "id2s", "Solr details of 2nd row source", Timestamp.valueOf("2017-06-05 23:00:01"),
-          Timestamp.valueOf("2016-06-16 00:00:00"), Timestamp.valueOf("2016-06-16 00:00:00")) ::
-        (3, "id3s", "Solr details of 3rd row source", Timestamp.valueOf("2017-08-07 23:00:01"),
-          Timestamp.valueOf("2016-06-16 00:00:00"), Timestamp.valueOf("2016-06-16 00:00:00")) ::
-        (4, "id4s", "Solr details of 4th row source", Timestamp.valueOf("2018-10-16 23:00:01"),
-          Timestamp.valueOf("2016-06-16 00:00:00"), Timestamp.valueOf("2016-06-16 00:00:00")) ::
-        (5, "id5", "Solr details of 5th row source", Timestamp.valueOf("2019-12-27 00:00:00"),
-          Timestamp.valueOf("2016-06-16 00:00:00"), Timestamp.valueOf("2016-06-16 00:00:00")) ::
-        (6, "id6", "Solr details of 6th row source", Timestamp.valueOf("2020-01-14 00:00:00"),
-          Timestamp.valueOf("2016-06-16 00:00:00"), Timestamp.valueOf("2016-06-16 00:00:00")) ::
-        Nil).toDF("id", "pk2", "details", "date_update", "date_update2", "date_update3")
+    val sInputDF: DataFrame = ((
+      1,
+      "id1s",
+      "Solr details of 1st row source",
+      Timestamp.valueOf("2016-02-01 23:00:01"),
+      Timestamp.valueOf("2016-06-16 00:00:00"),
+      Timestamp.valueOf("2016-06-16 00:00:00")
+    ) ::
+      (
+        2,
+        "id2s",
+        "Solr details of 2nd row source",
+        Timestamp.valueOf("2017-06-05 23:00:01"),
+        Timestamp.valueOf("2016-06-16 00:00:00"),
+        Timestamp.valueOf("2016-06-16 00:00:00")
+      ) ::
+      (
+        3,
+        "id3s",
+        "Solr details of 3rd row source",
+        Timestamp.valueOf("2017-08-07 23:00:01"),
+        Timestamp.valueOf("2016-06-16 00:00:00"),
+        Timestamp.valueOf("2016-06-16 00:00:00")
+      ) ::
+      (
+        4,
+        "id4s",
+        "Solr details of 4th row source",
+        Timestamp.valueOf("2018-10-16 23:00:01"),
+        Timestamp.valueOf("2016-06-16 00:00:00"),
+        Timestamp.valueOf("2016-06-16 00:00:00")
+      ) ::
+      (
+        5,
+        "id5",
+        "Solr details of 5th row source",
+        Timestamp.valueOf("2019-12-27 00:00:00"),
+        Timestamp.valueOf("2016-06-16 00:00:00"),
+        Timestamp.valueOf("2016-06-16 00:00:00")
+      ) ::
+      (
+        6,
+        "id6",
+        "Solr details of 6th row source",
+        Timestamp.valueOf("2020-01-14 00:00:00"),
+        Timestamp.valueOf("2016-06-16 00:00:00"),
+        Timestamp.valueOf("2016-06-16 00:00:00")
+      ) ::
+      Nil).toDF(
+      "id",
+      "pk2",
+      "details",
+      "date_update",
+      "date_update2",
+      "date_update3"
+    )
 
     val sCollectionName = "source"
-    SolrCloudUtil.buildCollection(zkHost, sCollectionName, null, 1, cloudClient, spark.sparkContext)
+    SolrCloudUtil.buildCollection(
+      zkHost,
+      sCollectionName,
+      null,
+      1,
+      cloudClient,
+      spark.sparkContext
+    )
     val sSolrOpts = Map(
       "zkhost" -> zkHost,
       "collection" -> sCollectionName,
@@ -158,7 +268,10 @@ class SolrConfTest extends QueryTest with SparkSessionTestWrapper with SolrCloud
   def checkCollectionExists(collection: String, zkhost: String): Boolean = { //private   solrClient: CloudSolrClient,
 
     implicit val solrClient: CloudSolrClient =
-      new CloudSolrClient.Builder(util.Arrays.asList(zkhost), Optional.empty()).build
+      new CloudSolrClient.Builder(
+        util.Arrays.asList(zkhost),
+        Optional.empty()
+      ).build
 
     solrClient.getZkStateReader.getClusterState.hasCollection(collection)
   }

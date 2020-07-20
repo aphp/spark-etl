@@ -99,7 +99,8 @@ class Scd2Test extends QueryTest with SparkSessionTestWrapper {
       joinKey,
       endDatetimeCol,
       partitions,
-      multiline)
+      multiline
+    )
 
     val df1: DataFrame = ((1, "a", "b", "bob", new Timestamp(1L), -1) ::
       Nil).toDF("id", "key1", "key2", "cd", "end_date", "hash")
@@ -110,7 +111,8 @@ class Scd2Test extends QueryTest with SparkSessionTestWrapper {
       joinKey,
       endDatetimeCol,
       partitions,
-      multiline)
+      multiline
+    )
     // this should make nothing
     getPgTool(bulkLoadMode).outputScd2Hash(
       table,
@@ -119,7 +121,8 @@ class Scd2Test extends QueryTest with SparkSessionTestWrapper {
       joinKey,
       endDatetimeCol,
       partitions,
-      multiline)
+      multiline
+    )
 
     val result = getPgTool().inputBulk("select * from test_scd2_low")
 

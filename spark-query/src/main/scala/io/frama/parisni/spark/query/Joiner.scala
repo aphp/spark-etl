@@ -3,7 +3,6 @@ package io.frama.parisni.spark.query
 import org.apache.spark.sql.Column
 import org.apache.spark.sql.types.StructField
 
-
 trait Joiner {
   val right: Query
   def resolve(left: Query): ResolvedJoin
@@ -11,13 +10,12 @@ trait Joiner {
 
 case class ResolvedJoin(left: Query, right: Query, on: Column)
 
-
 // left + right.on(left("leftCol") === right("rightCol"))
 // joins through column expression
 case class ColumnJoiner(right: Query, column: Column) extends Joiner {
-  override def resolve(left: Query): ResolvedJoin = ResolvedJoin(left, right, column)
+  override def resolve(left: Query): ResolvedJoin =
+    ResolvedJoin(left, right, column)
 }
-
 
 // joins via column names
 trait NameJoiner extends Joiner {
@@ -36,22 +34,28 @@ trait NameJoiner extends Joiner {
       rcol = aliasedRight(j.rightColumn)
     } yield lcol === rcol
     cols match {
-      case Nil => throw new IllegalArgumentException(
-        s"No column found to join ${left.as} <-> ${right.as}, " +
-          s"strategy=${getClass.getSimpleName}, tried ${candidates.mkString("[", ", ", "]")}")
-      case _   => ResolvedJoin(aliasedLeft, aliasedRight, cols.reduce(_ && _))
+      case Nil =>
+        throw new IllegalArgumentException(
+          s"No column found to join ${left.as} <-> ${right.as}, " +
+            s"strategy=${getClass.getSimpleName}, tried ${candidates
+              .mkString("[", ", ", "]")}"
+        )
+      case _ => ResolvedJoin(aliasedLeft, aliasedRight, cols.reduce(_ && _))
     }
   }
 }
 
-
-case class JoinColumn(leftAlias: String, leftColumn: String, rightAlias: String, rightColumn: String)
+case class JoinColumn(
+    leftAlias: String,
+    leftColumn: String,
+    rightAlias: String,
+    rightColumn: String
+)
 
 object JoinColumn {
   def apply(leftAlias: String, rightAlias: String, column: String): JoinColumn =
     JoinColumn(leftAlias, column, rightAlias, column)
 }
-
 
 // left + right
 // Guess column(s) to join on, up to 1 per leave, based on leaves' joinAs:
@@ -79,11 +83,11 @@ object AutoColumnsJoiner {
     for {
       left <- left.leaves
       rightCol <- guesses.map(_(left.joinAs)).find(right.df.columns.contains)
-      leftCol <- (left.idFields ++ Seq(left.joinAs + "_id", left.as + "_id")).find(left.df.columns.contains)
+      leftCol <- (left.idFields ++ Seq(left.joinAs + "_id", left.as + "_id"))
+        .find(left.df.columns.contains)
       right <- right.leaves.find(_.df.columns.contains(rightCol))
     } yield JoinColumn(left.as, leftCol, right.as, rightCol)
 }
-
 
 // left + ~right
 // joins on common columns in schema
@@ -97,10 +101,12 @@ case class CommonColumnsJoiner(right: Query) extends NameJoiner {
   }
 }
 
-
 // left + right.on("col", ...)
-case class ColumnNameJoiner(right: Query, onCols: String *) extends NameJoiner {
-  require(onCols.forall(right.df.columns.contains), "Some join columns not found in right query")
+case class ColumnNameJoiner(right: Query, onCols: String*) extends NameJoiner {
+  require(
+    onCols.forall(right.df.columns.contains),
+    "Some join columns not found in right query"
+  )
 
   override def resolveColumns(left: Query): Seq[JoinColumn] =
     for {
@@ -109,10 +115,13 @@ case class ColumnNameJoiner(right: Query, onCols: String *) extends NameJoiner {
     } yield JoinColumn(left.as, col, right.as, col)
 }
 
-
 // left + right.on("leftCol" -> "rightCol", ...)
-case class ColumnNamesJoiner(right: Query, onCols: (String, String) *) extends NameJoiner {
-  require(onCols.forall(on => right.df.columns.contains(on._2)), "Some join columns not found in right query")
+case class ColumnNamesJoiner(right: Query, onCols: (String, String)*)
+    extends NameJoiner {
+  require(
+    onCols.forall(on => right.df.columns.contains(on._2)),
+    "Some join columns not found in right query"
+  )
 
   override def resolveColumns(left: Query): Seq[JoinColumn] =
     for {
@@ -121,13 +130,14 @@ case class ColumnNamesJoiner(right: Query, onCols: (String, String) *) extends N
     } yield JoinColumn(left.as, lCol, right.as, rCol)
 }
 
-
 // left + right.on(left -> "col", ...)
-case class AliasAndColumnNameJoiner(right: Query, onCols: (String, String) *) extends NameJoiner {
-  require(onCols.forall(on => right.df.columns.contains(on._2)), "Some join columns not found in right query")
+case class AliasAndColumnNameJoiner(right: Query, onCols: (String, String)*)
+    extends NameJoiner {
+  require(
+    onCols.forall(on => right.df.columns.contains(on._2)),
+    "Some join columns not found in right query"
+  )
 
   override def resolveColumns(left: Query): Seq[JoinColumn] =
     for ((leftAlias, col) <- onCols) yield JoinColumn(leftAlias, right.as, col)
 }
-
-

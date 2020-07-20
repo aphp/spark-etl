@@ -10,16 +10,19 @@ import org.apache.spark.sql.{SaveMode, SparkSession}
   */
 object CopyTablesToOtherDatabase extends App with LazyLogging {
 
-  val (fromDb: String,
-       toDb: String,
-       format: String,
-       tableList: Option[String]) = args match {
+  val (
+    fromDb: String,
+    toDb: String,
+    format: String,
+    tableList: Option[String]
+  ) = args match {
     case Array(_, _)       => (args(0).toString, args(1).toString, "parquet", None)
     case Array(_, _, _)    => (args(0), args(1), args(2), None)
     case Array(_, _, _, _) => (args(0), args(1), args(2), Some(args(3)))
     case _ =>
       throw new UnsupportedOperationException(
-        "shall specify fromDb, toDb and optionally the format")
+        "shall specify fromDb, toDb and optionally the format"
+      )
   }
 
   implicit val spark = SparkSession
@@ -34,7 +37,8 @@ object CopyTablesToOtherDatabase extends App with LazyLogging {
       fromDb: String,
       toDb: String,
       format: String,
-      listTable: Option[String] = None)(implicit spark: SparkSession) = {
+      listTable: Option[String] = None
+  )(implicit spark: SparkSession) = {
 
     val tbList = tableList match {
       case Some(e: String) if e != "" => e.split(",")
@@ -59,10 +63,12 @@ object CopyTablesToOtherDatabase extends App with LazyLogging {
     tables
   }
 
-  def copyTable(fromDb: String,
-                toDb: String,
-                table: String,
-                format: String = "parquet")(implicit ss: SparkSession) = {
+  def copyTable(
+      fromDb: String,
+      toDb: String,
+      table: String,
+      format: String = "parquet"
+  )(implicit ss: SparkSession) = {
     logger.info(s"Copying ${fromDb}.${table} TO ${toDb}.${table}")
     val copyTable = ss
       .table(s"${fromDb}.${table}")

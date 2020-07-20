@@ -1,13 +1,22 @@
 package io.frama.parisni.spark.sync
 
 import com.typesafe.scalalogging.LazyLogging
-import io.frama.parisni.spark.sync.conf.{DeltaConf, ParquetConf, PostgresConf, SolrConf}
+import io.frama.parisni.spark.sync.conf.{
+  DeltaConf,
+  ParquetConf,
+  PostgresConf,
+  SolrConf
+}
 import org.apache.spark.sql.SparkSession
 
 class Sync extends LazyLogging {
 
-  def syncSourceTarget(spark: SparkSession, config: Map[String, String], dates: List[String],
-                       pks: List[String]): Unit = {
+  def syncSourceTarget(
+      spark: SparkSession,
+      config: Map[String, String],
+      dates: List[String],
+      pks: List[String]
+  ): Unit = {
 
     val sourceType = config.get("S_TABLE_TYPE").getOrElse("")
     val targetType = config.get("T_TABLE_TYPE").getOrElse("")
@@ -19,7 +28,8 @@ class Sync extends LazyLogging {
     val plc = new ParquetConf(config, dates, pks)
 
     /** Calculation of dateMax: be sure that "target" table exists
-     * (in order to calculate dateMax) or provide dateMax **/
+      * (in order to calculate dateMax) or provide dateMax *
+      */
     var dateMax = ""
     if (targetType == "postgres") dateMax = pgc.getDateMax(spark)
     else if (targetType == "delta") dateMax = dc.getDateMax(spark)
@@ -39,7 +49,19 @@ class Sync extends LazyLogging {
         val sDateField = pgc.getSourceDateField.getOrElse("")
         val loadType = pgc.getLoadType.getOrElse("")
 
-        sourceDF = pgc.readSource(spark, host, port, db, user, schema, sTable, sDateField, dateMax, loadType, pks)
+        sourceDF = pgc.readSource(
+          spark,
+          host,
+          port,
+          db,
+          user,
+          schema,
+          sTable,
+          sDateField,
+          dateMax,
+          loadType,
+          pks
+        )
       }
       case "delta" => {
 
@@ -48,7 +70,8 @@ class Sync extends LazyLogging {
         val sDateField = dc.getSourceDateField.getOrElse("")
         val loadType = dc.getLoadType.getOrElse("")
 
-        sourceDF = dc.readSource(spark, path, sTable, sDateField, dateMax, loadType)
+        sourceDF =
+          dc.readSource(spark, path, sTable, sDateField, dateMax, loadType)
       }
       case "parquet" => {
 
@@ -57,7 +80,8 @@ class Sync extends LazyLogging {
         val sDateField = dc.getSourceDateField.getOrElse("")
         val loadType = dc.getLoadType.getOrElse("")
 
-        sourceDF = plc.readSource(spark, path, sTable, sDateField, dateMax, loadType)
+        sourceDF =
+          plc.readSource(spark, path, sTable, sDateField, dateMax, loadType)
       }
       case "solr" => {
 
@@ -65,7 +89,8 @@ class Sync extends LazyLogging {
         val sCollection = slc.getSourceTableName.getOrElse("")
         val sDateField = slc.getSourceDateField.getOrElse("")
 
-        sourceDF = slc.readSource(spark, zkhost, sCollection, sDateField, dateMax)
+        sourceDF =
+          slc.readSource(spark, zkhost, sCollection, sDateField, dateMax)
       }
     }
 
@@ -86,7 +111,18 @@ class Sync extends LazyLogging {
           val loadType = pgc.getLoadType.getOrElse("")
           val hashField = pgc.getSourcePK.mkString(",")
 
-          pgc.writeSource(spark, sourceDF, host, port, db, user, schema, tTable, loadType, hashField)
+          pgc.writeSource(
+            spark,
+            sourceDF,
+            host,
+            port,
+            db,
+            user,
+            schema,
+            tTable,
+            loadType,
+            hashField
+          )
         }
 
         case "delta" => {

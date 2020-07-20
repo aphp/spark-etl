@@ -6,7 +6,6 @@ import org.scalatest.FunSuite
 
 import scala.io.Source
 
-
 class HiveToPostgresTest extends FunSuite {
 
   test("test fhir patient") {
@@ -15,8 +14,8 @@ class HiveToPostgresTest extends FunSuite {
     val yaml = ymlTxt.stripMargin.parseYaml
     val palette = yaml.convertTo[Database]
 
-    for(pal <- palette.tables.getOrElse(Nil)){
-          println("jim" + pal.insertDatetime)
+    for (pal <- palette.tables.getOrElse(Nil)) {
+      println("jim" + pal.insertDatetime)
 
     }
 
@@ -24,5 +23,3 @@ class HiveToPostgresTest extends FunSuite {
 
   }
 }
-
-

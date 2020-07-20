@@ -42,7 +42,8 @@ class PredicateTest extends QueryBaseTest {
     val person2 = new Query with Equatable[Person] {
       override def df: DataFrame = peopleDf
       override def as: String = "person"
-      override def eq(a: Person): Predicate = Predicate(df("person_id") === a.person_id)
+      override def eq(a: Person): Predicate =
+        Predicate(df("person_id") === a.person_id)
     }
     assertQuery(1) {
       person2 | (person2 === alice)

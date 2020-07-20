@@ -124,12 +124,14 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
     import spark.implicits._
     val schema =
       ((1, "asdf", 1L, Array(1, 2, 3), Array("bob"), Array(1L, 2L)) :: Nil)
-        .toDF("int_col",
-              "string_col",
-              "long_col",
-              "array_int_col",
-              "array_string_col",
-              "array_bigint_col")
+        .toDF(
+          "int_col",
+          "string_col",
+          "long_col",
+          "array_int_col",
+          "array_string_col",
+          "array_bigint_col"
+        )
         .schema
     getPgTool().tableCreate("test_array", schema, isUnlogged = true)
   }
@@ -139,12 +141,14 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
     import spark.implicits._
     val data =
       ((1, "asdf", 1L, Array(1, 2, 3), Array("bob"), Array(1L, 2L)) :: Nil)
-        .toDF("INT_COL",
-              "STRING_COL",
-              "LONG_COL",
-              "ARRAY_INT_COL",
-              "ARRAY_STRING_COL",
-              "ARRAY_BIGINT_COL")
+        .toDF(
+          "INT_COL",
+          "STRING_COL",
+          "LONG_COL",
+          "ARRAY_INT_COL",
+          "ARRAY_STRING_COL",
+          "ARRAY_BIGINT_COL"
+        )
     val schema = data.schema
     getPgTool().tableCreate("TEST_ARRAY", schema, isUnlogged = true)
     data.write
@@ -160,12 +164,14 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
     import spark.implicits._
     val schema =
       ((1, "asdf", 1L, Array(1, 2, 3), Array("bob"), Array(1L, 2L)) :: Nil)
-        .toDF("int_col",
-              "string_col",
-              "long_col",
-              "array_int_col",
-              "array_string_col",
-              "array_bigint_col")
+        .toDF(
+          "int_col",
+          "string_col",
+          "long_col",
+          "array_int_col",
+          "array_string_col",
+          "array_bigint_col"
+        )
         .schema
     assert(!getPgTool().tableExists("TEST_ARRAY"))
     getPgTool().tableCreate("TEST_ARRAY", schema, isUnlogged = true)
@@ -203,21 +209,25 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
     val rsBase = conn
       .createStatement()
       .executeQuery(
-        constraintSql.replace("TABLE_NAME", "base_table_for_constraints"))
+        constraintSql.replace("TABLE_NAME", "base_table_for_constraints")
+      )
     rsBase.next()
     assert(rsBase.getString(1) == expectedConstraintName)
     assert(rsBase.getString(2) == expectedConstraintSrc)
 
     // Do the copy
-    getPgTool().tableCopy("base_table_for_constraints",
-                          "copy_table_for_constraints",
-                          copyConstraints = true)
+    getPgTool().tableCopy(
+      "base_table_for_constraints",
+      "copy_table_for_constraints",
+      copyConstraints = true
+    )
 
     // Assert copied table has the storage parameter
     val rsCopy = conn
       .createStatement()
       .executeQuery(
-        constraintSql.replace("TABLE_NAME", "copy_table_for_constraints"))
+        constraintSql.replace("TABLE_NAME", "copy_table_for_constraints")
+      )
     rsCopy.next()
     assert(rsCopy.getString(1) == expectedConstraintName)
     assert(rsCopy.getString(2) == expectedConstraintSrc)
@@ -250,37 +260,44 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
       """.stripMargin
       )
 
-    val expectedIndexDef = "CREATE INDEX IDX_NAME ON public.TABLE_NAME USING btree " +
-      "(compounded_idx_1 NULLS FIRST, compounded_idx_2 DESC) " +
-      "WHERE (length((compounded_idx_2)::text) < 10)"
+    val expectedIndexDef =
+      "CREATE INDEX IDX_NAME ON public.TABLE_NAME USING btree " +
+        "(compounded_idx_1 NULLS FIRST, compounded_idx_2 DESC) " +
+        "WHERE (length((compounded_idx_2)::text) < 10)"
     // Assert base index info is correct
     val rsBase = conn
       .createStatement()
       .executeQuery(
-        "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = 'base_table_for_indexes'")
+        "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = 'base_table_for_indexes'"
+      )
     rsBase.next()
     assert(rsBase.getString(1) == "compounded_idx")
     assert(
       rsBase.getString(2) == expectedIndexDef
         .replace("IDX_NAME", "compounded_idx")
-        .replace("TABLE_NAME", "base_table_for_indexes"))
+        .replace("TABLE_NAME", "base_table_for_indexes")
+    )
 
     // Do the copy
-    getPgTool().tableCopy("base_table_for_indexes",
-                          "copy_table_for_indexes",
-                          copyIndexes = true)
+    getPgTool().tableCopy(
+      "base_table_for_indexes",
+      "copy_table_for_indexes",
+      copyIndexes = true
+    )
 
     // Assert copied index info is correct
     val rsCopy = conn
       .createStatement()
       .executeQuery(
-        "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = 'copy_table_for_indexes'")
+        "SELECT indexname, indexdef FROM pg_indexes WHERE tablename = 'copy_table_for_indexes'"
+      )
     rsCopy.next()
     val idxName = rsCopy.getString(1)
     assert(
       rsCopy.getString(2) == expectedIndexDef
         .replace("IDX_NAME", idxName)
-        .replace("TABLE_NAME", "copy_table_for_indexes"))
+        .replace("TABLE_NAME", "copy_table_for_indexes")
+    )
 
   }
 
@@ -288,7 +305,9 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
   def verifyPostgresCopyTableStorage(): Unit = {
     val db = pg.getEmbeddedPostgres.getPostgresDatabase
     val conn = db.getConnection()
-    conn.createStatement().execute("""
+    conn
+      .createStatement()
+      .execute("""
         |CREATE TABLE base_table_for_storage(
         | toast_column VARCHAR(1024)
         |)
@@ -310,14 +329,14 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
       .executeQuery(
         checkStorageSql
           .replace("TABLE_NAME", "base_table_for_storage")
-          .replace("COLUMN_NAME", "toast_column"))
+          .replace("COLUMN_NAME", "toast_column")
+      )
     rsBaseOriginal.next()
     assert(rsBaseOriginal.getString(1) == "x")
 
     conn
       .createStatement()
-      .execute(
-        """
+      .execute("""
         |ALTER TABLE base_table_for_storage ALTER COLUMN toast_column SET STORAGE PLAIN
       """.stripMargin)
 
@@ -327,14 +346,17 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
       .executeQuery(
         checkStorageSql
           .replace("TABLE_NAME", "base_table_for_storage")
-          .replace("COLUMN_NAME", "toast_column"))
+          .replace("COLUMN_NAME", "toast_column")
+      )
     rsBaseUpdated.next()
     assert(rsBaseUpdated.getString(1) == "p")
 
     // Do the copy
-    getPgTool().tableCopy("base_table_for_storage",
-                          "copy_table_for_storage",
-                          copyStorage = true)
+    getPgTool().tableCopy(
+      "base_table_for_storage",
+      "copy_table_for_storage",
+      copyStorage = true
+    )
 
     // Assert that copied-table column has storage p
     val rsCopy = conn
@@ -342,7 +364,8 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
       .executeQuery(
         checkStorageSql
           .replace("TABLE_NAME", "copy_table_for_storage")
-          .replace("COLUMN_NAME", "toast_column"))
+          .replace("COLUMN_NAME", "toast_column")
+      )
     rsCopy.next()
     assert(rsCopy.getString(1) == "p")
   }
@@ -384,21 +407,25 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
     val rsBase = conn
       .createStatement()
       .executeQuery(
-        commentsSql.replace("TABLE_NAME", "base_table_for_comments"))
+        commentsSql.replace("TABLE_NAME", "base_table_for_comments")
+      )
     rsBase.next()
     assert(rsBase.getString(1) == expectedColumnName)
     assert(rsBase.getString(2) == expectedColumnComment)
 
     // Do the copy
-    getPgTool().tableCopy("base_table_for_comments",
-                          "copy_table_for_comments",
-                          copyComments = true)
+    getPgTool().tableCopy(
+      "base_table_for_comments",
+      "copy_table_for_comments",
+      copyComments = true
+    )
 
     // Assert copied index info is correct
     val rsCopy = conn
       .createStatement()
       .executeQuery(
-        commentsSql.replace("TABLE_NAME", "copy_table_for_comments"))
+        commentsSql.replace("TABLE_NAME", "copy_table_for_comments")
+      )
     rsCopy.next()
     assert(rsCopy.getString(1) == expectedColumnName)
     assert(rsCopy.getString(2) == expectedColumnComment)
@@ -415,15 +442,18 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
       .createStatement()
       .execute("ALTER TABLE base_table_for_owner OWNER TO ru1")
 
-    getPgTool().tableCopy("base_table_for_owner",
-                          "copy_table_for_owner",
-                          copyOwner = true)
+    getPgTool().tableCopy(
+      "base_table_for_owner",
+      "copy_table_for_owner",
+      copyOwner = true
+    )
 
     // Check table perms
     val rsBaseTableOwner = conn
       .createStatement()
       .executeQuery(
-        "SELECT relowner FROM pg_class WHERE relname = 'base_table_for_owner'")
+        "SELECT relowner FROM pg_class WHERE relname = 'base_table_for_owner'"
+      )
     rsBaseTableOwner.next()
     val baseTableOwner = rsBaseTableOwner
       .getString(1)
@@ -437,7 +467,8 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
     val rsCopyTableOwner = conn
       .createStatement()
       .executeQuery(
-        "SELECT relowner FROM pg_class WHERE relname = 'copy_table_for_owner'")
+        "SELECT relowner FROM pg_class WHERE relname = 'copy_table_for_owner'"
+      )
     rsCopyTableOwner.next()
     val copyTableOwner = rsCopyTableOwner
       .getString(1)
@@ -491,15 +522,18 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
       .createStatement()
       .execute("GRANT UPDATE(perm_col) ON base_table_for_perms TO rg1")
 
-    getPgTool().tableCopy("base_table_for_perms",
-                          "copy_table_for_perms",
-                          copyPermissions = true)
+    getPgTool().tableCopy(
+      "base_table_for_perms",
+      "copy_table_for_perms",
+      copyPermissions = true
+    )
 
     // Check table perms
     val rsBaseTablePerms = conn
       .createStatement()
       .executeQuery(
-        "SELECT relacl FROM pg_class WHERE relname = 'base_table_for_perms'")
+        "SELECT relacl FROM pg_class WHERE relname = 'base_table_for_perms'"
+      )
     rsBaseTablePerms.next()
     val baseTablePerms = rsBaseTablePerms
       .getString(1)
@@ -513,7 +547,8 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
     val rsCopyTablePerms = conn
       .createStatement()
       .executeQuery(
-        "SELECT relacl FROM pg_class WHERE relname = 'copy_table_for_perms'")
+        "SELECT relacl FROM pg_class WHERE relname = 'copy_table_for_perms'"
+      )
     rsCopyTablePerms.next()
     val copyTablePerms = rsCopyTablePerms
       .getString(1)
@@ -600,14 +635,16 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
     var rs = conn
       .createStatement()
       .executeQuery(
-        "SELECT EXISTS(SELECT FROM information_schema.tables WHERE table_name = 'to_rename')")
+        "SELECT EXISTS(SELECT FROM information_schema.tables WHERE table_name = 'to_rename')"
+      )
     rs.next()
     assert(!rs.getBoolean(1))
 
     rs = conn
       .createStatement()
       .executeQuery(
-        "SELECT EXISTS(SELECT FROM information_schema.tables WHERE table_name = 'renamed')")
+        "SELECT EXISTS(SELECT FROM information_schema.tables WHERE table_name = 'renamed')"
+      )
     rs.next()
     assert(rs.getBoolean(1))
     conn.close()
@@ -635,10 +672,12 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
     val fakeData =
       ((1, "asdf", 1L) :: Nil).toDF("INT_COL", "STRING_COL", "LONG_COL")
     val schema = fakeData.schema
-    val data = ((1, "asdf", 1L, "err") :: Nil).toDF("INT_COL",
-                                                    "STRING_COL",
-                                                    "LONG_COL",
-                                                    "ERR_COL")
+    val data = ((1, "asdf", 1L, "err") :: Nil).toDF(
+      "INT_COL",
+      "STRING_COL",
+      "LONG_COL",
+      "ERR_COL"
+    )
 
     getPgTool().tableCreate("TEST_STREAM_BULK_LOAD", schema, isUnlogged = true)
 
@@ -690,12 +729,14 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
     import spark.implicits._
     val data =
       ((1, "asdf", 1L, Array(1, 2, 3), Array("bob"), Array(1L, 2L)) :: Nil)
-        .toDF("INT_COL",
-              "STRING_COL",
-              "LONG_COL",
-              "ARRAY_INT_COL",
-              "ARRAY_STRING_COL",
-              "ARRAY_BIGINT_COL")
+        .toDF(
+          "INT_COL",
+          "STRING_COL",
+          "LONG_COL",
+          "ARRAY_INT_COL",
+          "ARRAY_STRING_COL",
+          "ARRAY_BIGINT_COL"
+        )
     val schema = data.schema
     val tableName = s"TEST_ARRAY_$loadMode"
     getPgTool().tableCreate(tableName, schema, isUnlogged = true)
@@ -721,10 +762,12 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
     val fakeData =
       ((1, "asdf", 1L) :: Nil).toDF("INT_COL", "STRING_COL", "LONG_COL")
     val schema = fakeData.schema
-    val data = ((1, "asdf", 1L, "err") :: Nil).toDF("INT_COL",
-                                                    "STRING_COL",
-                                                    "LONG_COL",
-                                                    "ERR_COL")
+    val data = ((1, "asdf", 1L, "err") :: Nil).toDF(
+      "INT_COL",
+      "STRING_COL",
+      "LONG_COL",
+      "ERR_COL"
+    )
     val tableName = s"TEST_PG_BINARY_ERR_$loadMode"
     getPgTool().tableCreate(tableName, schema, isUnlogged = true)
 
@@ -899,18 +942,20 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
     import spark.implicits._
     // Needed for the InnerStruct class to be converted to DataFrame through implicit
     org.apache.spark.sql.catalyst.encoders.OuterScopes.addOuterScope(this)
-    val colNames = Seq("BOOL_COL",
-                       "BYTE_COL",
-                       "SHORT_COL",
-                       "INT_COL",
-                       "LONG_COL",
-                       "FLOAT_COL",
-                       "DOUBLE_COL",
-                       "STRING_COL",
-                       "DATE_COL",
-                       "TIMESTAMP_COL",
-                       "BYTEA_COL",
-                       "BIGD_COL")
+    val colNames = Seq(
+      "BOOL_COL",
+      "BYTE_COL",
+      "SHORT_COL",
+      "INT_COL",
+      "LONG_COL",
+      "FLOAT_COL",
+      "DOUBLE_COL",
+      "STRING_COL",
+      "DATE_COL",
+      "TIMESTAMP_COL",
+      "BYTEA_COL",
+      "BIGD_COL"
+    )
 
     val data = Seq(
       (
@@ -949,7 +994,9 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
       colNames.map(n => PGTool.sanP(n) + "[1]").mkString(", ")
     val selectSecondValues =
       colNames.map(n => PGTool.sanP(n) + "[2]").mkString(", ")
-    val rs = conn.createStatement().executeQuery(s"""
+    val rs = conn
+      .createStatement()
+      .executeQuery(s"""
         |SELECT
         |  $selectFirstValues,
         |  $selectSecondValues
@@ -967,7 +1014,8 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
     assert(rs.getString(8) == "8")
     assert(rs.getDate(9).toLocalDate.equals(testDate.toLocalDate))
     assert(
-      rs.getTimestamp(10).toLocalDateTime.equals(testTimestamp.toLocalDateTime))
+      rs.getTimestamp(10).toLocalDateTime.equals(testTimestamp.toLocalDateTime)
+    )
     assert(util.Arrays.equals(rs.getBytes(11), "11".getBytes))
     assert(rs.getDouble(12) == 12.0d)
 
@@ -978,10 +1026,12 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
   @Test
   def verifyOverwriteSwapLoad(): Unit = {
     import spark.implicits._
-    val data = ((1, "asdf", 1L, "err") :: Nil).toDF("INT_COL",
-                                                    "STRING_COL",
-                                                    "LONG_COL",
-                                                    "ERR_COL")
+    val data = ((1, "asdf", 1L, "err") :: Nil).toDF(
+      "INT_COL",
+      "STRING_COL",
+      "LONG_COL",
+      "ERR_COL"
+    )
     val schema = data.schema
     val tableName = "TEST_SWAP_BASE"
     getPgTool().tableCreate(tableName, schema, isUnlogged = true)

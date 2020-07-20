@@ -2,7 +2,6 @@ package io.frama.parisni.spark.query
 
 import org.apache.spark.sql.Column
 
-
 trait QueryDecorator extends Query {
   val base: Query
   override def leaves: Seq[Query] = base.leaves

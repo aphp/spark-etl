@@ -6,9 +6,9 @@ import net.jcazevedo.moultingyaml._
 import scala.io.Source
 import PostgresToSolrYaml._
 
-class SolrToPgTest extends SolrConfTest{    //FunSuite with io.frama.parisni.spark.sync.copy.SparkSessionTestWrapper
+class SolrToPgTest extends SolrConfTest { //FunSuite with io.frama.parisni.spark.sync.copy.SparkSessionTestWrapper
 
-    //test("test Solr to Postgres") {
+  //test("test Solr to Postgres") {
 
   //@Test
   def testSolr2Pg(): Unit = {
@@ -28,8 +28,13 @@ class SolrToPgTest extends SolrConfTest{    //FunSuite with io.frama.parisni.spa
     println(palette.toYaml.prettyPrint)
 
     println("Solr2Pg ------------------")
-    val solr2pg2:SolrToPg2 = new SolrToPg2
-    solr2pg2.sync(spark, palette, pg.getEmbeddedPostgres.getPort.toString, zkHost)
+    val solr2pg2: SolrToPg2 = new SolrToPg2
+    solr2pg2.sync(
+      spark,
+      palette,
+      pg.getEmbeddedPostgres.getPort.toString,
+      zkHost
+    )
 
   }
 }

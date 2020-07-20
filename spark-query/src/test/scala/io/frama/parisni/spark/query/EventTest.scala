@@ -1,6 +1,5 @@
 package io.frama.parisni.spark.query
 
-
 class EventTest extends QueryBaseTest {
 
   test("truth table") {
@@ -27,13 +26,13 @@ class EventTest extends QueryBaseTest {
   }
 
   test("filter: events") {
-    assertQuery(messages +1) {
+    assertQuery(messages + 1) {
       message | message.happens
     }
-    assertQuery(messages +1) {
+    assertQuery(messages + 1) {
       message | message.happens.before(Event.now)
     }
-    assertQuery(messages +1) {
+    assertQuery(messages + 1) {
       message | message.happens.before(Event.now - "1 day")
     }
   }

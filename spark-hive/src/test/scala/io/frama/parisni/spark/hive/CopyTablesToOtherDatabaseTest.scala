@@ -15,7 +15,8 @@ class CopyTablesToOtherDatabaseTest extends QueryTest with SparkTestingUtil {
     import spark.implicits._
     val table1 =
       List(Table1(1L, "bob"), Table1(2L, "jim"), Table1(3L, "john")).toDS
-    table1.write.mode(SaveMode.Overwrite)
+    table1.write
+      .mode(SaveMode.Overwrite)
       .saveAsTable("sourcedb.tableun")
 
     val table2 = List(Table2(1L, "jim"))

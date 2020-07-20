@@ -24,15 +24,15 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.types._
 
-
 /**
- * Shamelessly copied from Spark/sql codebase
- * https://github.com/apache/spark
- */
+  * Shamelessly copied from Spark/sql codebase
+  * https://github.com/apache/spark
+  */
 class UnivocityGenerator(
-  schema: StructType,
-  writer: Writer,
-  options: CSVOptions) {
+    schema: StructType,
+    writer: Writer,
+    options: CSVOptions
+) {
   private val writerSettings = options.asWriterSettings
   writerSettings.setHeaders(schema.fieldNames: _*)
   private val gen = new CsvWriter(writer, writerSettings)
@@ -46,21 +46,25 @@ class UnivocityGenerator(
   private val valueConverters: Array[ValueConverter] =
     schema.map(_.dataType).map(makeConverter).toArray
 
-  private def makeConverter(dataType: DataType): ValueConverter = dataType match {
-    case DateType =>
-      (row: InternalRow, ordinal: Int) =>
-        options.dateFormat.format(DateTimeUtils.toJavaDate(row.getInt(ordinal)))
+  private def makeConverter(dataType: DataType): ValueConverter =
+    dataType match {
+      case DateType =>
+        (row: InternalRow, ordinal: Int) =>
+          options.dateFormat.format(
+            DateTimeUtils.toJavaDate(row.getInt(ordinal))
+          )
 
-    case TimestampType =>
-      (row: InternalRow, ordinal: Int) =>
-        options.timestampFormat.format(DateTimeUtils.toJavaTimestamp(row.getLong(ordinal)))
+      case TimestampType =>
+        (row: InternalRow, ordinal: Int) =>
+          options.timestampFormat.format(
+            DateTimeUtils.toJavaTimestamp(row.getLong(ordinal))
+          )
 
-    //case udt: UserDefinedType[_] => makeConverter(udt.sqlType)
+      //case udt: UserDefinedType[_] => makeConverter(udt.sqlType)
 
-    case dt: DataType =>
-      (row: InternalRow, ordinal: Int) =>
-        row.get(ordinal, dt).toString
-  }
+      case dt: DataType =>
+        (row: InternalRow, ordinal: Int) => row.get(ordinal, dt).toString
+    }
 
   private def convertRow(row: InternalRow): Seq[String] = {
     var i = 0
@@ -77,8 +81,8 @@ class UnivocityGenerator(
   }
 
   /**
-   * Writes a single InternalRow to CSV using Univocity.
-   */
+    * Writes a single InternalRow to CSV using Univocity.
+    */
   def write(row: InternalRow): Unit = {
     if (printHeader) {
       gen.writeHeaders()

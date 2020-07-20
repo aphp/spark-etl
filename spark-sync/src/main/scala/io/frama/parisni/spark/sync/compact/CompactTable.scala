@@ -10,7 +10,8 @@ import scala.io.Source
 object CompactTable extends App with LazyLogging {
 
   // Spark Session
-  val spark = SparkSession.builder()
+  val spark = SparkSession
+    .builder()
     .master("local")
     .appName("spark session")
     .config("spark.sql.shuffle.partitions", "1")
@@ -33,12 +34,22 @@ object CompactTable extends App with LazyLogging {
   val schema = database.schema.toString
   val pw = database.pw.getOrElse("")
 
-  val compTab:CompactTable = new CompactTable
-  compTab.compactTables(spark, deltaPath, partition, numFiles, host, port, user, schema, db, pw)
+  val compTab: CompactTable = new CompactTable
+  compTab.compactTables(
+    spark,
+    deltaPath,
+    partition,
+    numFiles,
+    host,
+    port,
+    user,
+    schema,
+    db,
+    pw
+  )
 }
 
-
-class CompactTable extends LazyLogging{
+class CompactTable extends LazyLogging {
 
   //Table "meta_table"
   val META_TABLE_LIB = "meta_table"
@@ -46,43 +57,66 @@ class CompactTable extends LazyLogging{
   val DATABASE_LIB = "lib_database"
   val DELTA_TABLE_LIB = "lib_table"
 
-  def compactTables(spark: SparkSession, deltaPath: String, partition: String = "",
-                    numFiles: Int, host:String, port:String, user:String,
-                    schema:String, db:String, pw:String=""): Unit = {
+  def compactTables(
+      spark: SparkSession,
+      deltaPath: String,
+      partition: String = "",
+      numFiles: Int,
+      host: String,
+      port: String,
+      user: String,
+      schema: String,
+      db: String,
+      pw: String = ""
+  ): Unit = {
 
     //URL to connect to DB
-    val url = f"jdbc:postgresql://${host}:${port}/${db}?user=${user}&currentSchema=${schema}&password=${pw}"
+    val url =
+      f"jdbc:postgresql://${host}:${port}/${db}?user=${user}&currentSchema=${schema}&password=${pw}"
 
     //Get list of delta tables
-    val tables = spark.read.format("postgres")
+    val tables = spark.read
+      .format("postgres")
       .option("url", url)
-      .option("query", s"select ${DELTA_TABLE_LIB} from ${META_TABLE_LIB} where ${DATABASE_LIB} = '${SPARK_DB_LIB}'")
-      .load.toDF
+      .option(
+        "query",
+        s"select ${DELTA_TABLE_LIB} from ${META_TABLE_LIB} where ${DATABASE_LIB} = '${SPARK_DB_LIB}'"
+      )
+      .load
+      .toDF
 
     //Show tables
     logger.warn("List of Delta Tables ---------------------")
     tables.show
 
-    tables.take(tables.count.toInt).map(table => {
+    tables
+      .take(tables.count.toInt)
+      .map(table => {
 
-      val tableLib = table.get(0).toString
-      //Compact table
-      compactTable(spark, deltaPath, tableLib, partition, numFiles)
-      logger.warn(s"Delta table ${deltaPath}/${tableLib} compacted successfully")
-    })
+        val tableLib = table.get(0).toString
+        //Compact table
+        compactTable(spark, deltaPath, tableLib, partition, numFiles)
+        logger
+          .warn(s"Delta table ${deltaPath}/${tableLib} compacted successfully")
+      })
   }
 
-  def compactTable(spark: SparkSession, deltaPath: String, deltaTable: String,
-                   partition: String = "", numFiles: Int): Unit = {
+  def compactTable(
+      spark: SparkSession,
+      deltaPath: String,
+      deltaTable: String,
+      partition: String = "",
+      numFiles: Int
+  ): Unit = {
 
     val fullPath = deltaPath + "/" + deltaTable
     //check if delta path exists
-    if(!checkTableExists(spark, deltaPath, deltaTable)) {
+    if (!checkTableExists(spark, deltaPath, deltaTable)) {
       logger.warn(s"Delta Table ${fullPath} doesn't exists")
       return
     }
 
-    if(partition.isEmpty)
+    if (partition.isEmpty)
       spark.read
         .format("delta")
         .load(fullPath)
@@ -92,7 +126,7 @@ class CompactTable extends LazyLogging{
         .format("delta")
         .mode("overwrite")
         .save(fullPath)
-    else{
+    else {
 
       val numFilesPerPartition = numFiles
 
@@ -110,13 +144,17 @@ class CompactTable extends LazyLogging{
     }
   }
 
-  def checkTableExists(spark: SparkSession, path: String, table: String): Boolean = {
+  def checkTableExists(
+      spark: SparkSession,
+      path: String,
+      table: String
+  ): Boolean = {
 
     val conf = spark.sparkContext.hadoopConfiguration
     val fs = org.apache.hadoop.fs.FileSystem.get(conf)
     val deltaPath = path + "/" + table
     val res = fs.exists(new org.apache.hadoop.fs.Path(deltaPath))
-    logger.warn(s"Delta Table ${deltaPath} exists = "+res)
+    logger.warn(s"Delta Table ${deltaPath} exists = " + res)
     res
   }
 }

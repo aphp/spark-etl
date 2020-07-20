@@ -30,14 +30,16 @@ object PostgresToHive extends App with LazyLogging {
   //
   // SPARK PART
   //
-  val spark = SparkSession.builder()
+  val spark = SparkSession
+    .builder()
     .appName(database.jobName)
     .enableHiveSupport()
     .getOrCreate()
 
   spark.sparkContext.setLogLevel("WARN")
 
-  val url = f"jdbc:postgresql://${database.hostPg}:${database.portPg}/${database.databasePg}?user=${database.userPg}"
+  val url =
+    f"jdbc:postgresql://${database.hostPg}:${database.portPg}/${database.databasePg}?user=${database.userPg}"
   val pgClient = PGTool(spark, url, "spark-postgres")
 
   try {
@@ -50,25 +52,42 @@ object PostgresToHive extends App with LazyLogging {
           s"""select date_format(max(${database.timestampLastColumn.get}) - interval 2 hours, 'YYYYMMdd HHmmss') as last_timestamp
              |from ${database.databaseHive.get}.${database.timestampTable.get}""".stripMargin
         logger.warn(query)
-        val timestampLast = spark.sql(query)
-          .take(1).map(x => x.getString(0)).head
+        val timestampLast = spark
+          .sql(query)
+          .take(1)
+          .map(x => x.getString(0))
+          .head
         logger.warn(s"fetching data created after $timestampLast")
-        timestampFilter = database.timestampColumns.get.map(x => x + s" >= '$timestampLast'").mkString(" WHERE ", " OR ", "")
+        timestampFilter = database.timestampColumns.get
+          .map(x => x + s" >= '$timestampLast'")
+          .mkString(" WHERE ", " OR ", "")
       } catch {
-        case e: Exception => logger.warn(s"${database.databaseHive.get}.${database.timestampTable.get} does not yet exists. Loading from scratch")
+        case e: Exception =>
+          logger.warn(
+            s"${database.databaseHive.get}.${database.timestampTable.get} does not yet exists. Loading from scratch"
+          )
       }
     }
 
     for (table <- database.tables.getOrElse(Nil)) {
       if (table.isActive.getOrElse(true)) {
 
-        val query = f"select * from ${table.schemaPg}.${table.tablePg} " + timestampFilter
+        val query =
+          f"select * from ${table.schemaPg}.${table.tablePg} " + timestampFilter
         logger.warn(query)
-        val pgTable = DFTool.dfAddHash(pgClient.inputBulk(query = query, isMultiline = table.isMultiline, numPartitions = if (database.timestampTable.isEmpty) {
-          table.numThread
-        } else {
-          Some(1)
-        }, splitFactor = table.splitFactor, partitionColumn = table.key))
+        val pgTable = DFTool.dfAddHash(
+          pgClient.inputBulk(
+            query = query,
+            isMultiline = table.isMultiline,
+            numPartitions = if (database.timestampTable.isEmpty) {
+              table.numThread
+            } else {
+              Some(1)
+            },
+            splitFactor = table.splitFactor,
+            partitionColumn = table.key
+          )
+        )
 
         table.format.getOrElse("orc") match {
           case "delta" => {
@@ -85,7 +104,8 @@ object PostgresToHive extends App with LazyLogging {
                   .as("t")
                   .merge(
                     pgTable.as("s"),
-                    "s.%s = t.%s".format(table.key, table.key))
+                    "s.%s = t.%s".format(table.key, table.key)
+                  )
                   .whenMatched("s.hash <> t.hash")
                   .updateAll()
                   .whenNotMatched()
@@ -98,8 +118,16 @@ object PostgresToHive extends App with LazyLogging {
               pgTable.write.format("delta").mode(Overwrite).save(deltaPath)
             }
           }
-          case "parquet" => DFTool.saveHive(pgTable, DFTool.getDbTable(table.tableHive, table.schemaHive))
-          case format => pgTable.write.format(format).mode(Overwrite).saveAsTable(f"${table.schemaHive}.${table.tableHive}")
+          case "parquet" =>
+            DFTool.saveHive(
+              pgTable,
+              DFTool.getDbTable(table.tableHive, table.schemaHive)
+            )
+          case format =>
+            pgTable.write
+              .format(format)
+              .mode(Overwrite)
+              .saveAsTable(f"${table.schemaHive}.${table.tableHive}")
         }
       }
     }
@@ -108,7 +136,11 @@ object PostgresToHive extends App with LazyLogging {
   }
   spark.close()
 
-  def tableExists(spark: SparkSession, deltaPath: String, tablePath: String): Boolean = {
+  def tableExists(
+      spark: SparkSession,
+      deltaPath: String,
+      tablePath: String
+  ): Boolean = {
     val defaultFSConf = spark.sessionState.newHadoopConf().get("fs.defaultFS")
     val fsConf = if (deltaPath.startsWith("file:")) {
       "file:///"
@@ -143,4 +175,3 @@ object PostgresToHive extends App with LazyLogging {
    */
 
 }
-

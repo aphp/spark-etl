@@ -5,7 +5,7 @@ import net.jcazevedo.moultingyaml._
 
 import scala.io.Source
 import SolrToSolrYaml._
-class SolrToSolrTest extends SolrConfTest{
+class SolrToSolrTest extends SolrConfTest {
 
   //@Test
   def testSolr2Solr(): Unit = {
@@ -26,7 +26,7 @@ class SolrToSolrTest extends SolrConfTest{
 
     println("Solr2Solr ------------------")
     //startSolrCloudCluster
-    val s2s2:SolrToSolr2 = new SolrToSolr2
+    val s2s2: SolrToSolr2 = new SolrToSolr2
     s2s2.sync(spark, palette, zkHost)
 
   }

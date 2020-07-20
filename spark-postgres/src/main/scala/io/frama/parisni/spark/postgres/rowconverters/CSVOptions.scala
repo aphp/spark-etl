@@ -20,56 +20,69 @@ package io.frama.parisni.spark.postgres.rowconverters
 import java.nio.charset.StandardCharsets
 import java.util.{Locale, TimeZone}
 
-import com.univocity.parsers.csv.{CsvParserSettings, CsvWriterSettings, UnescapedQuoteHandling}
+import com.univocity.parsers.csv.{
+  CsvParserSettings,
+  CsvWriterSettings,
+  UnescapedQuoteHandling
+}
 import org.apache.commons.lang3.time.FastDateFormat
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.util._
 
 /**
- * Shamelessly copied from Spark/sql codebase
- * https://github.com/apache/spark
- */
+  * Shamelessly copied from Spark/sql codebase
+  * https://github.com/apache/spark
+  */
 class CSVOptions(
-  @transient val parameters: CaseInsensitiveMap[String],
-  val columnPruning: Boolean,
-  defaultTimeZoneId: String,
-  defaultColumnNameOfCorruptRecord: String)
-  extends Logging with Serializable {
+    @transient val parameters: CaseInsensitiveMap[String],
+    val columnPruning: Boolean,
+    defaultTimeZoneId: String,
+    defaultColumnNameOfCorruptRecord: String
+) extends Logging
+    with Serializable {
 
   def this(
-    parameters: Map[String, String],
-    columnPruning: Boolean,
-    defaultTimeZoneId: String,
-    defaultColumnNameOfCorruptRecord: String = "") = {
+      parameters: Map[String, String],
+      columnPruning: Boolean,
+      defaultTimeZoneId: String,
+      defaultColumnNameOfCorruptRecord: String = ""
+  ) = {
     this(
       CaseInsensitiveMap(parameters),
       columnPruning,
       defaultTimeZoneId,
-      defaultColumnNameOfCorruptRecord)
+      defaultColumnNameOfCorruptRecord
+    )
   }
 
   private def getChar(paramName: String, default: Char): Char = {
     val paramValue = parameters.get(paramName)
     paramValue match {
-      case None => default
-      case Some(null) => default
+      case None                             => default
+      case Some(null)                       => default
       case Some(value) if value.length == 0 => '\u0000'
       case Some(value) if value.length == 1 => value.charAt(0)
-      case _ => throw new RuntimeException(s"$paramName cannot be more than one character")
+      case _ =>
+        throw new RuntimeException(
+          s"$paramName cannot be more than one character"
+        )
     }
   }
 
   private def getInt(paramName: String, default: Int): Int = {
     val paramValue = parameters.get(paramName)
     paramValue match {
-      case None => default
+      case None       => default
       case Some(null) => default
-      case Some(value) => try {
-        value.toInt
-      } catch {
-        case e: NumberFormatException =>
-          throw new RuntimeException(s"$paramName should be an integer. Found $value")
-      }
+      case Some(value) =>
+        try {
+          value.toInt
+        } catch {
+          case e: NumberFormatException =>
+            throw new RuntimeException(
+              s"$paramName should be an integer. Found $value"
+            )
+        }
     }
   }
 
@@ -87,36 +100,49 @@ class CSVOptions(
   }
 
   val delimiter = CSVUtils.toChar(
-    parameters.getOrElse("sep", parameters.getOrElse("delimiter", ",")))
+    parameters.getOrElse("sep", parameters.getOrElse("delimiter", ","))
+  )
   val parseMode: ParseMode =
     parameters.get("mode").map(ParseMode.fromString).getOrElse(PermissiveMode)
-  val charset = parameters.getOrElse("encoding",
-    parameters.getOrElse("charset", StandardCharsets.UTF_8.name()))
+  val charset = parameters.getOrElse(
+    "encoding",
+    parameters.getOrElse("charset", StandardCharsets.UTF_8.name())
+  )
 
   val quote = getChar("quote", '\"')
   val escape = getChar("escape", '\\')
-  val charToEscapeQuoteEscaping = parameters.get("charToEscapeQuoteEscaping") match {
-    case None => None
-    case Some(null) => None
-    case Some(value) if value.length == 0 => None
-    case Some(value) if value.length == 1 => Some(value.charAt(0))
-    case _ =>
-      throw new RuntimeException("charToEscapeQuoteEscaping cannot be more than one character")
-  }
+  val charToEscapeQuoteEscaping =
+    parameters.get("charToEscapeQuoteEscaping") match {
+      case None                             => None
+      case Some(null)                       => None
+      case Some(value) if value.length == 0 => None
+      case Some(value) if value.length == 1 => Some(value.charAt(0))
+      case _ =>
+        throw new RuntimeException(
+          "charToEscapeQuoteEscaping cannot be more than one character"
+        )
+    }
   val comment = getChar("comment", '\u0000')
 
   val headerFlag = getBool("header")
   val inferSchemaFlag = getBool("inferSchema")
-  val ignoreLeadingWhiteSpaceInRead = getBool("ignoreLeadingWhiteSpace", default = false)
-  val ignoreTrailingWhiteSpaceInRead = getBool("ignoreTrailingWhiteSpace", default = false)
+  val ignoreLeadingWhiteSpaceInRead =
+    getBool("ignoreLeadingWhiteSpace", default = false)
+  val ignoreTrailingWhiteSpaceInRead =
+    getBool("ignoreTrailingWhiteSpace", default = false)
 
   // For write, both options were `true` by default. We leave it as `true` for
   // backwards compatibility.
-  val ignoreLeadingWhiteSpaceFlagInWrite = getBool("ignoreLeadingWhiteSpace", default = true)
-  val ignoreTrailingWhiteSpaceFlagInWrite = getBool("ignoreTrailingWhiteSpace", default = true)
+  val ignoreLeadingWhiteSpaceFlagInWrite =
+    getBool("ignoreLeadingWhiteSpace", default = true)
+  val ignoreTrailingWhiteSpaceFlagInWrite =
+    getBool("ignoreTrailingWhiteSpace", default = true)
 
   val columnNameOfCorruptRecord =
-    parameters.getOrElse("columnNameOfCorruptRecord", defaultColumnNameOfCorruptRecord)
+    parameters.getOrElse(
+      "columnNameOfCorruptRecord",
+      defaultColumnNameOfCorruptRecord
+    )
 
   val nullValue = parameters.getOrElse("nullValue", "")
 
@@ -125,22 +151,28 @@ class CSVOptions(
   val positiveInf = parameters.getOrElse("positiveInf", "Inf")
   val negativeInf = parameters.getOrElse("negativeInf", "-Inf")
 
-
   val compressionCodec: Option[String] = {
     val name = parameters.get("compression").orElse(parameters.get("codec"))
     name.map(CompressionCodecs.getCodecClassName)
   }
 
   val timeZone: TimeZone = DateTimeUtils.getTimeZone(
-    parameters.getOrElse(DateTimeUtils.TIMEZONE_OPTION, defaultTimeZoneId))
+    parameters.getOrElse(DateTimeUtils.TIMEZONE_OPTION, defaultTimeZoneId)
+  )
 
   // Uses `FastDateFormat` which can be direct replacement for `SimpleDateFormat` and thread-safe.
   val dateFormat: FastDateFormat =
-    FastDateFormat.getInstance(parameters.getOrElse("dateFormat", "yyyy-MM-dd"), Locale.US)
+    FastDateFormat.getInstance(
+      parameters.getOrElse("dateFormat", "yyyy-MM-dd"),
+      Locale.US
+    )
 
   val timestampFormat: FastDateFormat =
     FastDateFormat.getInstance(
-      parameters.getOrElse("timestampFormat", "yyyy-MM-dd'T'HH:mm:ss.SSSXXX"), timeZone, Locale.US)
+      parameters.getOrElse("timestampFormat", "yyyy-MM-dd'T'HH:mm:ss.SSSXXX"),
+      timeZone,
+      Locale.US
+    )
 
   val multiLine = parameters.get("multiLine").map(_.toBoolean).getOrElse(false)
 
@@ -160,24 +192,25 @@ class CSVOptions(
     parameters.get("samplingRatio").map(_.toDouble).getOrElse(1.0)
 
   /**
-   * Forcibly apply the specified or inferred schema to datasource files.
-   * If the option is enabled, headers of CSV files will be ignored.
-   */
+    * Forcibly apply the specified or inferred schema to datasource files.
+    * If the option is enabled, headers of CSV files will be ignored.
+    */
   val enforceSchema = getBool("enforceSchema", default = true)
 
+  /**
+    * String representation of an empty value in read and in write.
+    */
+  val emptyValue = parameters.get("emptyValue")
 
   /**
-   * String representation of an empty value in read and in write.
-   */
-  val emptyValue = parameters.get("emptyValue")
-  /**
-   * The string is returned when CSV reader doesn't have any characters for input value,
-   * or an empty quoted string `""`. Default value is empty string.
-   */
+    * The string is returned when CSV reader doesn't have any characters for input value,
+    * or an empty quoted string `""`. Default value is empty string.
+    */
   val emptyValueInRead = emptyValue.getOrElse("")
+
   /**
-   * The value is used instead of an empty string in write. Default value is `""`
-   */
+    * The value is used instead of an empty string in write. Default value is `""`
+    */
   val emptyValueInWrite = emptyValue.getOrElse("\"\"")
 
   def asWriterSettings: CsvWriterSettings = {
@@ -188,8 +221,12 @@ class CSVOptions(
     format.setQuoteEscape(escape)
     charToEscapeQuoteEscaping.foreach(format.setCharToEscapeQuoteEscaping)
     format.setComment(comment)
-    writerSettings.setIgnoreLeadingWhitespaces(ignoreLeadingWhiteSpaceFlagInWrite)
-    writerSettings.setIgnoreTrailingWhitespaces(ignoreTrailingWhiteSpaceFlagInWrite)
+    writerSettings.setIgnoreLeadingWhitespaces(
+      ignoreLeadingWhiteSpaceFlagInWrite
+    )
+    writerSettings.setIgnoreTrailingWhitespaces(
+      ignoreTrailingWhiteSpaceFlagInWrite
+    )
     writerSettings.setNullValue(nullValue)
     writerSettings.setEmptyValue(emptyValueInWrite)
     writerSettings.setSkipEmptyLines(true)

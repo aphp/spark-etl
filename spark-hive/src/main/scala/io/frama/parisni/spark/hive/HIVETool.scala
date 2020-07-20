@@ -14,9 +14,9 @@ class HIVETool(principal: String, keytab: String, url: String) {
   private var connection: Connection = null
 
   /**
-   * Creates the connection
-   *
-   */
+ * Creates the connection
+ *
+ */
   protected def init() = {
     val conf = new org.apache.hadoop.conf.Configuration();
     conf.set("hadoop.security.authentication", "Kerberos");
@@ -28,51 +28,51 @@ class HIVETool(principal: String, keytab: String, url: String) {
   }
 
   /**
-   * Run a query without expecting a result set back
-   *
-   * @param query String A sql statement
-   */
+ * Run a query without expecting a result set back
+ *
+ * @param query String A sql statement
+ */
   def execute(query: String) = {
     val statement = connection.createStatement()
     statement.execute(query)
   }
 
   /**
-   * Run a query without and returns a resultset
-   *
-   * @param query String A sql statement
-   */
+ * Run a query without and returns a resultset
+ *
+ * @param query String A sql statement
+ */
   def executeQuery(query: String): ResultSet = {
     val statement = connection.createStatement()
     statement.executeQuery(query)
   }
 
   /**
-   * Close the pending connection
-   *
-   */
+ * Close the pending connection
+ *
+ */
   def close() = {
     connection.close()
   }
 
   /**
-   * This produce a merge statement. It can be an insert, an
-   * update and/or a delete merge depending on the specified mode.
-   * In each case, different the arguments need to be specified.
-   * The merge is always based on a key comparison that can be a
-   * list of keys.
-   *
-   * @param targetTable String The table to be merged
-   * @param sourceTable String The table with new data
-   * @param key List[String] The list of key to compare source and target
-   * @param colums List[String] The colums list in the exact order
-   * @param mode String i, u, d for Insert, Update, or Delete. "iud" if all
-   * @param compareColumns Option[List[String]] The list of the colums to trigger the update
-   * @param updateColumns  Option[List[String]] The list of the columns to be updated
-   * @param deleteClause  Option[String] The statement triggering the delete
-   *
-   * @note the TARGET table SHALL have the exact same columns in the **same order** than the TARGET TABLE
-   */
+ * This produce a merge statement. It can be an insert, an
+ * update and/or a delete merge depending on the specified mode.
+ * In each case, different the arguments need to be specified.
+ * The merge is always based on a key comparison that can be a
+ * list of keys.
+ *
+ * @param targetTable String The table to be merged
+ * @param sourceTable String The table with new data
+ * @param key List[String] The list of key to compare source and target
+ * @param colums List[String] The colums list in the exact order
+ * @param mode String i, u, d for Insert, Update, or Delete. "iud" if all
+ * @param compareColumns Option[List[String]] The list of the colums to trigger the update
+ * @param updateColumns  Option[List[String]] The list of the columns to be updated
+ * @param deleteClause  Option[String] The statement triggering the delete
+ *
+ * @note the TARGET table SHALL have the exact same columns in the **same order** than the TARGET TABLE
+ */
   def merge(targetTable: String, sourceTable: String, key: List[String], columns: Option[List[String]], mode: String, compareColumns: Option[List[String]] = None, updateColumns: Option[List[String]] = None, deleteClause: Option[String] = None) = {
     val mergeQuery = HIVETool.merge(targetTable, sourceTable, key, columns, mode, compareColumns, updateColumns, deleteClause)
     execute(mergeQuery)
@@ -89,25 +89,25 @@ object HIVETool {
   }
 
   /**
-   * @example given a, b columns from source table and a, c from source table
-   * produces a = t.a, b = t.b
-   */
+ * @example given a, b columns from source table and a, c from source table
+ * produces a = t.a, b = t.b
+ */
   def generateUpdateSet(sourceTable: String, columns: List[String]): String = {
     columns.map(c => f""""$c" = "$sourceTable"."$c"""").mkString(", ")
   }
 
   /**
-   * @example given a, b columns from source table and a, c from source table
-   * produces a <> t.a OR b <> t.b
-   */
+ * @example given a, b columns from source table and a, c from source table
+ * produces a <> t.a OR b <> t.b
+ */
   def generateUpdateCompare(sourceTable: String, columns: List[String]): String = {
     columns.map(c => f""""$c" <> "$sourceTable"."$c"""").mkString(" OR ")
   }
 
   /**
-   * @example given a, b columns from source table and a, c from source table
-   * produces s.a = t.a AND s.b = t.b
-   */
+ * @example given a, b columns from source table and a, c from source table
+ * produces s.a = t.a AND s.b = t.b
+ */
   def generateJoin(sourceTable: String, targetTable: String, key: List[String]): String = {
     key.map(c => f""""$sourceTable"."$c" = "$targetTable"."$c"""").mkString(" AND ")
   }
@@ -140,7 +140,7 @@ object HIVETool {
 
     val insertStr = if (mode.contains("i"))
       f"""
-      WHEN NOT MATCHED  
+      WHEN NOT MATCHED
         THEN INSERT VALUES ($insert)"""
 
     val updateStr = if (mode.contains("u"))
@@ -167,4 +167,4 @@ object HIVETool {
 
 }
 
-*/
+ */

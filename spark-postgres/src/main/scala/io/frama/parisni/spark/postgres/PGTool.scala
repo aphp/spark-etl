@@ -261,10 +261,6 @@ class PGTool(
     )
   }
 
-  private def genPath: String = {
-    tmpPath + "/" + randomUUID.toString
-  }
-
   def outputScd1Hash(
       table: String,
       key: Seq[String],
@@ -289,6 +285,10 @@ class PGTool(
       bulkLoadBufferSize
     )
     this
+  }
+
+  private def genPath: String = {
+    tmpPath + "/" + randomUUID.toString
   }
 
   def outputBulkCsv(
@@ -365,14 +365,6 @@ object PGTool extends java.io.Serializable with LazyLogging {
     res
   }
 
-  def tableTruncate(url: String, table: String, password: String = ""): Unit = {
-    val conn = connOpen(url, password)
-    val st: PreparedStatement =
-      conn.prepareStatement(s"""TRUNCATE TABLE "$table" """)
-    st.executeUpdate()
-    conn.close()
-  }
-
   def connOpen(url: String, password: String = ""): Connection = {
     val prop = new Properties()
     prop.put("password", passwordFromConn(url, password))
@@ -409,17 +401,23 @@ object PGTool extends java.io.Serializable with LazyLogging {
     var passwd = ""
     content.split("\n").foreach { line =>
       val connCfg = line.split(":")
-      if (
-        hostname == connCfg(0)
-        && port == connCfg(1)
-        && (database == connCfg(2) || connCfg(2) == "*")
-        && username == connCfg(3)
-      ) {
+      if (hostname == connCfg(0)
+          && port == connCfg(1)
+          && (database == connCfg(2) || connCfg(2) == "*")
+          && username == connCfg(3)) {
         passwd = connCfg(4)
       }
     }
     reader.close()
     passwd
+  }
+
+  def tableTruncate(url: String, table: String, password: String = ""): Unit = {
+    val conn = connOpen(url, password)
+    val st: PreparedStatement =
+      conn.prepareStatement(s"""TRUNCATE TABLE "$table" """)
+    st.executeUpdate()
+    conn.close()
   }
 
   def tableDrop(url: String, table: String, password: String = ""): Unit = {
@@ -1161,8 +1159,8 @@ object PGTool extends java.io.Serializable with LazyLogging {
               throw new TimeoutException(s"""
                    | The copy operation for copying this partition's data to postgres has been running for
                    | more than the timeout: ${TimeUnit.MILLISECONDS.toSeconds(
-                copyTimeoutMs
-              )}s.
+                                              copyTimeoutMs
+                                            )}s.
                    | You can configure this timeout with option copyTimeoutMs, such as "2h", "100min",
                    | and default copyTimeout is "10min".
                 """.stripMargin)
@@ -1626,10 +1624,8 @@ object PGTool extends java.io.Serializable with LazyLogging {
   ): DataFrame = {
     val newCols = df.schema.fields.map(c => {
       val colName = c.name
-      if (
-        c.dataType.isInstanceOf[MapType] || c.dataType
-          .isInstanceOf[StructType]
-      ) {
+      if (c.dataType.isInstanceOf[MapType] || c.dataType
+            .isInstanceOf[StructType]) {
         to_json(col(colName)).as(colName)
       } else {
         col(colName)
@@ -1690,18 +1686,16 @@ object PGTool extends java.io.Serializable with LazyLogging {
       bulkLoadMode: BulkLoadMode = defaultBulkLoadStrategy,
       bulkLoadBufferSize: Int = defaultBulkLoadBufferSize
   ): Unit = {
-    if (
-      loadEmptyTable(
-        spark,
-        url,
-        table,
-        candidate,
-        path,
-        partitions,
-        password,
-        bulkLoadMode
-      )
-    )
+    if (loadEmptyTable(
+          spark,
+          url,
+          table,
+          candidate,
+          path,
+          partitions,
+          password,
+          bulkLoadMode
+        ))
       return
 
     logger.info("The postgres table is not empty")
@@ -1908,18 +1902,16 @@ object PGTool extends java.io.Serializable with LazyLogging {
       bulkLoadBufferSize: Int = defaultBulkLoadBufferSize
   ): Unit = {
 
-    if (
-      loadEmptyTable(
-        spark,
-        url,
-        table,
-        candidate,
-        path,
-        partitions,
-        password,
-        bulkLoadMode
-      )
-    )
+    if (loadEmptyTable(
+          spark,
+          url,
+          table,
+          candidate,
+          path,
+          partitions,
+          password,
+          bulkLoadMode
+        ))
       return
 
     val insertTmp = getTmpTable("ins_")
@@ -2060,13 +2052,27 @@ object PGTool extends java.io.Serializable with LazyLogging {
   def parametrize(st: PreparedStatement, params: List[Any]) = {
     for ((obj, i) <- params.zipWithIndex) {
       obj match {
+        case s: Option[String] if s == None =>
+          st.setNull(i+1, java.sql.Types.VARCHAR)
         case s: String               => st.setString(i + 1, s)
         case b: Boolean              => st.setBoolean(i + 1, b)
+        case s: Option[Boolean] if s == None =>
+          st.setNull(i+1, java.sql.Types.BOOLEAN)
         case l: Long                 => st.setLong(i + 1, l)
+        case s: Option[Long] if s == None =>
+          st.setNull(i+1, java.sql.Types.BIGINT)
         case i: Integer              => st.setInt(i + 1, i)
+        case s: Option[Integer] if s == None =>
+          st.setNull(i+1, java.sql.Types.INTEGER)
         case b: java.math.BigDecimal => st.setDouble(i + 1, b.doubleValue())
+        case s: Option[java.math.BigDecimal] if s == None =>
+          st.setNull(i+1, java.sql.Types.DOUBLE)
         case d: java.sql.Date        => st.setDate(i + 1, d)
+        case s: Option[java.sql.Date] if s == None =>
+          st.setNull(i+1, java.sql.Types.DATE)
         case t: Timestamp            => st.setTimestamp(i + 1, t)
+        case s: Option[Timestamp] if s == None =>
+          st.setNull(i+1, java.sql.Types.TIMESTAMP)
         case _ =>
           throw new UnsupportedEncodingException(
             obj.getClass.getCanonicalName + " type not yet supported for prepared statements"
@@ -2215,8 +2221,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
       ("8", "8"),
       ("9", "9"),
       (":", upperBound)
-    )
-      .filterNot { case (_, end) => end > upperBound }
+    ).filterNot { case (_, end) => end > upperBound }
 
     val partitionsLast = List(partitionsTmp.last._1 -> upperBound)
 

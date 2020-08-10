@@ -72,19 +72,6 @@ object DFTool extends LazyLogging {
   }
 
   /**
-    * Apply a schema on the given DataFrame. It reorders the
-    * columns.
-    *
-    * @param df     their name
-    * @param schema the schema as a StructType
-    * @return a validated DataFrame
-    */
-  def reorderColumns(df: DataFrame, schema: StructType): DataFrame = {
-    val reorderedColumnNames = schema.fieldNames.map(x => "`" + x + "`")
-    df.select(reorderedColumnNames.head, reorderedColumnNames.tail: _*)
-  }
-
-  /**
     * Validate schema on the given DataFrame. It verifies if
     * the columns exists independently on the schema.
     *
@@ -122,32 +109,6 @@ object DFTool extends LazyLogging {
     */
   def getOptionalColumns(schema: StructType): StructType = {
     StructType(schema.filter(f => f.metadata.contains("default")))
-  }
-
-  /**
-    * Add missing columns and apply the default value
-    * specified as a Metadata passed with the StrucType
-    *
-    * @param df            : a DataFrame
-    * @param missingSchema : StructType
-    * @return a DataFrame
-    */
-  def addMissingColumns(df: DataFrame, missingSchema: StructType): DataFrame = {
-    var result = df
-    missingSchema.fields.foreach(f => {
-      logger.debug(f"Added ${f.name} column")
-      if (!df.columns.contains(f.name))
-        result = result.withColumn(
-          f.name,
-          if (f.metadata.contains("default")) {
-            lit(f.metadata.getString("default")).cast(f.dataType)
-          } else {
-            lit(null)
-          }
-        )
-
-    })
-    result
   }
 
   /**
@@ -206,6 +167,45 @@ object DFTool extends LazyLogging {
     val right = reorderColumns(targetDfPlus, sourceDfPlus.schema)
 
     sourceDfPlus.union(right)
+  }
+
+  /**
+    * Apply a schema on the given DataFrame. It reorders the
+    * columns.
+    *
+    * @param df     their name
+    * @param schema the schema as a StructType
+    * @return a validated DataFrame
+    */
+  def reorderColumns(df: DataFrame, schema: StructType): DataFrame = {
+    val reorderedColumnNames = schema.fieldNames.map(x => "`" + x + "`")
+    df.select(reorderedColumnNames.head, reorderedColumnNames.tail: _*)
+  }
+
+  /**
+    * Add missing columns and apply the default value
+    * specified as a Metadata passed with the StrucType
+    *
+    * @param df            : a DataFrame
+    * @param missingSchema : StructType
+    * @return a DataFrame
+    */
+  def addMissingColumns(df: DataFrame, missingSchema: StructType): DataFrame = {
+    var result = df
+    missingSchema.fields.foreach(f => {
+      logger.debug(f"Added ${f.name} column")
+      if (!df.columns.contains(f.name))
+        result = result.withColumn(
+          f.name,
+          if (f.metadata.contains("default")) {
+            lit(f.metadata.getString("default")).cast(f.dataType)
+          } else {
+            lit(null)
+          }
+        )
+
+    })
+    result
   }
 
   def getMissingColumns(
@@ -287,8 +287,7 @@ object DFTool extends LazyLogging {
     val firstCol = df.columns(0)
 
     val w = Window.partitionBy("fake").orderBy(col(firstCol))
-    df
-      .withColumn("fake", lit(1))
+    df.withColumn("fake", lit(1))
       .withColumn(columnName, row_number().over(w).plus(indexBegin))
       .drop("fake")
   }
@@ -336,8 +335,7 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
           .toList
       else _levels
 
-    df
-      .filter(key.isInCollection(levels))
+    df.filter(key.isInCollection(levels))
       .groupBy(groupBy)
       .agg(
         map_from_entries(collect_list(struct(key, expr(aggCol))))
@@ -453,80 +451,6 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
 
   }
 
-  def getHiveLocation(spark: SparkSession, tableName: String) = {
-    Try {
-      val path = spark
-        .sql(s"describe extended ${tableName}")
-        .filter("col_name = 'Location'")
-        .select("data_type")
-        .collect()
-        .map(row => row.getString(0))
-        .mkString
-      //require(path.startsWith("hdfs://"))
-      path
-    }
-  }
-
-  def tableExists(
-      spark: SparkSession,
-      deltaPath: String,
-      tablePath: String
-  ): Boolean = {
-    if (spark.catalog.databaseExists(deltaPath))
-      spark.catalog.tableExists(getDbTable(tablePath, deltaPath))
-    else {
-      val defaultFSConf = spark.sessionState.newHadoopConf().get("fs.defaultFS")
-      val fsConf = if (deltaPath.startsWith("file:")) {
-        "file:///"
-      } else {
-        defaultFSConf
-      }
-      val conf = new Configuration()
-      conf.set("fs.defaultFS", fsConf)
-      val fs = FileSystem.get(conf)
-
-      fs.exists(new Path(deltaPath + tablePath))
-    }
-  }
-
-  def getDbTable(table: String, db: String = "default") = s"`${db}`.`${table}`"
-
-  /**
-    * Writes a parquet table even if the table already exists
-    * The strategy might not work as expected because the hive table is not created.
-    * A better strategy may be to catch the error, parse the location and remove it.
-    *
-    * @param df
-    * @param tableName
-    */
-  def saveHive(
-      df: DataFrame,
-      tableName: String,
-      format: String = "parquet"
-  ): Unit = {
-
-    def write() = {
-      logger.warn(s"persisting $tableName")
-      df.write
-        .format(format)
-        .mode(SaveMode.Overwrite)
-        .saveAsTable(tableName)
-    }
-
-    val res = Try {
-      write()
-    }
-    res.failed.getOrElse(None) match {
-      case e: AnalysisException => {
-        val location = getHiveLocation(e.getMessage())
-        logger.warn(s"${location} already exists")
-        removeHiveLocation(df.sparkSession, location)
-        write()
-      }
-      case _ =>
-    }
-  }
-
   def saveHiveFull(
       df: DataFrame,
       database: String,
@@ -582,28 +506,43 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
     }*/
   }
 
-  def getHiveLocation(errorMessage: String) = {
-    val reg = """.*The associated location\('([^']+)'\) already exists.*""".r
-    errorMessage match {
-      case reg(url) => url
-      case _        => throw new RuntimeException(errorMessage)
+  def getHiveLocation(spark: SparkSession, tableName: String) = {
+    Try {
+      val path = spark
+        .sql(s"describe extended ${tableName}")
+        .filter("col_name = 'Location'")
+        .select("data_type")
+        .collect()
+        .map(row => row.getString(0))
+        .mkString
+      //require(path.startsWith("hdfs://"))
+      path
     }
   }
 
-  def removeHiveLocation(spark: SparkSession, location: String) = {
-    val defaultFSConf = spark.sessionState.newHadoopConf().get("fs.defaultFS")
-    val fsConf = if (location.startsWith("file:")) {
-      "file:///"
-    } else {
-      defaultFSConf
-    }
-    val conf = new Configuration()
-    conf.set("fs.defaultFS", fsConf)
-    val fs = FileSystem.get(conf)
+  def tableExists(
+      spark: SparkSession,
+      deltaPath: String,
+      tablePath: String
+  ): Boolean = {
+    if (spark.catalog.databaseExists(deltaPath))
+      spark.catalog.tableExists(getDbTable(tablePath, deltaPath))
+    else {
+      val defaultFSConf = spark.sessionState.newHadoopConf().get("fs.defaultFS")
+      val fsConf = if (deltaPath.startsWith("file:")) {
+        "file:///"
+      } else {
+        defaultFSConf
+      }
+      val conf = new Configuration()
+      conf.set("fs.defaultFS", fsConf)
+      val fs = FileSystem.get(conf)
 
-    logger.warn(s"removing ${location}")
-    fs.delete(new Path(location), true)
+      fs.exists(new Path(deltaPath + tablePath))
+    }
   }
+
+  def getDbTable(table: String, db: String = "default") = s"`${db}`.`${table}`"
 
   def getArchived(
       colJoin: Seq[String],
@@ -634,7 +573,6 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
       * This Function Accepts DataFrame with same or Different Schema/Column Order.With some or none common columns
       * Creates a Unioned DataFrame
       */
-
     val spark = DFList.head.sparkSession
 
     val MasterColList: Array[String] =
@@ -648,8 +586,7 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
         x match {
           case x if myCols.contains(x) => col(x)
           case _                       => lit(null).as(x)
-        }
-      )
+      })
     }
 
     // Create EmptyDF , ignoring different Datatype in StructField and treating them same based on Name ignoring cases
@@ -680,17 +617,86 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
     assert(Constraints.fromSchema(schema)(spark.table(hiveTable)).isSuccess)
   }
 
+  /**
+    * Writes a parquet table even if the table already exists
+    * The strategy might not work as expected because the hive table is not created.
+    * A better strategy may be to catch the error, parse the location and remove it.
+    *
+    * @param df
+    * @param tableName
+    */
+  def saveHive(
+      df: DataFrame,
+      tableName: String,
+      format: String = "parquet",
+      partitions: Int = 200
+  ): Unit = {
+
+    def write() = {
+      logger.warn(s"persisting $tableName")
+      df.repartition(partitions)
+        .write
+        .format(format)
+        .mode(SaveMode.Overwrite)
+        .saveAsTable(tableName)
+    }
+
+    val res = Try {
+      write()
+    }
+    res.failed.getOrElse(None) match {
+      case e: AnalysisException => {
+        val location = getHiveLocation(e.getMessage())
+        logger.warn(s"${location} already exists")
+        removeHiveLocation(df.sparkSession, location)
+        write()
+      }
+      case _ =>
+    }
+  }
+
+  def getHiveLocation(errorMessage: String) = {
+    val reg = """.*The associated location\('([^']+)'\) already exists.*""".r
+    errorMessage match {
+      case reg(url) => url
+      case _        => throw new RuntimeException(errorMessage)
+    }
+  }
+
+  def removeHiveLocation(spark: SparkSession, location: String) = {
+    val defaultFSConf = spark.sessionState.newHadoopConf().get("fs.defaultFS")
+    val fsConf = if (location.startsWith("file:")) {
+      "file:///"
+    } else {
+      defaultFSConf
+    }
+    val conf = new Configuration()
+    conf.set("fs.defaultFS", fsConf)
+    val fs = FileSystem.get(conf)
+
+    logger.warn(s"removing ${location}")
+    fs.delete(new Path(location), true)
+  }
+
   def save(
       hiveTable: String,
       df: DataFrame,
-      format: String = "parquet"
+      format: String = "parquet",
+      partitions: Int = 200
   ): Unit = {
-    if (hiveTable.contains("/")) saveFile(hiveTable, df, format)
-    else saveHive(df, hiveTable, format)
+    if (hiveTable.contains("/")) saveFile(hiveTable, df, format, partitions)
+    else saveHive(df, hiveTable, format, partitions)
   }
 
-  def saveFile(file: String, df: DataFrame, format: String = "parquet") = {
-    df.write.format(format).mode(SaveMode.Overwrite).save(file)
+  def saveFile(file: String,
+               df: DataFrame,
+               format: String = "parquet",
+               partitions: Int = 200) = {
+    df.repartition(partitions)
+      .write
+      .format(format)
+      .mode(SaveMode.Overwrite)
+      .save(file)
   }
 
   def read(

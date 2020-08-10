@@ -409,7 +409,7 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
         candidate.write.mode(SaveMode.Overwrite).format("delta").save(deltaPath)
 
     } else {
-      logger.warn(
+      logger.info(
         "Merging table %s with table of %d rows".format(
           deltaPath,
           candidate.count
@@ -460,7 +460,7 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
 
     def write() = {
 
-      logger.warn(s"persisting $tableName")
+      logger.info(s"persisting $tableName")
       val spark = df.sparkSession
       //val candidate = if (!df.columns.contains("hash")) dfAddHash(df) else df
 
@@ -478,7 +478,7 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
 
       //val query = primaryKeys.map(x => (f"t.${x} = s.${x}")).mkString(" AND ")
       if (!isTableExists) {
-        logger.warn(
+        logger.info(
           "Table %s does not yet exist".format(getDbTable(tableName, database))
         )
         /*if (isHive) saveHive(df, getDbTable(tableName, database), format)
@@ -613,7 +613,7 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
   }
 
   def validate(spark: SparkSession, hiveTable: String, schema: Schema): Unit = {
-    logger.warn(s"validating $hiveTable")
+    logger.info(s"validating $hiveTable")
     assert(Constraints.fromSchema(schema)(spark.table(hiveTable)).isSuccess)
   }
 
@@ -633,7 +633,7 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
   ): Unit = {
 
     def write() = {
-      logger.warn(s"persisting $tableName")
+      logger.info(s"persisting $tableName")
       df.repartition(partitions)
         .write
         .format(format)

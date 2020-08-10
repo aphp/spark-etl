@@ -85,6 +85,10 @@ class JoinTest extends QueryBaseTest {
     assertQuery(1) {
       person %% message | !message.happens
     }
+    // Only Carlos didn't post any message
+    assertQuery(1) {
+      message %% person | !message.happens
+    }
     // One message has no author
     assertQuery(1) {
       person %% message | !person.happens

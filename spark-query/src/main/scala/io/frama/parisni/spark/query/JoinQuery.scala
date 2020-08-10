@@ -116,3 +116,4 @@ case class CrossJoin(left: Query, right: Query) extends JoinQuery {
       .crossJoin(AliasQuery.getAliasedDataFrame(right))
   }
 }
+

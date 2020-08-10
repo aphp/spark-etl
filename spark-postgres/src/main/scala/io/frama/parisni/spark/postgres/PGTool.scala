@@ -211,6 +211,10 @@ class PGTool(
     this
   }
 
+  private def genPath: String = {
+    tmpPath + "/" + randomUUID.toString
+  }
+
   def input(
       query: String,
       numPartitions: Int = 1,
@@ -285,10 +289,6 @@ class PGTool(
       bulkLoadBufferSize
     )
     this
-  }
-
-  private def genPath: String = {
-    tmpPath + "/" + randomUUID.toString
   }
 
   def outputBulkCsv(
@@ -2052,27 +2052,35 @@ object PGTool extends java.io.Serializable with LazyLogging {
   def parametrize(st: PreparedStatement, params: List[Any]) = {
     for ((obj, i) <- params.zipWithIndex) {
       obj match {
+        case s: String       => st.setString(i + 1, s)
+        case Some(s: String) => st.setString(i + 1, s)
         case s: Option[String] if s == None =>
-          st.setNull(i+1, java.sql.Types.VARCHAR)
-        case s: String               => st.setString(i + 1, s)
-        case b: Boolean              => st.setBoolean(i + 1, b)
+          st.setNull(i + 1, java.sql.Types.VARCHAR)
+        case b: Boolean       => st.setBoolean(i + 1, b)
+        case Some(b: Boolean) => st.setBoolean(i + 1, b)
         case s: Option[Boolean] if s == None =>
-          st.setNull(i+1, java.sql.Types.BOOLEAN)
-        case l: Long                 => st.setLong(i + 1, l)
+          st.setNull(i + 1, java.sql.Types.BOOLEAN)
+        case l: Long       => st.setLong(i + 1, l)
+        case Some(l: Long) => st.setLong(i + 1, l)
         case s: Option[Long] if s == None =>
-          st.setNull(i+1, java.sql.Types.BIGINT)
-        case i: Integer              => st.setInt(i + 1, i)
+          st.setNull(i + 1, java.sql.Types.BIGINT)
+        case i: Integer       => st.setInt(i + 1, i)
+        case Some(i: Integer) => st.setInt(i + 1, i)
         case s: Option[Integer] if s == None =>
-          st.setNull(i+1, java.sql.Types.INTEGER)
+          st.setNull(i + 1, java.sql.Types.INTEGER)
         case b: java.math.BigDecimal => st.setDouble(i + 1, b.doubleValue())
+        case Some(b: java.math.BigDecimal) =>
+          st.setDouble(i + 1, b.doubleValue())
         case s: Option[java.math.BigDecimal] if s == None =>
-          st.setNull(i+1, java.sql.Types.DOUBLE)
-        case d: java.sql.Date        => st.setDate(i + 1, d)
+          st.setNull(i + 1, java.sql.Types.DOUBLE)
+        case d: java.sql.Date       => st.setDate(i + 1, d)
+        case Some(d: java.sql.Date) => st.setDate(i + 1, d)
         case s: Option[java.sql.Date] if s == None =>
-          st.setNull(i+1, java.sql.Types.DATE)
-        case t: Timestamp            => st.setTimestamp(i + 1, t)
+          st.setNull(i + 1, java.sql.Types.DATE)
+        case t: Timestamp       => st.setTimestamp(i + 1, t)
+        case Some(t: Timestamp) => st.setTimestamp(i + 1, t)
         case s: Option[Timestamp] if s == None =>
-          st.setNull(i+1, java.sql.Types.TIMESTAMP)
+          st.setNull(i + 1, java.sql.Types.TIMESTAMP)
         case _ =>
           throw new UnsupportedEncodingException(
             obj.getClass.getCanonicalName + " type not yet supported for prepared statements"

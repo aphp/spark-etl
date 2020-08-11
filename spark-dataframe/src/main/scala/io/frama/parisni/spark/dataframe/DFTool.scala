@@ -586,7 +586,8 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
         x match {
           case x if myCols.contains(x) => col(x)
           case _                       => lit(null).as(x)
-      })
+        }
+      )
     }
 
     // Create EmptyDF , ignoring different Datatype in StructField and treating them same based on Name ignoring cases
@@ -688,10 +689,12 @@ def pivot(df, group_by, key, aggFunction, levels=[]):
     else saveHive(df, hiveTable, format, partitions)
   }
 
-  def saveFile(file: String,
-               df: DataFrame,
-               format: String = "parquet",
-               partitions: Int = 200) = {
+  def saveFile(
+      file: String,
+      df: DataFrame,
+      format: String = "parquet",
+      partitions: Int = 200
+  ) = {
     df.repartition(partitions)
       .write
       .format(format)

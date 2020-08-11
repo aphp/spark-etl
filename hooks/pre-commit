@@ -1,0 +1,9 @@
+#!/bin/bash
+echo "Running scalafmt"
+scalafmt  --diff --config .scalafmt.conf */src/
+# While generally discouraged, scalafmt seems trustworthy enough to automatically
+# add new changes to staging (see: https://github.com/pre-commit/pre-commit/issues/806)
+echo "Running xmllint"
+find . -name 'pom.xml' -exec xmllint --format {} --output {} \;
+git add -u
+

@@ -1,66 +1,60 @@
+<?xml version="1.0"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <artifactId>spark-meta</artifactId>
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>spark-meta</artifactId>
+  <version>1.0.13-SNAPSHOT</version>
+  <name>Spark ETL Meta</name>
+  <packaging>jar</packaging>
+  <parent>
+    <groupId>io.frama.parisni</groupId>
+    <artifactId>spark-etl</artifactId>
     <version>1.0.13-SNAPSHOT</version>
-    <name>Spark ETL Meta</name>
-    <packaging>jar</packaging>
-
-    <parent>
-        <groupId>io.frama.parisni</groupId>
-        <artifactId>spark-etl</artifactId>
-        <version>1.0.13-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
-    </parent>
-
+    <relativePath>../pom.xml</relativePath>
+  </parent>
   <dependencies>
-      <dependency>
-          <groupId>io.frama.parisni</groupId>
-          <artifactId>spark-dataframe</artifactId>
-      </dependency>
-
-      <dependency>
-          <groupId>io.frama.parisni</groupId>
-          <artifactId>spark-csv</artifactId>
-      </dependency>
-
-      <dependency>
-          <groupId>io.frama.parisni</groupId>
-          <artifactId>spark-postgres</artifactId>
-      </dependency>
-
-      <dependency>
-          <groupId>net.jcazevedo</groupId>
-          <artifactId>moultingyaml_${scala.tools.version}</artifactId>
-      </dependency>
-
-      <dependency>
-          <groupId>com.opentable.components</groupId>
-          <artifactId>otj-pg-embedded</artifactId>
-      </dependency>
+    <dependency>
+      <groupId>io.frama.parisni</groupId>
+      <artifactId>spark-dataframe</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.frama.parisni</groupId>
+      <artifactId>spark-csv</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.frama.parisni</groupId>
+      <artifactId>spark-postgres</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>net.jcazevedo</groupId>
+      <artifactId>moultingyaml_${scala.tools.version}</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.opentable.components</groupId>
+      <artifactId>otj-pg-embedded</artifactId>
+    </dependency>
   </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.scalatest</groupId>
-                <artifactId>scalatest-maven-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>net.alchim31.maven</groupId>
-                <artifactId>scala-maven-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.sonatype.plugins</groupId>
-                <artifactId>nexus-staging-maven-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-            </plugin>
-        </plugins>
-    </build>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.scalatest</groupId>
+        <artifactId>scalatest-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>net.alchim31.maven</groupId>
+        <artifactId>scala-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>nexus-staging-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
 </project>

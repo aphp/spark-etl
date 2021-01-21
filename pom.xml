@@ -372,7 +372,7 @@
     <scala-yaml.version>0.4.1</scala-yaml.version>
     <scalatest.version>3.0.8</scalatest.version>
     <solr.version>8.5.1</solr.version>
-    <fasterxml.version>2.6.7</fasterxml.version>
+    <fasterxml.version>2.12.1</fasterxml.version>
     <release.name>RELEASE</release.name>
     <snapshot.name>SNAPSHOT</snapshot.name>
     <hadoop.version>2.6.5</hadoop.version>

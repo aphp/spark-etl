@@ -371,7 +371,7 @@
     <hive.version>2.3.5</hive.version>
     <scala-yaml.version>0.4.1</scala-yaml.version>
     <scalatest.version>3.0.8</scalatest.version>
-    <solr.version>8.5.1</solr.version>
+    <solr.version>8.8.2</solr.version>
     <fasterxml.version>2.6.7</fasterxml.version>
     <release.name>RELEASE</release.name>
     <snapshot.name>SNAPSHOT</snapshot.name>

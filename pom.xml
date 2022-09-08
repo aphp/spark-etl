@@ -366,7 +366,7 @@
     <logback.version>1.0.13</logback.version>
     <slf4j.version>1.7.25</slf4j.version>
     <scala-logging.version>3.9.2</scala-logging.version>
-    <postgres.version>42.2.5</postgres.version>
+    <postgres.version>42.4.1</postgres.version>
     <spark-testing.version>2.4.0_0.11.0</spark-testing.version>
     <hive.version>2.3.5</hive.version>
     <scala-yaml.version>0.4.1</scala-yaml.version>

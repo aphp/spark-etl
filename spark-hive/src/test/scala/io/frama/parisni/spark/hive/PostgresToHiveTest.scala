@@ -2,7 +2,7 @@ package io.frama.parisni.spark.hive
 
 import io.frama.parisni.spark.hive.PostgresToHiveYaml._
 import net.jcazevedo.moultingyaml._
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.FunSuite
 
 import scala.io.Source
 
@@ -17,8 +17,10 @@ class PostgresToHiveTest extends FunSuite {
     for (pal <- palette.tables.getOrElse(Nil)) {
       println("bob" + pal.isActive.getOrElse(""))
     }
+
     println(palette.toYaml.prettyPrint)
 
+    assert("test_scd_pg".equals(palette.tables.get.head.tablePg))
   }
 
 }

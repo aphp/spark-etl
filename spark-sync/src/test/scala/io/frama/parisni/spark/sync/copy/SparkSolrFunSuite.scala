@@ -1,7 +1,8 @@
 package io.frama.parisni.spark.sync.copy
 
 import com.lucidworks.spark.LazyLogging
-import org.scalatest.{FunSuite, Outcome}
+import org.scalatest.funsuite.FunSuite
+import org.scalatest.Outcome
 
 /**
   * Base abstract class for all Scala unit tests in spark-solr for handling common functionality.

@@ -367,8 +367,8 @@
     <maven.compiler.target>1.8</maven.compiler.target>
     <encoding>UTF-8</encoding>
 
-    <scala.tools.version>2.12</scala.tools.version> <!-- 2.12 -->
-    <scala.version>2.12.15</scala.version> <!-- 2.12.15 -->
+    <scala.tools.version>2.12</scala.tools.version>
+    <scala.version>2.12.15</scala.version>
     <spark.version>3.3.0</spark.version>
 
     <logback.version>1.0.13</logback.version>
@@ -540,6 +540,115 @@
               <version>3.0.0-M5</version>
               <configuration>
                 <skipTests>true</skipTests>
+              </configuration>
+            </plugin>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-source-plugin</artifactId>
+              <version>3.2.0</version>
+              <executions>
+                <execution>
+                  <id>attach-sources</id>
+                  <phase>deploy</phase>
+                  <goals>
+                    <goal>jar-no-fork</goal>
+                  </goals>
+                </execution>
+              </executions>
+            </plugin>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-deploy-plugin</artifactId>
+              <version>3.0.0-M1</version>
+              <executions>
+                <execution>
+                  <id>default-deploy</id>
+                  <phase>deploy</phase>
+                  <goals>
+                    <goal>deploy</goal>
+                  </goals>
+                </execution>
+              </executions>
+            </plugin>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-project-info-reports-plugin</artifactId>
+              <version>3.0.0</version>
+            </plugin>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-javadoc-plugin</artifactId>
+              <version>3.2.0</version>
+              <executions>
+                <execution>
+                  <id>attach-javadocs</id>
+                  <goals>
+                    <goal>jar</goal>
+                  </goals>
+                </execution>
+              </executions>
+            </plugin>
+            <plugin>
+              <groupId>org.sonatype.plugins</groupId>
+              <artifactId>nexus-staging-maven-plugin</artifactId>
+              <version>1.6.8</version>
+              <configuration>
+                <serverId>nexus</serverId>
+                <nexusUrl>https://nexus.eds.aphp.fr/</nexusUrl>
+                <skipStaging>true</skipStaging>
+              </configuration>
+            </plugin>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-release-plugin</artifactId>
+              <version>3.0.0-M1</version>
+              <configuration>
+                <arguments>-DskipTests</arguments>
+                <developmentVersion>${snapshot.name}</developmentVersion>
+                <releaseVersion>${release.name}</releaseVersion>
+                <scmCommentPrefix>[CICD]</scmCommentPrefix>
+                <scmDevelopmentCommitComment>
+                                    @{prefix} Snapshot: ${snapshot.name}
+                                </scmDevelopmentCommitComment>
+                <scmReleaseCommitComment>
+                                    @{prefix} Release: ${release.name}
+                                </scmReleaseCommitComment>
+                <tag>${release.name}</tag>
+                <tagNameFormat>@{project.version}</tagNameFormat>
+              </configuration>
+            </plugin>
+            <plugin>
+              <groupId>org.sonarsource.scanner.maven</groupId>
+              <artifactId>sonar-maven-plugin</artifactId>
+              <version>3.7.0.1746</version>
+            </plugin>
+            <plugin>
+              <groupId>org.jacoco</groupId>
+              <artifactId>jacoco-maven-plugin</artifactId>
+              <version>0.8.5</version>
+              <executions>
+                <execution>
+                  <id>pre-test</id>
+                  <goals>
+                    <goal>prepare-agent</goal>
+                  </goals>
+                </execution>
+                <execution>
+                  <id>report</id>
+                  <phase>prepare-package</phase>
+                  <goals>
+                    <goal>report</goal>
+                  </goals>
+                </execution>
+              </executions>
+            </plugin>
+            <plugin>
+              <groupId>org.owasp</groupId>
+              <artifactId>dependency-check-maven</artifactId>
+              <version>5.3.2</version>
+              <configuration>
+                <outputDirectory>${project.build.directory}</outputDirectory>
+                <skipSystemScope>true</skipSystemScope>
               </configuration>
             </plugin>
           </plugins>

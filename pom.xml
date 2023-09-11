@@ -74,6 +74,12 @@
       <groupId>com.typesafe.scala-logging</groupId>
       <artifactId>scala-logging_${scala.tools.version}</artifactId>
       <version>${scala-logging.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.scala-lang</groupId>
+          <artifactId>scala-reflect</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.scala-lang</groupId>

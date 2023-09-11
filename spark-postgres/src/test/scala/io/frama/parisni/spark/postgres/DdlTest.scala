@@ -951,10 +951,7 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
       "FLOAT_COL",
       "DOUBLE_COL",
       "STRING_COL",
-      //"DATE_COL",
-      //"TIMESTAMP_COL",
       "BYTEA_COL",
-      //"BIGD_COL"
     )
 
     val data = Seq(
@@ -967,10 +964,7 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
         Array(Some(6.0f), None),
         Array(Some(7.0d), None),
         Array(Some("8"), None),
-        //Array(Some(testDate), None),
-        //Array(Some(testTimestamp), None),
-        Array(Some("11".getBytes()), None),
-        //Array(Some(BigDecimal(12)), None)
+        Array(Some("9".getBytes()), None),
       )
     ).toDF(colNames: _*)
 
@@ -1012,12 +1006,7 @@ class DdlTest extends QueryTest with SparkSessionTestWrapper {
     assert(rs.getFloat(6) == 6.0f)
     assert(rs.getDouble(7) == 7.0d)
     assert(rs.getString(8) == "8")
-    //assert(rs.getDate(9).toLocalDate.equals(testDate.toLocalDate))
-//    assert(
-//      rs.getTimestamp(9).toLocalDateTime.equals(testTimestamp.toLocalDateTime)
-//    )
-    assert(util.Arrays.equals(rs.getBytes(9), "11".getBytes))
-    //assert(rs.getDouble(10) == 12.0d)
+    assert(util.Arrays.equals(rs.getBytes(9), "9".getBytes))
 
     (10 to 18).foreach(i => assert(rs.getString(i) == null))
 

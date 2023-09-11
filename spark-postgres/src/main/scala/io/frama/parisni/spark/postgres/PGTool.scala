@@ -1146,7 +1146,7 @@ object PGTool extends java.io.Serializable with LazyLogging {
                     )
                 }
               }
-              univocityGenerator.write(rowEncoder.toRow(row))
+              univocityGenerator.write(rowEncoder.createSerializer().apply(row))
             })
             outputWriter.close()
             // Wait for the copy to have finished

@@ -57,7 +57,7 @@ class TestDfTool extends QueryTest with SparkSessionTestWrapper {
         m
       ) :: Nil
     )
-    val mandatorySchema = StructType(StructField("c1", IntegerType) :: Nil)
+    val mandatorySchema = StructType(StructField("c1", IntegerType, nullable = false) :: Nil)
 
     assert(DFTool.getMandatoryColumns(schema).toDDL == mandatorySchema.toDDL)
 

@@ -1,12 +1,11 @@
 package io.frama.parisni.spark.sync.copy
 
 import java.sql.Timestamp
-
 import io.frama.parisni.spark.sync.conf.DeltaConf
 import io.frama.parisni.spark.sync.copy.PostgresToDeltaYaml.Database
 import net.jcazevedo.moultingyaml._
 import org.apache.spark.sql.DataFrame
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.FunSuite
 
 import scala.io.Source
 
